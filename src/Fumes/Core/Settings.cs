@@ -180,7 +180,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Painted;
+        public HoseMode Hose = HoseMode.Auto;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -211,7 +211,7 @@ namespace Fumes.Core
         /// where honest scale disappears. Thick enough to be a hose, not so thick it is a
         /// pipe.
         /// </summary>
-        public float HoseThickness = 0.075f;
+        public float HoseThickness = 0.045f;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
         public float HoseSag = 1.22f;
@@ -234,9 +234,9 @@ namespace Fumes.Core
         public float NozzleOffsetX = 0.055f;
         public float NozzleOffsetY = 0.02f;
         public float NozzleOffsetZ = 0.0f;
-        public float NozzleRotX = 45f;
+        public float NozzleRotX = 0f;
         public float NozzleRotY = 270f;
-        public float NozzleRotZ = 0f;
+        public float NozzleRotZ = 45f;
 
         /// <summary>
         /// In-game tuning for the six numbers above.
@@ -267,7 +267,7 @@ namespace Fumes.Core
         /// the payment panel. The base-game pumps are a little under two metres, so this sits
         /// just below the light box on the lid.
         /// </summary>
-        public float HoseAnchorZ = 1.85f;
+        public float HoseAnchorZ = 2.10f;
 
         // ---- HUD --------------------------------------------------------------
         /// <summary>Top-left help box, or the bottom-right button bar.</summary>

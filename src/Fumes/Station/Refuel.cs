@@ -254,6 +254,7 @@ namespace Fumes.Station
 
             _nozzle.Take();     // keeps asking until the model streams; no-op once it is out
             _nozzle.Tune();     // no-op unless [Nozzle] TuneNozzle is on
+            TuneHose();         // likewise
             LockHands();
 
             var anchor = Anchor();
@@ -763,6 +764,48 @@ namespace Fumes.Station
         private string NameOf(Control control)
         {
             return control == Control.ContextSecondary ? SecondaryName() : KeyName();
+        }
+
+        private bool _ropeKeyDown;
+
+        /// <summary>
+        /// Cycles the rope texture while you look at it, when TuneNozzle is on.
+        ///
+        /// This exists because there is no way to choose between GTA's nine rope types from
+        /// outside the game. They are authored textures with no names, no previews and no
+        /// documentation -- the only description of type 5 anywhere is that SHVDN calls it
+        /// "thin metal wire" -- so picking one is a matter of looking at all nine and saying
+        /// which is a fuel hose. That takes about fifteen seconds in front of a pump and is
+        /// otherwise impossible.
+        ///
+        /// NumPad * because it is one of the very few keys nothing else on this machine claims;
+        /// NumPad + belongs to Enhanced Native Trainer.
+        /// </summary>
+        private void TuneHose()
+        {
+            if (!_cfg.TuneNozzle) return;
+
+            bool down;
+            try { down = Game.IsKeyPressed(System.Windows.Forms.Keys.Multiply); }
+            catch { down = false; }
+
+            var edge = down && !_ropeKeyDown;
+            _ropeKeyDown = down;
+
+            if (edge)
+            {
+                _cfg.HoseRopeType = (_cfg.HoseRopeType + 1) % 9;
+
+                // The type is baked in at ADD_ROPE, so the rope has to be thrown away and made
+                // again. It respawns on the next frame from Carrying.
+                _hose.Retract();
+
+                Log.Info("Hose rope type is now " + _cfg.HoseRopeType + ".");
+            }
+
+            Draw.Text("HOSE  [NumPad *]  rope type " + _cfg.HoseRopeType + " of 0-8",
+                      0.5f, 0.145f, 0.32f,
+                      System.Drawing.Color.FromArgb(235, 245, 200, 90), 4, true);
         }
 
         /// <summary>Reads the configured key once, at the top of the tick. See _keyEdge.</summary>
