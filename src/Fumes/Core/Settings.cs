@@ -194,7 +194,7 @@ namespace Fumes.Core
         public float NozzleOffsetY = 0.02f;
         public float NozzleOffsetZ = 0.0f;
         public float NozzleRotX = 0f;
-        public float NozzleRotY = 90f;
+        public float NozzleRotY = 270f;
         public float NozzleRotZ = 0f;
 
         /// <summary>

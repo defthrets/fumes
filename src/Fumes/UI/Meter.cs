@@ -103,8 +103,12 @@ namespace Fumes.UI
                 // The pump, top right, bobbing and dripping while fuel moves. It goes still at
                 // full: a logo swaying on a finished pump reads as a stuck animation, not life.
                 _pump.Scale = 0.050f;
-                _pump.Draw(left + W - 0.034f, Top + 0.055f, !full);
-                Drip(left + W - 0.034f, Top + 0.070f, !full);
+                _pump.Draw(left + W - 0.034f, Top + 0.064f, !full);
+
+                // The drip hangs ABOVE the bowser rather than under it. Under, it fell into
+                // the numbers column and read as a stray dot on the price; above, the pump has
+                // clear panel over it and the drop has somewhere to be.
+                Drip(left + W - 0.034f, Top + 0.024f, !full);
 
                 Numbers(left, litres, pricePerLitre, owed, free);
 
@@ -192,27 +196,41 @@ namespace Fumes.UI
 
                 // Each piece is drawn a shade longer than its spacing, so neighbours overlap
                 // rather than leaving a hairline of frame showing between them.
+                //
+                // AND EVERY PIECE IS CLAMPED TO ITS OWN EDGE. That overlap is the reason: the
+                // last segment before a corner starts almost at the corner and is 15% longer
+                // than the gap it has left, so it ran out past the end of the frame -- a gold
+                // spur sticking off the top right, and another off the bottom left, four times
+                // every circuit. The frame looked broken rather than lit.
                 var run = step * 1.15f;
 
                 if (d < wide)
                 {
+                    // Top, left to right.
                     var x = left + (d / wide) * W;
-                    Hud.Bar(x, top, run / aspect, thick, colour);
+                    var len = Math.Min(run / aspect, left + W - x);
+                    if (len > 0f) Hud.Bar(x, top, len, thick, colour);
                 }
                 else if (d < wide + H)
                 {
+                    // Right, top to bottom.
                     var y = top + (d - wide);
-                    Hud.Bar(left + W - thick, y, thick, run, colour);
+                    var len = Math.Min(run, top + H - y);
+                    if (len > 0f) Hud.Bar(left + W - thick, y, thick, len, colour);
                 }
                 else if (d < 2f * wide + H)
                 {
+                    // Bottom, right to left.
                     var x = left + W - ((d - wide - H) / wide) * W;
-                    Hud.Bar(x - run / aspect, top + H - thick, run / aspect, thick, colour);
+                    var from = Math.Max(left, x - run / aspect);
+                    if (x > from) Hud.Bar(from, top + H - thick, x - from, thick, colour);
                 }
                 else
                 {
+                    // Left, bottom to top.
                     var y = top + H - (d - 2f * wide - H);
-                    Hud.Bar(left, y - run, thick, run, colour);
+                    var from = Math.Max(top, y - run);
+                    if (y > from) Hud.Bar(left, from, thick, y - from, colour);
                 }
             }
         }
@@ -448,7 +466,7 @@ namespace Fumes.UI
             if (!flowing || _drip.Missing) return;
 
             const float period = 1.25f;
-            const float fall = 0.030f;
+            const float fall = 0.022f;
 
             var p = (Environment.TickCount % (int)(period * 1000)) / (period * 1000f);
 

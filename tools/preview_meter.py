@@ -177,16 +177,28 @@ def border(img, left, top, t, full):
         d = u * perimeter
         run = step * 1.15
 
+        # Every piece clamped to its own edge -- the overlap that stops hairline gaps also
+        # runs the last segment before a corner out past the end of the frame.
         if d < wide:
-            bar(img, left + (d / wide) * W, top, run / ASPECT, thick, colour)
+            x = left + (d / wide) * W
+            length = min(run / ASPECT, left + W - x)
+            if length > 0:
+                bar(img, x, top, length, thick, colour)
         elif d < wide + H:
-            bar(img, left + W - thick, top + (d - wide), thick, run, colour)
+            y = top + (d - wide)
+            length = min(run, top + H - y)
+            if length > 0:
+                bar(img, left + W - thick, y, thick, length, colour)
         elif d < 2 * wide + H:
             x = left + W - ((d - wide - H) / wide) * W
-            bar(img, x - run / ASPECT, top + H - thick, run / ASPECT, thick, colour)
+            start = max(left, x - run / ASPECT)
+            if x > start:
+                bar(img, start, top + H - thick, x - start, thick, colour)
         else:
             y = top + H - (d - 2 * wide - H)
-            bar(img, left, y - run, thick, run, colour)
+            start = max(top, y - run)
+            if y > start:
+                bar(img, left, start, thick, y - start, colour)
 
 
 # ---- the tank ---------------------------------------------------------------
@@ -261,13 +273,13 @@ def frame(t, fraction, litres, owed, price=1.27):
     # Pump icon, top right, with its drip.
     bob = math.sin(t * math.pi * 2 / 1.9) * 0.006 if not full else 0.0
     tilt = math.sin(t * math.pi * 2 / 2.7) * 7.0 if not full else 0.0
-    icon(img, "fuel.png", left + W - 0.034, TOP + 0.055 + bob, 0.050, (245, 175, 55, 235), tilt)
+    icon(img, "fuel.png", left + W - 0.034, TOP + 0.064 + bob, 0.050, (245, 175, 55, 235), tilt)
 
     if not full:
         p = (t % 1.25) / 1.25
         alpha = int(210 * min(p * 6.0, min((1.0 - p) * 3.5, 1.0)))
         if alpha > 4:
-            icon(img, "drop.png", left + W - 0.034, TOP + 0.070 + p * p * 0.030, 0.016,
+            icon(img, "drop.png", left + W - 0.034, TOP + 0.024 + p * p * 0.022, 0.016,
                  (245, 185, 70, alpha))
 
     # Numbers: labels hard left, values hard right.
