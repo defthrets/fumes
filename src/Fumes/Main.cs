@@ -1,5 +1,6 @@
 using System;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Fumes.Core;
 using Fumes.Fuel;
@@ -316,6 +317,8 @@ namespace Fumes
 
             _sinceSurvey += dt;
             if (_sinceSurvey < 2f) return;
+
+            var slice = _sinceSurvey;
             _sinceSurvey = 0f;
 
             try
@@ -324,9 +327,19 @@ namespace Fumes
                 if (me == null || !me.Exists()) return;
 
                 var pump = _pumps.Sweep(me.Position, 70f);
-                if (pump == null || !pump.Exists()) return;
+                var found = pump != null && pump.Exists();
+                var where = found ? pump.Position : Vector3.Zero;
 
-                if (_stations.Learn(pump.Position)) _stations.Reblip();
+                var changed = false;
+
+                if (found) changed = _stations.Learn(where);
+
+                // The other half, and it has to run whether or not a pump was found -- that is
+                // the entire point of it. A station nobody can find a pump at is exactly the
+                // case a "did we see a pump" early return would skip.
+                changed |= _stations.Doubt(me.Position, found, where, slice);
+
+                if (changed) _stations.Reblip();
             }
             catch (Exception ex)
             {

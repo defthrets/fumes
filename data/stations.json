@@ -14,7 +14,6 @@
   ],
 
   "stations": [
-    { "name": "Grove Street",        "brand": "Xero",         "x": 49.42,    "y": -1897.17, "z": 28.71,  "price": 0.94 },
     { "name": "Innocence Boulevard", "brand": "LTD Gasoline", "x": 263.89,   "y": -1261.31, "z": 28.29,  "price": 1.02 },
     { "name": "Route 68 West",       "brand": "RON",          "x": 1039.96,  "y": 2671.13,  "z": 38.55,  "price": 1.08 },
     { "name": "Route 68 East",       "brand": "Xero",         "x": 1207.26,  "y": 2660.18,  "z": 36.20,  "price": 1.06 },

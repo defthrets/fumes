@@ -18,6 +18,18 @@ namespace Fumes.Station
         /// <summary>Whether this position came from a real pump rather than the shipped list.</summary>
         public bool Learned;
 
+        /// <summary>
+        /// Struck off: somebody stood on this coordinate and there was no pump anywhere near it.
+        ///
+        /// Kept in the list rather than deleted from it, so the shipped file can still be
+        /// reloaded and so a tombstone can be written down. A removed station draws no blip and
+        /// names no price.
+        /// </summary>
+        public bool Removed;
+
+        /// <summary>Seconds spent standing on this coordinate with no pump in sight.</summary>
+        public float Doubt;
+
         public string Title => Brand + " - " + Name;
     }
 
@@ -140,6 +152,7 @@ namespace Fumes.Station
 
             foreach (var f in _all)
             {
+                if (f.Removed) continue;
                 if (f.Blip != null && f.Blip.Exists()) continue;
 
                 try
@@ -177,6 +190,8 @@ namespace Fumes.Station
 
             foreach (var f in _all)
             {
+                if (f.Removed) continue;
+
                 var d = f.Position.DistanceTo(position);
                 if (d >= bestDist) continue;
 
@@ -268,6 +283,8 @@ namespace Fumes.Station
 
             foreach (var f in _all)
             {
+                if (f.Removed) continue;
+
                 var d = f.Position.DistanceTo(to);
                 if (d >= bestDist) continue;
 
@@ -276,6 +293,72 @@ namespace Fumes.Station
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// How near you have to be to a station's coordinate for your not finding a pump there
+        /// to mean anything.
+        /// </summary>
+        private const float Judge = 45f;
+
+        /// <summary>
+        /// Seconds of standing that near with no pump before the station is struck off.
+        ///
+        /// Not one sighting. Objects stream, and a single sweep taken in the wrong second can
+        /// come back empty on a forecourt that is really there -- which would delete a good
+        /// station on the strength of one unlucky frame. Several seconds of continuous nothing
+        /// is not a streaming hiccup.
+        /// </summary>
+        private const float Condemn = 5f;
+
+        /// <summary>
+        /// Strikes off a station you are standing on that has no pump anywhere near it.
+        ///
+        /// The mirror of Learn, and needed for the same reason: the shipped list was written by
+        /// hand, and a hand-written list has entries that are simply not real -- one of them
+        /// put a petrol station on a residential stop sign in Davis. Learn can move a station
+        /// that is nearly right; nothing but this can get rid of one that was never there.
+        ///
+        /// Returns true when something changed.
+        /// </summary>
+        public bool Doubt(Vector3 standingAt, bool sawPump, Vector3 pumpAt, float dt)
+        {
+            if (!_cfg.LearnStations) return false;
+
+            var changed = false;
+
+            foreach (var f in _all)
+            {
+                if (f.Removed) continue;
+
+                if (f.Position.DistanceTo(standingAt) > Judge) { f.Doubt = 0f; continue; }
+
+                // A pump near THIS station clears it, even if the sweep found it while you were
+                // nearer a different one.
+                if (sawPump && pumpAt.DistanceTo(f.Position) <= Claim) { f.Doubt = 0f; continue; }
+
+                f.Doubt += dt;
+                if (f.Doubt < Condemn) continue;
+
+                f.Removed = true;
+                f.Doubt = 0f;
+                _correctionsDirty = true;
+                changed = true;
+
+                Log.Info("Struck off " + f.Title + ": stood on its coordinate for " +
+                         Condemn.ToString("0") + "s and there is no pump within " +
+                         Claim.ToString("0") + "m. It is not a real station.");
+
+                Notify("~y~" + f.Title + "~s~ is not a real station - taken off the map.");
+            }
+
+            return changed;
+        }
+
+        private static void Notify(string text)
+        {
+            try { GTA.UI.Notification.PostTicker(text, false, false); }
+            catch { /* not worth a crash */ }
         }
 
         private static string Zone(Vector3 at)
@@ -350,6 +433,25 @@ namespace Fumes.Station
                 }
 
                 if (applied > 0) Log.Info("Applied " + applied + " corrected station position(s).");
+
+                var struck = 0;
+
+                foreach (var node in root["removed"].Items)
+                {
+                    var brand = node["brand"].AsString("");
+                    var name = node["name"].AsString("");
+
+                    var gone = _all.Find(f =>
+                        string.Equals(f.Brand, brand, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
+
+                    if (gone == null) continue;
+
+                    gone.Removed = true;
+                    struck++;
+                }
+
+                if (struck > 0) Log.Info("Kept " + struck + " station(s) off the map.");
             }
             catch (Exception ex)
             {
@@ -380,11 +482,21 @@ namespace Fumes.Station
                         .Set("price", f.PriceMultiplier));
                 }
 
+                var gone = Json.Array();
+
+                foreach (var f in _all)
+                {
+                    if (!f.Removed) continue;
+                    gone.Add(Json.Object().Set("brand", f.Brand).Set("name", f.Name));
+                }
+
                 var root = Json.Object()
-                    .Set("_readme", "Station positions this install worked out from real pumps. " +
-                                    "Delete this file to go back to the shipped coordinates.")
+                    .Set("_readme", "Station positions this install worked out from real pumps, and " +
+                                    "stations it went to and found were not there. Delete this file to " +
+                                    "go back to the shipped list exactly as it ships.")
                     .Set("version", Build.Version)
-                    .Set("stations", list);
+                    .Set("stations", list)
+                    .Set("removed", gone);
 
                 if (JsonFile.Write(Paths.StationsLocalFile, root)) _correctionsDirty = false;
             }

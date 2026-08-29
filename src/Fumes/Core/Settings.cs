@@ -285,9 +285,9 @@ namespace Fumes.Core
         /// anybody can nudge by 0.01 while looking at it beats a formula nobody can check.
         /// These are measured off a real screenshot at this machine's aspect ratio.
         /// </summary>
-        public float GaugeX = 0.1230f;
+        public float GaugeX = 0.1470f;
         public float GaugeY = 0.9845f;
-        public float GaugeWidth = 0.1475f;
+        public float GaugeWidth = 0.1235f;
         public float GaugeHeight = 0.0110f;
 
         /// <summary>
