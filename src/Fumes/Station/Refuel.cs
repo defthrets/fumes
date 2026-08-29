@@ -258,7 +258,7 @@ namespace Fumes.Station
                 return;
             }
 
-            var vehicle = NearestFillable(me, out var filler, out var exact);
+            var vehicle = NearestFillable(me, out var filler, out var inReach);
 
             if (vehicle == null)
             {
@@ -268,13 +268,19 @@ namespace Fumes.Station
                 return;
             }
 
-            // A marker on the actual filler, because "the side of the car" is not obvious on
-            // every model and hunting for it by walking in circles is not the interaction.
+            // A marker on the actual filler.
+            //
+            // THE POINT OF IT IS TO GET YOU THERE, so it is drawn from several metres out and
+            // not only once you are already standing on the spot -- which is what it used to
+            // do, and which made it a confirmation of something you had already found rather
+            // than the thing that told you where to walk. Where the filler is depends entirely
+            // on the model, and hunting for it in circles is not the interaction.
             World.DrawMarker(MarkerType.Cylinder,
                              filler - new Vector3(0f, 0f, 0.45f),
                              Vector3.Zero, Vector3.Zero,
                              new Vector3(0.28f, 0.28f, 0.3f),
-                             Color.FromArgb(150, 245, 175, 55),
+                             inReach ? Color.FromArgb(190, 120, 235, 130)
+                                     : Color.FromArgb(140, 245, 175, 55),
                              false, false, false, null, null, false);
 
             var tank = _tanks.For(vehicle);
@@ -287,6 +293,12 @@ namespace Fumes.Station
             if (tank.Litres >= tank.Capacity - 0.05f)
             {
                 Draw.Help(vehicle.LocalizedName + " is already full.");
+                return;
+            }
+
+            if (!inReach)
+            {
+                Draw.Help("Take the nozzle to the marker on the " + vehicle.LocalizedName + ".");
                 return;
             }
 
@@ -356,26 +368,34 @@ namespace Fumes.Station
             return true;
         }
 
-        /// <summary>The nearest vehicle whose filler is actually within arm's length.</summary>
-        private Vehicle NearestFillable(Ped me, out Vector3 filler, out bool exact)
+        /// <summary>How far out a filler is worth pointing at, even though you cannot reach it yet.</summary>
+        private const float GuideMetres = 6.5f;
+
+        /// <summary>
+        /// The nearest vehicle worth walking the nozzle to, and whether you are there yet.
+        ///
+        /// Deliberately NOT reach-gated. Reach decides whether you can start filling, which is
+        /// what inReach is for; finding the car at all has to happen before that, or the marker
+        /// only lights up once you no longer need it.
+        /// </summary>
+        private Vehicle NearestFillable(Ped me, out Vector3 filler, out bool inReach)
         {
             filler = Vector3.Zero;
-            exact = false;
+            inReach = false;
 
             Vehicle best = null;
-            var bestDist = float.MaxValue;
+            var bestDist = GuideMetres;
 
             try
             {
                 // A small radius on purpose: this runs every frame while the nozzle is out,
-                // and the answer can only ever be a vehicle he could touch.
+                // and the answer can only ever be a vehicle he could walk to on the hose.
                 foreach (var v in World.GetNearbyVehicles(me.Position, 9f))
                 {
                     if (v == null || !v.Exists()) continue;
                     if (!_tanks.Covers(v)) continue;
 
                     var point = Filler.On(v, out var isExact);
-                    if (!Filler.WithinReach(point, me.Position, _cfg.CapReach, isExact)) continue;
 
                     var d = point.DistanceTo(me.Position);
                     if (d >= bestDist) continue;
@@ -383,7 +403,7 @@ namespace Fumes.Station
                     best = v;
                     bestDist = d;
                     filler = point;
-                    exact = isExact;
+                    inReach = Filler.WithinReach(point, me.Position, _cfg.CapReach, isExact);
                 }
             }
             catch (Exception ex)
