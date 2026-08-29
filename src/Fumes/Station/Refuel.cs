@@ -1089,6 +1089,34 @@ namespace Fumes.Station
             Draw.Text("HOSE  [NumPad *]  rope type " + _cfg.HoseRopeType + " of 0-8",
                       0.5f, 0.145f, 0.32f,
                       System.Drawing.Color.FromArgb(235, 245, 200, 90), 4, true);
+
+            MarkHoseEnd();
+        }
+
+        /// <summary>
+        /// Puts a dot exactly where the hose is joining the nozzle, while tuning.
+        ///
+        /// The three HoseEnd numbers are an offset in the NOZZLE'S own space, and the nozzle is
+        /// rotated three ways -- so which direction "back a bit" turns out to be is not
+        /// something anybody can work out in their head, including me. Being able to see the
+        /// point turns the tuning from a guess into a nudge.
+        ///
+        /// Only while TuneNozzle is on, obviously. It is a workbench light, not a feature.
+        /// </summary>
+        private void MarkHoseEnd()
+        {
+            try
+            {
+                World.DrawMarker(MarkerType.Sphere, _nozzle.HoseEnd(),
+                                 Vector3.Zero, Vector3.Zero,
+                                 new Vector3(0.02f, 0.02f, 0.02f),
+                                 System.Drawing.Color.FromArgb(200, 120, 235, 255),
+                                 false, false, false, null, null, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hosemark", "Could not mark the hose end: " + ex.Message);
+            }
         }
 
         /// <summary>Reads the configured key once, at the top of the tick. See _keyEdge.</summary>

@@ -263,8 +263,8 @@ namespace Fumes.Core
         /// Negative Y is behind it. Dial it in with the tuner like the rest of the placement.
         /// </summary>
         public float HoseEndX = 0f;
-        public float HoseEndY = -0.12f;
-        public float HoseEndZ = 0f;
+        public float HoseEndY = -0.04f;
+        public float HoseEndZ = -0.06f;
 
         public bool TuneNozzle = false;
 
@@ -280,6 +280,15 @@ namespace Fumes.Core
         /// back. They are two halves of one decision.
         /// </summary>
         public bool LeftHand = true;
+
+        /// <summary>
+        /// How big the lettering in the upright gauge is, as a multiple of the bar's width.
+        ///
+        /// Its own number rather than a fixed fraction of the bar, because "make the bar
+        /// thinner" and "make the text smaller" turned out to be two different requests and
+        /// tying them together meant neither could be answered without moving the other.
+        /// </summary>
+        public float GaugeTextScale = 0.78f;
 
         /// <summary>Whether a marker is drawn on the vehicle's filler while you carry the nozzle.</summary>
         public bool ShowFillerMarker = false;
@@ -365,7 +374,7 @@ namespace Fumes.Core
 
         public float GaugeX = 0.1120f;
         public float GaugeY = 0.8240f;
-        public float GaugeWidth = 0.0034f;
+        public float GaugeWidth = 0.0020f;
         public float GaugeHeight = 0.1550f;
 
         /// <summary>
@@ -507,6 +516,7 @@ namespace Fumes.Core
                 s.Vertical = ini.GetBool("HUD", "Vertical", s.Vertical);
                 s.Units = ParseEnum(ini.GetString("HUD", "Units", "Litres"), s.Units);
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);
+                s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);
                 s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 
                 s.ForecourtHazard = ini.GetBool("Hazard", "ForecourtHazard", s.ForecourtHazard);

@@ -39,9 +39,46 @@ namespace Fumes.UI
                 : litres.ToString("0.0", CultureInfo.InvariantCulture) + " L";
         }
 
+        /// <summary>Whether the one-off measurement below has been written to the log.</summary>
+        private bool _measured;
+
+        /// <summary>
+        /// Says, once, how big the gauge actually IS in real pixels.
+        ///
+        /// Everything here is written in fractions of the screen, and a fraction tells you
+        /// nothing about how thick a line looks on somebody else's monitor -- which is exactly
+        /// the argument that kept going round: a bar can be described as three thousandths wide
+        /// and still be reported as too thick, and neither side of that can check the other.
+        /// A line in the log with the resolution and the pixel width settles it in one reading.
+        /// </summary>
+        private void Measure()
+        {
+            if (_measured) return;
+            _measured = true;
+
+            try
+            {
+                var res = GTA.UI.Screen.Resolution;
+
+                Log.Info("Gauge: " + (_cfg.GaugeWidth * res.Width).ToString("0.0") + " x " +
+                         (_cfg.GaugeHeight * res.Height).ToString("0.0") + " px" +
+                         " at " + (_cfg.GaugeX * res.Width).ToString("0") + "," +
+                         (_cfg.GaugeY * res.Height).ToString("0") +
+                         "  (screen " + res.Width + "x" + res.Height +
+                         ", ini " + _cfg.GaugeWidth.ToString("0.0000") + " x " +
+                         _cfg.GaugeHeight.ToString("0.0000") + ")");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("gauge-measure", "Could not read the screen size: " + ex.Message);
+            }
+        }
+
         public void Update(Vehicle vehicle, Tank tank, bool refuelling, bool stalled = false)
         {
             if (!_cfg.ShowGauge || tank == null) return;
+
+            Measure();
 
             // On foot the gauge is only shown while actually putting fuel in something --
             // otherwise it is a permanent readout of a car you are not in.
@@ -122,11 +159,12 @@ namespace Fumes.UI
                     var pct = (int)Math.Round(fraction * 100f);
                     if (pct > 99) pct = 99;
 
-                    var pitch = w * 1.05f;
+                    var glyph = w * _cfg.GaugeTextScale;
+                    var pitch = glyph * 1.35f;
                     var text = pct.ToString(CultureInfo.InvariantCulture) + "%";
 
-                    _glyphs.Number(text, x + w / 2f, y + h - 0.003f, w * 0.78f, pitch, ink);
-                    _glyphs.Label(x + w / 2f, y + 0.020f, w * 0.78f, 0.030f, ink);
+                    _glyphs.Number(text, x + w / 2f, y + h - 0.003f, glyph, pitch, ink);
+                    _glyphs.Label(x + w / 2f, y + 0.020f, glyph, glyph * 5.6f, ink);
                     return;
                 }
 
