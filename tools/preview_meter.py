@@ -5,18 +5,18 @@ Renders the pump display outside the game, from the same numbers Meter.cs uses.
 
 Writes preview/meter.gif and preview/meter_full.png.
 
-WHY THIS EXISTS: the panel is a couple of dozen rectangles positioned in screen fractions to
-three decimal places, and the only way to see whether two of them overlap is to look at it.
-Looking at it in the game costs a launch, a drive to a station, and a tank that is not full --
-several minutes for each thousandth you move something. Here it costs a second.
+WHY THIS EXISTS: the panel is a few dozen rectangles positioned in screen fractions to three
+decimal places, and the only way to see whether two of them overlap is to look at it. Looking
+at it in the game costs a launch, a drive to a station, and a tank that is not full -- several
+minutes for every thousandth you move something. Here it costs a second.
 
-It is a DRAWING check, not a behaviour one: it mirrors the layout arithmetic and the wave
-maths, so it catches things sitting on top of each other, text running out of its panel and
-waves that are too big or too small. It knows nothing about whether the mod works.
+It is a DRAWING check, not a behaviour one: it mirrors the layout arithmetic and the animation
+maths, so it catches things sitting on top of each other, text running out of its panel, and
+motion that is too fast or too subtle. It knows nothing about whether the mod works.
 
 Keep the numbers below in step with Meter.cs by hand. They are duplicated on purpose -- the
-alternative is a shared data file that the game would have to parse at runtime for the sake of
-a dev tool, which is a worse trade.
+alternative is a shared data file the game would have to parse at runtime for the sake of a
+dev tool, which is a worse trade.
 """
 
 import math
@@ -29,15 +29,15 @@ ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "preview")
 ICONS = os.path.join(ROOT, "data", "icons")
 
-# A 16:9 canvas. The panel is positioned in fractions, so the aspect only changes how wide
-# the pixels are, not where anything sits relative to anything else.
 SCREEN_W, SCREEN_H = 1920, 1080
+ASPECT = SCREEN_W / SCREEN_H
 
 # ---- mirrored from Meter.cs -------------------------------------------------
-X, TOP, W, H = 0.5, 0.715, 0.25, 0.138
-TANK_W, TANK_H = 0.034, 0.088
-COLUMNS = 22
-BUBBLES = 5
+X, TOP, W, H = 0.5, 0.700, 0.300, 0.160
+TANK_X, TANK_Y, TANK_W, TANK_H = 0.020, 0.036, 0.042, 0.088
+COL_LEFT, COL_RIGHT = 0.078, 0.238
+COLUMNS, BUBBLES = 22, 5
+BORDER_SEGMENTS = 120
 
 
 def fx(v):
@@ -50,11 +50,10 @@ def fy(v):
 
 # EVERYTHING TRANSLUCENT IS COMPOSITED, NOT DRAWN.
 #
-# ImageDraw.Draw(img, "RGBA") does NOT alpha-blend onto an RGBA image -- it REPLACES the
-# pixel, alpha channel and all. So a rectangle asked for at alpha 38 came out as opaque
-# white, and the first render of this panel showed two brilliant white bars down the glass
-# that do not exist in the game at all. A preview that invents problems is worse than no
-# preview, so every translucent shape goes through alpha_composite instead.
+# ImageDraw.Draw(img, "RGBA") does NOT alpha-blend onto an RGBA image -- it REPLACES the pixel,
+# alpha channel and all. So a rectangle asked for at alpha 38 came out opaque white, and the
+# first render of this panel showed two brilliant white bars down the glass that do not exist
+# in the game. A preview that invents problems is worse than no preview.
 
 
 def bar(img, left, top, w, h, colour):
@@ -62,11 +61,11 @@ def bar(img, left, top, w, h, colour):
     x0, y0 = int(round(fx(left))), int(round(fy(top)))
     x1, y1 = int(round(fx(left + w))), int(round(fy(top + h)))
 
-    x1 = max(x1, x0 + 1)
-    y1 = max(y1, y0 + 1)
+    x1, y1 = max(x1, x0 + 1), max(y1, y0 + 1)
+    if x0 < 0 or y0 < 0 or x1 > SCREEN_W or y1 > SCREEN_H:
+        return
 
-    tile = Image.new("RGBA", (x1 - x0, y1 - y0), colour)
-    img.alpha_composite(tile, (x0, y0))
+    img.alpha_composite(Image.new("RGBA", (x1 - x0, y1 - y0), colour), (x0, y0))
 
 
 def rect(img, cx, cy, w, h, colour):
@@ -74,12 +73,9 @@ def rect(img, cx, cy, w, h, colour):
     bar(img, cx - w / 2, cy - h / 2, w, h, colour)
 
 
-# Font 4 is Chalet Comprime Cologne; font 1 is Sign Painter House Script.
-#
-# Neither ships with Windows, so the preview stands in Arial and Segoe Script. The SHAPES are
-# wrong and the widths are only close -- which is fine for what this tool is for (does it fit,
-# does it overlap) and useless for judging the letterforms. Those have to be looked at in the
-# game.
+# Font 4 is Chalet Comprime Cologne; font 1 is Sign Painter House Script. Neither ships with
+# Windows, so the preview stands in Arial and Segoe Script. The SHAPES are wrong and the widths
+# only close -- fine for "does it fit, does it overlap", useless for judging letterforms.
 FACES = {
     4: ("arialbd.ttf", "arial.ttf", "segoeui.ttf"),
     1: ("segoescb.ttf", "segoesc.ttf", "arialbi.ttf"),
@@ -87,8 +83,6 @@ FACES = {
 
 
 def font_for(scale, font=4):
-    # GTA font 4 is about 58px tall at scale 1.0 on a 1080-high screen. Approximate, and only
-    # needs to be close enough to show whether a line of text fits where it was put.
     px = max(8, int(scale * 58))
     for name in FACES.get(font, FACES[4]):
         try:
@@ -99,13 +93,13 @@ def font_for(scale, font=4):
 
 
 def text_width(s, scale, font=4):
-    """Mirrors Hud.Width: how wide the run is as a fraction of the screen."""
+    """Mirrors Hud.Width: how wide a run is as a fraction of the screen."""
     f = font_for(scale, font)
-    layer = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    return layer.textbbox((0, 0), s, font=f)[2] / SCREEN_W
+    d = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    return d.textbbox((0, 0), s, font=f)[2] / SCREEN_W
 
 
-def text(img, s, x, y, scale, colour, centre=False, font=4):
+def text(img, s, x, y, scale, colour, centre=False, right=False, font=4):
     """Text, composited for the same reason bar() is."""
     f = font_for(scale, font)
 
@@ -113,8 +107,11 @@ def text(img, s, x, y, scale, colour, centre=False, font=4):
     d = ImageDraw.Draw(layer)
 
     px, py = fx(x), fy(y)
+    w = d.textbbox((0, 0), s, font=f)[2]
     if centre:
-        px -= d.textbbox((0, 0), s, font=f)[2] / 2
+        px -= w / 2
+    elif right:
+        px -= w
 
     d.text((px, py), s, font=f, fill=colour)
     img.alpha_composite(layer)
@@ -129,13 +126,70 @@ def icon(img, name, cx, cy, scale, tint, rotation=0.0):
     im = Image.open(path).convert("RGBA").resize((side, side), Image.LANCZOS)
 
     solid = Image.new("RGBA", im.size, tint[:3] + (255,))
-    alpha = im.split()[-1].point(lambda a: int(a * tint[3] / 255))
-    solid.putalpha(alpha)
+    solid.putalpha(im.split()[-1].point(lambda a: int(a * tint[3] / 255)))
 
     if rotation:
         solid = solid.rotate(-rotation, resample=Image.BICUBIC, expand=False)
 
     img.alpha_composite(solid, (int(fx(cx) - side / 2), int(fy(cy) - side / 2)))
+
+
+# ---- the animated border ----------------------------------------------------
+
+
+def ring(u, chase, halo):
+    d = abs(u - chase)
+    if d > 0.5:
+        d = 1.0 - d
+    return max(0.0, 1.0 - d / halo)
+
+
+def blend(a, b, t):
+    t = min(max(t, 0.0), 1.0)
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(4))
+
+
+def border(img, left, top, t, full):
+    thick, chase_seconds, halo = 0.0022, 2.8, 0.10
+
+    dim = (42, 112, 58, 165) if full else (108, 72, 24, 165)
+    lit = (165, 250, 180, 255) if full else (255, 220, 140, 255)
+
+    # Solid frame first, in one piece per edge -- a ring of abutting rectangles does not abut
+    # once each edge is rounded to whole pixels, and came out as gold blocks with gaps.
+    bar(img, left, top, W, thick, dim)
+    bar(img, left, top + H - thick, W, thick, dim)
+    bar(img, left, top, thick, H, dim)
+    bar(img, left + W - thick, top, thick, H, dim)
+
+    wide = W * ASPECT
+    perimeter = 2 * (wide + H)
+    step = perimeter / BORDER_SEGMENTS
+    chase = (t % chase_seconds) / chase_seconds
+
+    for i in range(BORDER_SEGMENTS):
+        u = i / BORDER_SEGMENTS
+        glow = max(ring(u, chase, halo), ring(u, (chase + 0.5) % 1.0, halo))
+        if glow <= 0.02:
+            continue
+
+        colour = blend(dim, lit, glow * glow)
+        d = u * perimeter
+        run = step * 1.15
+
+        if d < wide:
+            bar(img, left + (d / wide) * W, top, run / ASPECT, thick, colour)
+        elif d < wide + H:
+            bar(img, left + W - thick, top + (d - wide), thick, run, colour)
+        elif d < 2 * wide + H:
+            x = left + W - ((d - wide - H) / wide) * W
+            bar(img, x - run / ASPECT, top + H - thick, run / ASPECT, thick, colour)
+        else:
+            y = top + H - (d - 2 * wide - H)
+            bar(img, left, y - run, thick, run, colour)
+
+
+# ---- the tank ---------------------------------------------------------------
 
 
 def liquid(img, x, y, fraction, full, t):
@@ -150,7 +204,7 @@ def liquid(img, x, y, fraction, full, t):
     surface_y = y + TANK_H - level
 
     settle = 0.0 if full else min(fraction * 6.0, 1.0) * (1.0 - fraction * 0.55)
-    a1, a2 = 0.0016 * settle, 0.0009 * settle
+    a1, a2 = 0.0017 * settle, 0.0010 * settle
 
     for i in range(COLUMNS):
         u = i / (COLUMNS - 1)
@@ -178,59 +232,73 @@ def liquid(img, x, y, fraction, full, t):
 
         edge = min(phase * 4.0, min((1.0 - phase) * 3.0, 1.0))
         alpha = int(150 * max(edge, 0.0))
-        if alpha <= 4:
-            continue
-
-        bar(img, x + TANK_W * lane, by, size, size, (255, 240, 200, alpha))
+        if alpha > 4:
+            bar(img, x + TANK_W * lane, by, size, size, (255, 240, 200, alpha))
 
 
-def frame(t, fraction, litres, owed):
+# ---- one frame --------------------------------------------------------------
+
+
+def frame(t, fraction, litres, owed, price=1.27):
     img = Image.new("RGBA", (SCREEN_W, SCREEN_H), (48, 52, 58, 255))
     left = X - W / 2
     full = fraction >= 0.999
 
-    rect(img, X, TOP + H / 2, W, H, (8, 8, 10, 212))
-    rect(img, X, TOP + 0.0016, W, 0.0032, (245, 175, 55, 235))
+    rect(img, X, TOP + H / 2, W, H, (8, 8, 10, 214))
 
-    # Brand in script, location in the block font, centred as a unit.
+    # Header: brand in script, location in the block font, centred as a unit.
     brand, place = "Xero", "Davis Avenue"
-    brand_scale, place_scale, lift = 0.42, 0.28, 0.0062
-
+    brand_scale, place_scale, script_lift = 0.42, 0.28, 0.0062
     tail = "  -  " + place.upper()
+
     bw = text_width(brand, brand_scale, 1)
     tw = text_width(tail, place_scale, 4)
     start = X - (bw + tw) / 2
 
-    text(img, brand, start, TOP + 0.0065 - lift, brand_scale, (250, 200, 110, 240), False, 1)
-    text(img, tail, start + bw, TOP + 0.0065, place_scale, (220, 205, 175, 210), False, 4)
+    text(img, brand, start, TOP + 0.011 - script_lift, brand_scale, (250, 200, 110, 240), font=1)
+    text(img, tail, start + bw, TOP + 0.011, place_scale, (220, 205, 175, 210), font=4)
 
-    lift = math.sin(t * math.pi * 2 / 1.9) * 0.006 if not full else 0.0
+    # Pump icon, top right, with its drip.
+    bob = math.sin(t * math.pi * 2 / 1.9) * 0.006 if not full else 0.0
     tilt = math.sin(t * math.pi * 2 / 2.7) * 7.0 if not full else 0.0
-    icon(img, "fuel.png", left + 0.036, TOP + 0.0545 + lift, 0.052, (245, 175, 55, 235), tilt)
+    icon(img, "fuel.png", left + W - 0.034, TOP + 0.055 + bob, 0.050, (245, 175, 55, 235), tilt)
 
     if not full:
         p = (t % 1.25) / 1.25
         alpha = int(210 * min(p * 6.0, min((1.0 - p) * 3.5, 1.0)))
         if alpha > 4:
-            icon(img, "drop.png", left + 0.036, TOP + 0.070 + p * p * 0.030, 0.016,
+            icon(img, "drop.png", left + W - 0.034, TOP + 0.070 + p * p * 0.030, 0.016,
                  (245, 185, 70, alpha))
 
-    text(img, "%.1f L" % litres, left + 0.108, TOP + 0.027, 0.60, (245, 175, 55, 240), True)
-    text(img, "$%.2f   @ $1.27/L" % owed, left + 0.108, TOP + 0.069, 0.30, (225, 225, 225, 220), True)
+    # Numbers: labels hard left, values hard right.
+    lx, rx = left + COL_LEFT, left + COL_RIGHT
+    label = (175, 175, 180, 180)
+    value = (240, 240, 240, 238)
 
-    tx, ty = left + 0.198, TOP + 0.019
-    bar(img, tx - 0.0022, ty - 0.0022, TANK_W + 0.0044, TANK_H + 0.0044, (60, 60, 66, 210))
-    bar(img, tx, ty, TANK_W, TANK_H, (20, 20, 24, 220))
+    text(img, "TOTAL", lx, TOP + 0.048, 0.25, label)
+    text(img, "$%.2f" % owed, rx, TOP + 0.036, 0.62, (245, 175, 55, 245), right=True)
+
+    text(img, "VOLUME", lx, TOP + 0.085, 0.25, label)
+    text(img, "%.1f L" % litres, rx, TOP + 0.079, 0.38, value, right=True)
+
+    text(img, "PRICE", lx, TOP + 0.112, 0.25, label)
+    text(img, "$%.2f/L" % price, rx, TOP + 0.109, 0.30, (215, 215, 218, 215), right=True)
+
+    # Tank.
+    tx, ty = left + TANK_X, TOP + TANK_Y
+    bar(img, tx - 0.0024, ty - 0.0024, TANK_W + 0.0048, TANK_H + 0.0048, (62, 62, 68, 215))
+    bar(img, tx, ty, TANK_W, TANK_H, (20, 20, 24, 224))
     liquid(img, tx, ty, fraction, full, t)
-    bar(img, tx + 0.0026, ty + 0.004, 0.0012, TANK_H - 0.008, (255, 255, 255, 38))
-    bar(img, tx + TANK_W - 0.0034, ty + 0.004, 0.0009, TANK_H - 0.008, (255, 255, 255, 22))
+    bar(img, tx + 0.0030, ty + 0.005, 0.0013, TANK_H - 0.010, (255, 255, 255, 38))
+    bar(img, tx + TANK_W - 0.0040, ty + 0.005, 0.0010, TANK_H - 0.010, (255, 255, 255, 22))
 
     status = "FULL" if full else "%d%%" % round(fraction * 100)
-    text(img, status, tx + TANK_W / 2, TOP + 0.112, 0.30,
-         (150, 235, 160, 235) if full else (220, 220, 220, 215), True)
+    text(img, status, tx + TANK_W / 2, TOP + TANK_Y + TANK_H + 0.004, 0.32,
+         (150, 235, 160, 235) if full else (225, 225, 225, 220), centre=True)
 
-    # Crop to the panel with a margin, since the rest is empty desktop.
-    pad = 0.02
+    border(img, left, TOP, t, full)
+
+    pad = 0.018
     box = (int(fx(left - pad)), int(fy(TOP - pad)),
            int(fx(left + W + pad)), int(fy(TOP + H + pad)))
     return img.crop(box).convert("RGB")
@@ -241,10 +309,10 @@ def main():
         os.makedirs(OUT)
 
     frames = []
-    for i in range(48):
+    for i in range(60):
         t = i / 24.0
-        f = 0.20 + (i / 48.0) * 0.70          # filling as it plays
-        frames.append(frame(t, f, 7.3 + i * 0.9, 9.30 + i * 1.15))
+        f = 0.18 + (i / 60.0) * 0.74
+        frames.append(frame(t, f, 65.0 * f, 65.0 * f * 1.27))
 
     gif = os.path.join(OUT, "meter.gif")
     frames[0].save(gif, save_all=True, append_images=frames[1:], duration=42, loop=0)
