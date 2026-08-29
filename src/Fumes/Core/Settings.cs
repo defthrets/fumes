@@ -372,9 +372,9 @@ namespace Fumes.Core
         /// </summary>
         public bool Vertical = true;
 
-        public float GaugeX = 0.1120f;
+        public float GaugeX = 0.1325f;
         public float GaugeY = 0.8240f;
-        public float GaugeWidth = 0.0020f;
+        public float GaugeWidth = 0.0035f;
         public float GaugeHeight = 0.1550f;
 
         /// <summary>
@@ -511,8 +511,8 @@ namespace Fumes.Core
                 s.GaugeOnlyInVehicle = ini.GetBool("HUD", "OnlyInVehicle", s.GaugeOnlyInVehicle);
                 s.GaugeX = ini.GetFloat("HUD", "X", s.GaugeX, 0f, 1f);
                 s.GaugeY = ini.GetFloat("HUD", "Y", s.GaugeY, 0f, 1f);
-                s.GaugeWidth = ini.GetFloat("HUD", "Width", s.GaugeWidth, 0.02f, 0.8f);
-                s.GaugeHeight = ini.GetFloat("HUD", "Height", s.GaugeHeight, 0.004f, 0.2f);
+                s.GaugeWidth = ini.GetFloat("HUD", "Width", s.GaugeWidth, 0.0010f, 0.8f);
+                s.GaugeHeight = ini.GetFloat("HUD", "Height", s.GaugeHeight, 0.004f, 0.6f);
                 s.Vertical = ini.GetBool("HUD", "Vertical", s.Vertical);
                 s.Units = ParseEnum(ini.GetString("HUD", "Units", "Litres"), s.Units);
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);

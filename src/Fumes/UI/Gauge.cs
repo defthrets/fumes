@@ -164,7 +164,15 @@ namespace Fumes.UI
                     var text = pct.ToString(CultureInfo.InvariantCulture) + "%";
 
                     _glyphs.Number(text, x + w / 2f, y + h - 0.003f, glyph, pitch, ink);
-                    _glyphs.Label(x + w / 2f, y + 0.020f, glyph, glyph * 5.6f, ink);
+                    // ANCHORED BY ITS OWN HEIGHT, not by a fixed offset from the top.
+                    // The label is sized off the bar's width, so on a wide bar it grew past
+                    // the fixed 0.020 it was being centred at and hung out of the top of the
+                    // gauge. Half its own height plus a margin can never do that, whatever
+                    // width the bar ends up.
+                    var labelH = glyph * 5.6f;
+                    if (labelH > h * 0.45f) labelH = h * 0.45f;
+
+                    _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph, labelH, ink);
                     return;
                 }
 
