@@ -69,23 +69,26 @@ namespace Fumes.UI
                 var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
                 Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f, Color.FromArgb(220, 235, 180, 60));
 
-                if (stalled)
-                {
-                    // An empty bar and a bar with a drop left in it look the same at a
-                    // glance, and only one of them means the car is not going anywhere.
-                    Draw.Text(tank.Electric ? "FLAT" : "DRY",
-                              x + w / 2f, y + h + 0.004f, 0.28f,
-                              Color.FromArgb(235, 220, 70, 60), 4, true);
-                }
-
                 if (!_cfg.ShowNumbers) return;
 
-                var label = tank.Noun;
-                Draw.Text(label, x, y - 0.026f, 0.26f, Color.FromArgb(205, 235, 235, 235));
+                // THE READOUT SITS INSIDE THE BAR, which is not where it started. It used to be
+                // a label row above -- fine in the bottom-right corner, impossible under the
+                // minimap: there is about two hundredths of a screen between the minimap and
+                // the bottom edge, which fits a bar or a line of text but not both. Overlaid on
+                // the bar it needs no room of its own, and the outline the text already carries
+                // is enough to keep it readable over any fill colour.
+                //
+                // The stall state takes the label's place rather than adding a line, for the
+                // same reason -- and it reads better anyway, because an empty bar and a bar
+                // with a drop left in it look identical at a glance.
+                var label = stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun;
 
-                var reading = Volume(tank.Litres) + " / " + Volume(tank.Capacity);
-                Draw.Text(reading, x + w, y - 0.026f, 0.26f,
-                          Color.FromArgb(205, 235, 235, 235), 4, false, true);
+                var reading = label + "   " + Volume(tank.Litres) + " / " + Volume(tank.Capacity);
+
+                Draw.Text(reading, x + w / 2f, y + 0.0005f, 0.235f,
+                          stalled ? Color.FromArgb(240, 255, 120, 110)
+                                  : Color.FromArgb(230, 245, 245, 245),
+                          4, true);
             }
             catch (Exception ex)
             {

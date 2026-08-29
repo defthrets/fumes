@@ -172,6 +172,23 @@ namespace Fumes.Core
         /// <summary>Shipped: the pump/station coordinates.</summary>
         public static string StationsFile => Path.Combine(Data, "stations.json");
 
+        /// <summary>
+        /// Shipped artwork, beside the data rather than in the writable folder.
+        ///
+        /// It is CONTENT: it ships with the mod and nothing writes here. A missing folder
+        /// just means the HUD has no pictures in it, which the icons report once and then
+        /// carry on without.
+        /// </summary>
+        public static string Icons
+        {
+            get
+            {
+                var d = Path.Combine(Data, "icons");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
         // WRITTEN, so both follow the writability fallback rather than sitting next to the dll.
         public static string LogFile => Path.Combine(Writable, "Fumes.log");
         public static string TanksFile => Path.Combine(Writable, "tanks.json");

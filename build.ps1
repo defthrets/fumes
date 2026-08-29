@@ -278,6 +278,15 @@ if ($Package) {
     Copy-Item (Join-Path $root 'Fumes.ini') (Join-Path $scripts 'Fumes.ini')
     Copy-Item (Join-Path $root 'data\*.json') $dataOut
 
+    # The icons, which are named outright rather than swept up by a wildcard.
+    #
+    # data\*.json above catches the data and nothing else, so a folder added later goes to
+    # nobody -- every download is silently missing it, and the one machine that cannot notice
+    # is this one, where the files are already in place from being deployed. That exact thing
+    # happened to Overspray's voice pack; this line is here so it does not happen again.
+    $icons = Join-Path $root 'data\icons'
+    if (Test-Path $icons) { Copy-Item $icons $dataOut -Recurse }
+
     foreach ($doc in @('README.txt', 'CHANGES.txt')) {
         $p = Join-Path $relDir $doc
         if (Test-Path $p) { Copy-Item $p $stage }

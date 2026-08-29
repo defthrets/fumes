@@ -86,12 +86,12 @@ namespace Fumes.Station
         {
             if (_mode == HoseMode.None) return;
 
-            if (_mode == HoseMode.Line) { DrawLine(from, to); return; }
+            if (_mode == HoseMode.Line) { DrawCatenary(from, to); return; }
 
             if (!Live && !Spawn(from, to))
             {
-                // Rope could not be had. In Auto that is a decision, not a failure.
-                if (_mode == HoseMode.Auto && _gaveUpOnRopeAt != 0 &&
+                // Rope could not be had. In Auto and Painted that is a decision, not a failure.
+                if ((_mode == HoseMode.Auto || _mode == HoseMode.Painted) && _gaveUpOnRopeAt != 0 &&
                     Game.GameTime - _gaveUpOnRopeAt > 3000)
                 {
                     _mode = HoseMode.Line;
@@ -99,11 +99,43 @@ namespace Fumes.Station
                              "Set [Nozzle] Hose = Line to make that permanent, or Rope to keep waiting.");
                 }
 
-                if (_mode != HoseMode.Rope) DrawLine(from, to);
+                if (_mode != HoseMode.Rope) DrawCatenary(from, to);
                 return;
             }
 
             Pin(from, to);
+
+            // Painted mode: the rope did the physics, we do the colour. See HoseMode.Painted.
+            if (_mode == HoseMode.Painted) PaintRope(from, to);
+        }
+
+        /// <summary>
+        /// Draws the hose along the rope's OWN vertices.
+        ///
+        /// This is what makes a black hose possible at all. There is no native to tint a rope;
+        /// the colour is baked into one of nine authored textures and the choice of texture is
+        /// the only control there is. But the rope will tell you where every one of its
+        /// vertices ended up, and a line through those points is the rope's exact shape -- sag,
+        /// swing, drape over a wing and all -- in whatever colour we like.
+        /// </summary>
+        private void PaintRope(Vector3 from, Vector3 to)
+        {
+            try
+            {
+                var count = _rope.VertexCount;
+                if (count < 2) { DrawCatenary(from, to); return; }
+
+                var points = new Vector3[count];
+                for (var i = 0; i < count; i++) points[i] = _rope.GetVertexCoord(i);
+
+                Stroke(points);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hose-paint", "Could not read the rope's shape: " + ex.Message +
+                                       " - drawing a plain hose instead.");
+                DrawCatenary(from, to);
+            }
         }
 
         private bool Spawn(Vector3 from, Vector3 to)
@@ -157,7 +189,7 @@ namespace Fumes.Station
             {
                 Log.Once("rope-spawn", "Could not create the hose rope: " + ex.Message +
                                        " - falling back to a drawn hose.");
-                if (_mode == HoseMode.Auto) _mode = HoseMode.Line;
+                if (_mode == HoseMode.Auto || _mode == HoseMode.Painted) _mode = HoseMode.Line;
                 return false;
             }
         }
@@ -191,18 +223,18 @@ namespace Fumes.Station
             {
                 Log.Once("rope-pin", "Hose pinning failed: " + ex.Message + " - drawing it instead.");
                 Retract();
-                if (_mode == HoseMode.Auto) _mode = HoseMode.Line;
+                if (_mode == HoseMode.Auto || _mode == HoseMode.Painted) _mode = HoseMode.Line;
             }
         }
 
         /// <summary>
-        /// The drawn hose: a hanging curve, thickened by drawing it more than once.
+        /// The hose with no rope behind it: a hanging curve worked out here.
         ///
-        /// DRAW_LINE is one pixel wide at any distance, which reads as a wire and not a hose,
-        /// so the same curve is drawn three times a couple of centimetres apart across its own
-        /// width. Three is enough to look like a tube and cheap enough not to matter.
+        /// Used when ropes are switched off or will not load. The shape is a parabola rather
+        /// than a real catenary -- over three metres of hose the two are the same picture, and
+        /// only one of them needs a cosh.
         /// </summary>
-        private void DrawLine(Vector3 from, Vector3 to)
+        private void DrawCatenary(Vector3 from, Vector3 to)
         {
             const int segments = 16;
 
@@ -211,43 +243,86 @@ namespace Fumes.Station
                 var span = from.DistanceTo(to);
                 if (span < 0.05f) return;
 
-                // How far the middle hangs below the straight line. Comes out of the same
-                // slack figure the rope uses, so both hoses have the same shape.
+                // Slack from the same figure the rope uses, so both hoses hang alike.
                 var sag = Clamp(span * (_cfg.HoseSag - 1f) * 1.6f, 0.08f, 1.4f);
 
-                var across = Vector3.Cross(to - from, Vector3.WorldUp);
-                if (across.Length() > 0.001f) across.Normalize();
-                across *= 0.022f;
-
-                var hose = Color.FromArgb(235, 24, 24, 26);
-
-                for (var pass = -1; pass <= 1; pass++)
+                var points = new Vector3[segments + 1];
+                for (var i = 0; i <= segments; i++)
                 {
-                    var shift = across * pass;
-                    var previous = from + shift;
-
-                    for (var i = 1; i <= segments; i++)
-                    {
-                        var t = (float)i / segments;
-                        var point = Vector3.Lerp(from, to, t) + shift;
-
-                        // A parabola, not a real catenary. Over three metres of hose the two
-                        // are the same picture and one of them needs a cosh.
-                        point.Z -= 4f * sag * t * (1f - t);
-
-                        Function.Call(Hash.DRAW_LINE,
-                                      previous.X, previous.Y, previous.Z,
-                                      point.X, point.Y, point.Z,
-                                      hose.R, hose.G, hose.B, hose.A);
-
-                        previous = point;
-                    }
+                    var t = (float)i / segments;
+                    var point = Vector3.Lerp(from, to, t);
+                    point.Z -= 4f * sag * t * (1f - t);
+                    points[i] = point;
                 }
+
+                Stroke(points);
             }
             catch (Exception ex)
             {
                 Log.Once("hose-draw", "Could not draw the hose: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Draws a run of points as something that reads as a TUBE rather than a wire.
+        ///
+        /// DRAW_LINE is one pixel wide at any distance, so a single pass looks like fishing
+        /// line however dark it is. Each segment is therefore drawn five times: once down the
+        /// middle and once at each of four offsets around it, forming a cross-section. Four
+        /// rather than two because two only look thick from one side, and the player walks all
+        /// the way round this thing.
+        /// </summary>
+        private void Stroke(Vector3[] points)
+        {
+            if (points == null || points.Length < 2) return;
+
+            var colour = Color.FromArgb(240,
+                                        Clamp255(_cfg.HoseRed),
+                                        Clamp255(_cfg.HoseGreen),
+                                        Clamp255(_cfg.HoseBlue));
+
+            var radius = _cfg.HoseThickness * 0.5f;
+
+            for (var i = 0; i < points.Length - 1; i++)
+            {
+                var a = points[i];
+                var b = points[i + 1];
+
+                var dir = b - a;
+                if (dir.Length() < 0.0005f) continue;
+
+                var side = Vector3.Cross(dir, Vector3.WorldUp);
+                if (side.Length() < 0.0005f) side = Vector3.Cross(dir, Vector3.RelativeFront);
+                if (side.Length() < 0.0005f) continue;
+
+                side.Normalize();
+                side *= radius;
+
+                var up = Vector3.Cross(dir, side);
+                if (up.Length() < 0.0005f) continue;
+
+                up.Normalize();
+                up *= radius;
+
+                Segment(a, b, colour);
+                Segment(a + side, b + side, colour);
+                Segment(a - side, b - side, colour);
+                Segment(a + up, b + up, colour);
+                Segment(a - up, b - up, colour);
+            }
+        }
+
+        private static void Segment(Vector3 a, Vector3 b, Color colour)
+        {
+            Function.Call(Hash.DRAW_LINE, a.X, a.Y, a.Z, b.X, b.Y, b.Z,
+                          colour.R, colour.G, colour.B, colour.A);
+        }
+
+        private static int Clamp255(int v)
+        {
+            if (v < 0) return 0;
+            if (v > 255) return 255;
+            return v;
         }
 
         /// <summary>Reels it in. Safe whether or not anything is out.</summary>

@@ -37,6 +37,7 @@ namespace Fumes
         private readonly Stations _stations;
         private readonly Gauge _gauge;
         private readonly Meter _meter;
+        private readonly Buttons _buttons;
         private readonly Refuel _refuel;
 
         /// <summary>
@@ -68,7 +69,8 @@ namespace Fumes
             _stations = new Stations(_cfg);
             _gauge = new Gauge(_cfg);
             _meter = new Meter(_cfg, _gauge);
-            _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter);
+            _buttons = new Buttons();
+            _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter, _buttons);
 
             Interval = 0;
             Tick += OnTick;
@@ -117,6 +119,10 @@ namespace Fumes
                 {
                     _gauge.Update(_watched, _tanks.For(_watched), false, _stalled);
                 }
+
+                // LAST, and it has to be: the bar draws whatever was queued during this
+                // tick, so every Show call has to have happened already.
+                _buttons.Render();
 
                 _failures = 0;
             }
@@ -319,6 +325,7 @@ namespace Fumes
         private void Cleanup()
         {
             try { _refuel.Shutdown(); } catch (Exception ex) { Log.Error("Refuel shutdown", ex); }
+            try { _buttons.Dispose(); } catch (Exception ex) { Log.Error("Button bar cleanup", ex); }
             try { _stations.RemoveBlips(); } catch (Exception ex) { Log.Error("Blip cleanup", ex); }
             try { _tanks.SaveToDisk(); } catch (Exception ex) { Log.Error("Final save", ex); }
 

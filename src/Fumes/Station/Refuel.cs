@@ -43,6 +43,7 @@ namespace Fumes.Station
         private readonly Nozzle _nozzle;
         private readonly Hose _hose;
         private readonly Hazard _hazard;
+        private readonly Buttons _buttons;
 
         private Stage _stage = Stage.Idle;
 
@@ -80,7 +81,11 @@ namespace Fumes.Station
         /// <summary>Stops the over-stretch warning being said sixty times a second.</summary>
         private int _stretchMoanedAt;
 
-        public Refuel(Settings cfg, Tanks tanks, Pumps pumps, Stations stations, Gauge gauge, Meter meter)
+        /// <summary>Prompt text for when the button bar is unavailable. See Prompt().</summary>
+        private string _fallback;
+
+        public Refuel(Settings cfg, Tanks tanks, Pumps pumps, Stations stations, Gauge gauge,
+                      Meter meter, Buttons buttons)
         {
             _cfg = cfg;
             _tanks = tanks;
@@ -88,6 +93,7 @@ namespace Fumes.Station
             _stations = stations;
             _gauge = gauge;
             _meter = meter;
+            _buttons = buttons;
             _nozzle = new Nozzle(cfg);
             _hose = new Hose(cfg);
             _hazard = new Hazard(cfg);
@@ -124,12 +130,19 @@ namespace Fumes.Station
                 return;
             }
 
+            _fallback = null;
+
             switch (_stage)
             {
                 case Stage.Idle: AtRest(me); break;
                 case Stage.Carrying: Carrying(me); break;
                 case Stage.Filling: Filling(me, dt); break;
             }
+
+            // One help box for however many buttons were asked for, and only when the bar
+            // itself could not be drawn. Calling Draw.Help per prompt would have each one
+            // overwrite the last and the player would see only whichever came last.
+            if (!string.IsNullOrEmpty(_fallback)) Draw.Help(_fallback);
         }
 
         private static Ped Player()
@@ -154,28 +167,9 @@ namespace Fumes.Station
             var pump = _pumps.Nearest(me.Position, _cfg.PumpReach);
             if (pump == null) return;
 
-            var canBuyCan = _cfg.JerryCanRefill && CanAfford(_cfg.JerryCanPrice);
+            Prompt(Control.Context, "Take the nozzle");
 
-            var prompt = "Press ~b~" + KeyName() + "~s~ to take the nozzle.";
-            if (_cfg.JerryCanRefill)
-            {
-                prompt += "~n~Press ~b~" + SecondaryName() + "~s~ to fill a jerry can  $" +
-                          _cfg.JerryCanPrice.ToString("0", CultureInfo.InvariantCulture);
-            }
-
-            Draw.Help(prompt);
-
-            if (Pressed()) { Take(me, pump); return; }
-
-            if (!_cfg.JerryCanRefill || !SecondaryPressed()) return;
-
-            if (!canBuyCan)
-            {
-                Notify("~r~You cannot afford a can of fuel.~s~");
-                return;
-            }
-
-            FillJerryCan(me);
+            if (Pressed()) Take(me, pump);
         }
 
         private void Take(Ped me, Prop pump)
@@ -240,6 +234,7 @@ namespace Fumes.Station
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
             _nozzle.Take();     // keeps asking until the model streams; no-op once it is out
+            _nozzle.Tune();     // no-op unless [Nozzle] TuneNozzle is on
             LockHands();
 
             var anchor = Anchor();
@@ -249,71 +244,75 @@ namespace Fumes.Station
 
             if (Leash(me, anchor)) return;
 
-            // Hanging it back up takes priority over filling: if you are standing at the pump
-            // with a car also in reach, you meant the pump.
-            if (me.Position.DistanceTo(_pump.Position) <= _cfg.PumpReach)
+            // HangUpReach, not PumpReach, and they are different numbers for a reason that only
+            // turns up in play: you park right next to the pump, so the filler is nearly always
+            // inside PumpReach as well.
+            var atPump = me.Position.DistanceTo(_pump.Position) <= _cfg.HangUpReach;
+
+            // The second button means the same thing wherever you are standing: put it back if
+            // you are at the pump, put it down if you are not.
+            if (SecondaryPressed())
             {
-                Draw.Help("Press ~b~" + KeyName() + "~s~ to hang the nozzle up.");
-                if (Pressed()) HangUp();
+                if (atPump) HangUp(); else DropIt("dropped");
                 return;
             }
 
             var vehicle = NearestFillable(me, out var filler, out var inReach);
+            var tank = vehicle == null ? null : _tanks.For(vehicle);
+            var hasRoom = tank != null && tank.Litres < tank.Capacity - 0.05f;
 
-            if (vehicle == null)
+            if (_cfg.ShowFillerMarker && vehicle != null)
             {
-                Draw.Help("Walk the nozzle to the filler on the side of your vehicle." +
-                          "~n~Press ~b~" + SecondaryName() + "~s~ to drop it.");
-                if (SecondaryPressed()) DropIt("dropped");
+                World.DrawMarker(MarkerType.Cylinder,
+                                 filler - new Vector3(0f, 0f, 0.45f),
+                                 Vector3.Zero, Vector3.Zero,
+                                 new Vector3(0.22f, 0.22f, 0.22f),
+                                 inReach ? Color.FromArgb(170, 120, 235, 130)
+                                         : Color.FromArgb(120, 245, 175, 55),
+                                 false, false, false, null, null, false);
+            }
+
+            // FILLING WINS OVER HANGING UP, and this order is the whole fix for a station being
+            // unusable. Both prompts want the same button, and at a real pump you are standing
+            // inside both radii at once -- so whichever is tested first is the only one you can
+            // ever get. Hanging up used to be first, which meant the fill prompt was unreachable
+            // at exactly the moment it was the thing you wanted.
+            if (vehicle != null && inReach && hasRoom)
+            {
+                Prompt(Control.Context, "Fill the " + vehicle.LocalizedName +
+                                        "   $" + _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L");
+                Prompt(Control.ContextSecondary, atPump ? "Hang up" : "Drop it");
+
+                if (!Pressed()) return;
+
+                _target = vehicle;
+                _targetTank = tank;
+                _stage = Stage.Filling;
+
+                Log.Info("Filling " + vehicle.LocalizedName + " (" +
+                         tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + "/" +
+                         tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L).");
                 return;
             }
 
-            // A marker on the actual filler.
-            //
-            // THE POINT OF IT IS TO GET YOU THERE, so it is drawn from several metres out and
-            // not only once you are already standing on the spot -- which is what it used to
-            // do, and which made it a confirmation of something you had already found rather
-            // than the thing that told you where to walk. Where the filler is depends entirely
-            // on the model, and hunting for it in circles is not the interaction.
-            World.DrawMarker(MarkerType.Cylinder,
-                             filler - new Vector3(0f, 0f, 0.45f),
-                             Vector3.Zero, Vector3.Zero,
-                             new Vector3(0.28f, 0.28f, 0.3f),
-                             inReach ? Color.FromArgb(190, 120, 235, 130)
-                                     : Color.FromArgb(140, 245, 175, 55),
-                             false, false, false, null, null, false);
-
-            var tank = _tanks.For(vehicle);
-            if (tank == null)
+            if (atPump)
             {
-                Draw.Help("This one does not take fuel.");
+                Prompt(Control.Context, "Hang the nozzle up");
+                if (Pressed()) HangUp();
                 return;
             }
 
-            if (tank.Litres >= tank.Capacity - 0.05f)
+            if (vehicle != null && inReach && !hasRoom)
             {
-                Draw.Help(vehicle.LocalizedName + " is already full.");
+                Draw.Help(vehicle.LocalizedName + " is full. Take the nozzle back to the pump.");
+                Prompt(Control.ContextSecondary, "Drop it");
                 return;
             }
 
-            if (!inReach)
-            {
-                Draw.Help("Take the nozzle to the marker on the " + vehicle.LocalizedName + ".");
-                return;
-            }
-
-            Draw.Help("Press ~b~" + KeyName() + "~s~ to fill the " + vehicle.LocalizedName +
-                      "  ~y~$" + _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L~s~");
-
-            if (!Pressed()) return;
-
-            _target = vehicle;
-            _targetTank = tank;
-            _stage = Stage.Filling;
-
-            Log.Info("Filling " + vehicle.LocalizedName + " (" +
-                     tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + "/" +
-                     tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L).");
+            Draw.Help(vehicle == null
+                          ? "Walk the nozzle to the filler on the side of your vehicle."
+                          : "Take the nozzle to the filler on the " + vehicle.LocalizedName + ".");
+            Prompt(Control.ContextSecondary, "Drop it");
         }
 
         /// <summary>
@@ -480,10 +479,10 @@ namespace Fumes.Station
 
             _tanks.Touch(_target, _targetTank, true);
 
-            _meter.Draw(_stationName, _dispensed, _price, _owed, !_cfg.ChargeMoney);
+            _meter.Draw(_stationName, _dispensed, _price, _owed, !_cfg.ChargeMoney, _targetTank);
             _gauge.Update(_target, _targetTank, true);
 
-            Draw.Help("Press ~b~" + KeyName() + "~s~ to stop.");
+            Prompt(Control.Context, "Stop");
             if (Pressed()) Stop(me, null);
         }
 
@@ -615,28 +614,6 @@ namespace Fumes.Station
         }
 
         // ==================================================================
-        // Jerry can
-        // ==================================================================
-
-        private void FillJerryCan(Ped me)
-        {
-            try
-            {
-                var weapon = me.Weapons.Give(WeaponHash.PetrolCan, 4500, false, true);
-                if (weapon != null) weapon.Ammo = 4500;
-
-                if (_cfg.ChargeMoney) Game.Player.Money -= (int)Math.Round(_cfg.JerryCanPrice);
-
-                Notify("Jerry can filled. ~r~-$" +
-                       _cfg.JerryCanPrice.ToString("0", CultureInfo.InvariantCulture) + "~s~");
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Could not fill the jerry can.", ex);
-            }
-        }
-
-        // ==================================================================
         // Input, money and the small print
         // ==================================================================
 
@@ -714,9 +691,38 @@ namespace Fumes.Station
             catch { return 0; }
         }
 
-        private static bool CanAfford(float amount)
+        /// <summary>
+        /// One action, on the game's own instructional button bar.
+        ///
+        /// Going through a CONTROL rather than drawing a letter is what makes this work on a
+        /// pad: the same call renders E on a keyboard and the right D-pad glyph on a
+        /// controller, and it follows a rebind made in the game's own settings.
+        ///
+        /// A custom InteractKey is the one case the glyph cannot show, because the glyph is
+        /// for the control and the custom key is ours -- so it is named in the label instead,
+        /// and only when it is not already the key the control is on.
+        /// </summary>
+        private void Prompt(Control control, string label)
         {
-            return Money() >= amount;
+            if (control == Control.Context && !IsDefaultKey()) label += "   [" + KeyName() + "]";
+
+            _buttons.Show(control, label);
+
+            if (!_buttons.Failed) return;
+
+            var line = NameOf(control) + " - " + label;
+            _fallback = string.IsNullOrEmpty(_fallback) ? line : _fallback + "~n~" + line;
+        }
+
+        /// <summary>Whether InteractKey is still the key the context control itself is on.</summary>
+        private bool IsDefaultKey()
+        {
+            return string.Equals(KeyName(), "E", StringComparison.Ordinal);
+        }
+
+        private string NameOf(Control control)
+        {
+            return control == Control.ContextSecondary ? SecondaryName() : KeyName();
         }
 
         /// <summary>Reads the configured key once, at the top of the tick. See _keyEdge.</summary>

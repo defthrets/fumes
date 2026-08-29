@@ -15,10 +15,27 @@ namespace Fumes.Core
     /// <summary>How the hose between pump and nozzle is drawn.</summary>
     internal enum HoseMode
     {
-        /// <summary>Try a real rope; fall back to the drawn line if it will not come up.</summary>
+        /// <summary>
+        /// A real physics rope, but painted by us instead of wearing its own texture.
+        ///
+        /// The best of both, and the default. GTA has no way to TINT a rope -- the colour comes
+        /// from whichever of nine authored textures the rope type picks, and the nearest thing
+        /// to a fuel line among them is still a beige mooring rope. So the rope is created as
+        /// the darkest, thinnest type there is, and then a thick black line is drawn ALONG ITS
+        /// OWN VERTICES. The shape, the swing and the sag are the rope solver's work; only the
+        /// colour is ours, and the thin dark wire underneath vanishes inside the line.
+        /// </summary>
+        Painted,
+
+        /// <summary>A real rope wearing its own texture. Falls back to Line if ropes fail.</summary>
         Auto,
+
+        /// <summary>Insist on the rope and its texture, with no fallback.</summary>
         Rope,
+
+        /// <summary>No rope at all: a drawn catenary. Cheapest, and it cannot fail.</summary>
         Line,
+
         None
     }
 
@@ -26,10 +43,20 @@ namespace Fumes.Core
     internal enum NozzlePose
     {
         /// <summary>
-        /// Hold an INVISIBLE petrol can. The game already knows how a ped holds one of those,
-        /// so the arm, the grip and the walk all come free and correct. Same trick Overspray
-        /// uses with the fire extinguisher.
+        /// Hold an INVISIBLE FIRE EXTINGUISHER. The default.
+        ///
+        /// The game owns a complete hold, walk, run and idle set for a man carrying one of
+        /// these, which is the shape we want. But the real reason to prefer it over the petrol
+        /// can is what it leaves room for: an extinguisher is a weapon that SPRAYS. It brings
+        /// an aiming camera, a reticle and a trigger, none of which a prop can provide, and
+        /// that is exactly the seam Overspray paints through. If fuel is ever to come out of
+        /// this nozzle under player control, this is what it will be built on.
+        ///
+        /// Nothing sprays yet -- Refuel holds the trigger shut while the nozzle is out.
         /// </summary>
+        FireExtinguisher,
+
+        /// <summary>An invisible petrol can instead. A one-handed carry with no trigger.</summary>
         PetrolCan,
 
         /// <summary>Prop in hand, no pose. The arm hangs. Always works.</summary>
@@ -97,6 +124,16 @@ namespace Fumes.Core
         // ---- the forecourt ----------------------------------------------------
         public float PumpReach = 2.6f;
         public float CapReach = 1.9f;
+
+        /// <summary>
+        /// How close you must be to the pump to hang the nozzle back on it.
+        ///
+        /// MUCH TIGHTER THAN PumpReach, and they are separate numbers for a reason that only
+        /// shows up in play: you park right next to the pump, so the filler is almost always
+        /// inside PumpReach too. Sharing one radius meant the hang-up prompt sat on top of the
+        /// fill prompt at every station and filling up was a fight.
+        /// </summary>
+        public float HangUpReach = 1.2f;
         public float LitresPerSecond = 2.2f;
         public float PricePerLitre = 1.55f;
 
@@ -108,8 +145,8 @@ namespace Fumes.Core
 
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
-        public NozzlePose Pose = NozzlePose.PetrolCan;
-        public HoseMode Hose = HoseMode.Auto;
+        public NozzlePose Pose = NozzlePose.FireExtinguisher;
+        public HoseMode Hose = HoseMode.Painted;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -118,10 +155,22 @@ namespace Fumes.Core
         public float HoseWarnFraction = 0.8f;
 
         /// <summary>
-        /// GTA rope type, 0-8. Different textures and thicknesses; nothing else changes.
-        /// 1 reads closest to a fuel line at this length.
+        /// GTA rope type, 0-8. Different authored textures and thicknesses; nothing else
+        /// changes, and none of them can be tinted.
+        ///
+        /// 5 is the thin metal wire -- dark and slim, which is why Painted mode uses it: the
+        /// little of it that shows through the drawn hose reads as shadow rather than as beige
+        /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 1;
+        public int HoseRopeType = 5;
+
+        /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
+        public int HoseRed = 16;
+        public int HoseGreen = 16;
+        public int HoseBlue = 18;
+
+        /// <summary>How thick a painted hose is drawn, in metres across.</summary>
+        public float HoseThickness = 0.05f;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
         public float HoseSag = 1.22f;
@@ -130,27 +179,72 @@ namespace Fumes.Core
         public bool HoseSnaps = true;
 
         /// <summary>
+        /// Where the nozzle sits in the hand, and which way round it points.
+        ///
+        /// PH_R_Hand wants no offset at all for props authored around it -- a spray can, a
+        /// phone -- but prop_cs_fuel_nozle is not one of those. It is a scene prop whose origin
+        /// is not its grip, so left at zero it hangs out of the fist like a dropped knife.
+        /// These six numbers put it right, and they live in the ini rather than the code
+        /// because the only way to find them is to look at it: turn TuneNozzle on and dial
+        /// them in with the game running.
+        ///
+        /// Offsets are metres in the bone's own space; rotations are degrees.
+        /// </summary>
+        public float NozzleOffsetX = 0.055f;
+        public float NozzleOffsetY = 0.02f;
+        public float NozzleOffsetZ = 0.0f;
+        public float NozzleRotX = 0f;
+        public float NozzleRotY = 90f;
+        public float NozzleRotZ = 0f;
+
+        /// <summary>
+        /// In-game tuning for the six numbers above.
+        ///
+        /// NumPad5 cycles the axis, NumPad4 and NumPad6 move it, NumPad0 writes the whole set
+        /// to the log in ini form. Off by default: it is a workbench, not a feature.
+        /// </summary>
+        public bool TuneNozzle = false;
+
+        /// <summary>Whether a marker is drawn on the vehicle's filler while you carry the nozzle.</summary>
+        public bool ShowFillerMarker = false;
+
+        /// <summary>
         /// Where on the pump the hose is bolted, in the pump's own local space.
         ///
         /// Exposed because the six pump models in the game are not the same shape, and a
         /// number that hangs the hose off the right-hand side of a modern pump hangs it off
         /// thin air on the vintage one. Y is forward, Z is up, in metres.
         /// </summary>
-        public float HoseAnchorX = 0.32f;
-        public float HoseAnchorY = 0.10f;
-        public float HoseAnchorZ = 1.05f;
+        public float HoseAnchorX = 0.30f;
+        public float HoseAnchorY = 0.08f;
 
-        // ---- jerry can --------------------------------------------------------
-        public bool JerryCanRefill = true;
-        public float JerryCanPrice = 22f;
+        /// <summary>
+        /// Height up the pump, and it wants to be near the TOP.
+        ///
+        /// A real nozzle hangs in a holster at the top of the machine, roughly shoulder height,
+        /// not out of its middle -- and a hose leaving at waist height reads as coming out of
+        /// the payment panel. The base-game pumps are a little under two metres, so this sits
+        /// just below the light box on the lid.
+        /// </summary>
+        public float HoseAnchorZ = 1.52f;
 
         // ---- HUD --------------------------------------------------------------
         public bool ShowGauge = true;
         public bool GaugeOnlyInVehicle = true;
-        public float GaugeX = 0.845f;
-        public float GaugeY = 0.945f;
-        public float GaugeWidth = 0.115f;
-        public float GaugeHeight = 0.013f;
+        /// <summary>
+        /// The gauge, sitting under the minimap.
+        ///
+        /// STATIC NUMBERS, and deliberately so. Where the minimap actually lands depends on the
+        /// player's safe-zone setting and their aspect ratio, and the natives that would let it
+        /// be computed exactly are easy to get subtly wrong in a way that puts the gauge
+        /// somewhere random rather than somewhere obviously broken. A number in an ini that
+        /// anybody can nudge by 0.01 while looking at it beats a formula nobody can check.
+        /// These are measured off a real screenshot at this machine's aspect ratio.
+        /// </summary>
+        public float GaugeX = 0.1425f;
+        public float GaugeY = 0.9775f;
+        public float GaugeWidth = 0.128f;
+        public float GaugeHeight = 0.0195f;
         public Units Units = Units.Litres;
         public bool ShowNumbers = true;
 
@@ -227,6 +321,7 @@ namespace Fumes.Core
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);
                 s.CapReach = ini.GetFloat("Station", "CapReach", s.CapReach, 0.5f, 12f);
+                s.HangUpReach = ini.GetFloat("Station", "HangUpReach", s.HangUpReach, 0.4f, 6f);
                 s.LitresPerSecond = ini.GetFloat("Station", "LitresPerSecond", s.LitresPerSecond, 0.1f, 60f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
@@ -239,14 +334,24 @@ namespace Fumes.Core
                 s.HoseMaxMetres = ini.GetFloat("Nozzle", "HoseMaxMetres", s.HoseMaxMetres, 2f, 40f);
                 s.HoseWarnFraction = ini.GetFloat("Nozzle", "HoseWarnFraction", s.HoseWarnFraction, 0.2f, 0.98f);
                 s.HoseRopeType = ini.GetInt("Nozzle", "HoseRopeType", s.HoseRopeType, 0, 8);
+                s.HoseRed = ini.GetInt("Nozzle", "HoseRed", s.HoseRed, 0, 255);
+                s.HoseGreen = ini.GetInt("Nozzle", "HoseGreen", s.HoseGreen, 0, 255);
+                s.HoseBlue = ini.GetInt("Nozzle", "HoseBlue", s.HoseBlue, 0, 255);
+                s.HoseThickness = ini.GetFloat("Nozzle", "HoseThickness", s.HoseThickness, 0.005f, 0.3f);
                 s.HoseSag = ini.GetFloat("Nozzle", "HoseSag", s.HoseSag, 1.0f, 2.5f);
                 s.HoseSnaps = ini.GetBool("Nozzle", "HoseSnaps", s.HoseSnaps);
                 s.HoseAnchorX = ini.GetFloat("Nozzle", "HoseAnchorX", s.HoseAnchorX, -3f, 3f);
                 s.HoseAnchorY = ini.GetFloat("Nozzle", "HoseAnchorY", s.HoseAnchorY, -3f, 3f);
                 s.HoseAnchorZ = ini.GetFloat("Nozzle", "HoseAnchorZ", s.HoseAnchorZ, 0f, 4f);
 
-                s.JerryCanRefill = ini.GetBool("JerryCan", "Enabled", s.JerryCanRefill);
-                s.JerryCanPrice = ini.GetFloat("JerryCan", "Price", s.JerryCanPrice, 0f, 5000f);
+                s.NozzleOffsetX = ini.GetFloat("Nozzle", "NozzleOffsetX", s.NozzleOffsetX, -1f, 1f);
+                s.NozzleOffsetY = ini.GetFloat("Nozzle", "NozzleOffsetY", s.NozzleOffsetY, -1f, 1f);
+                s.NozzleOffsetZ = ini.GetFloat("Nozzle", "NozzleOffsetZ", s.NozzleOffsetZ, -1f, 1f);
+                s.NozzleRotX = ini.GetFloat("Nozzle", "NozzleRotX", s.NozzleRotX, -360f, 360f);
+                s.NozzleRotY = ini.GetFloat("Nozzle", "NozzleRotY", s.NozzleRotY, -360f, 360f);
+                s.NozzleRotZ = ini.GetFloat("Nozzle", "NozzleRotZ", s.NozzleRotZ, -360f, 360f);
+                s.TuneNozzle = ini.GetBool("Nozzle", "TuneNozzle", s.TuneNozzle);
+                s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
 
                 s.ShowGauge = ini.GetBool("HUD", "ShowGauge", s.ShowGauge);
                 s.GaugeOnlyInVehicle = ini.GetBool("HUD", "OnlyInVehicle", s.GaugeOnlyInVehicle);
