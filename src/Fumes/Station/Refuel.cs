@@ -53,6 +53,17 @@ namespace Fumes.Station
 
         /// <summary>Set at pickup so the price cannot change while you are standing there.</summary>
         private float _price = 1f;
+
+        /// <summary>
+        /// The brand and the place, kept APART rather than as one joined title.
+        ///
+        /// The display sets them in two different fonts -- the brand in signwriter's
+        /// script, the location in the block font -- so a pre-joined string would have to
+        /// be split again on a separator, and any station whose name contained that
+        /// separator would split in the wrong place.
+        /// </summary>
+        private string _stationBrand = "";
+        private string _stationPlace = "";
         private string _stationName = "";
 
         private Vehicle _target;
@@ -183,6 +194,9 @@ namespace Fumes.Station
             _anchorLocal = LocalAnchor(pump, me.Position);
 
             _price = _stations.PriceAt(pump.Position, out var forecourt);
+
+            _stationBrand = forecourt == null ? "PUMP" : forecourt.Brand;
+            _stationPlace = forecourt == null ? "" : forecourt.Name;
             _stationName = forecourt == null ? "PUMP" : forecourt.Title;
 
             _dispensed = 0f;
@@ -479,7 +493,8 @@ namespace Fumes.Station
 
             _tanks.Touch(_target, _targetTank, true);
 
-            _meter.Draw(_stationName, _dispensed, _price, _owed, !_cfg.ChargeMoney, _targetTank);
+            _meter.Draw(_stationBrand, _stationPlace, _dispensed, _price, _owed,
+                        !_cfg.ChargeMoney, _targetTank);
             _gauge.Update(_target, _targetTank, true);
 
             Prompt(Control.Context, "Stop");

@@ -34,7 +34,7 @@ ICONS = os.path.join(ROOT, "data", "icons")
 SCREEN_W, SCREEN_H = 1920, 1080
 
 # ---- mirrored from Meter.cs -------------------------------------------------
-X, TOP, W, H = 0.5, 0.715, 0.25, 0.145
+X, TOP, W, H = 0.5, 0.715, 0.25, 0.138
 TANK_W, TANK_H = 0.034, 0.088
 COLUMNS = 22
 BUBBLES = 5
@@ -74,11 +74,23 @@ def rect(img, cx, cy, w, h, colour):
     bar(img, cx - w / 2, cy - h / 2, w, h, colour)
 
 
-def font_for(scale):
+# Font 4 is Chalet Comprime Cologne; font 1 is Sign Painter House Script.
+#
+# Neither ships with Windows, so the preview stands in Arial and Segoe Script. The SHAPES are
+# wrong and the widths are only close -- which is fine for what this tool is for (does it fit,
+# does it overlap) and useless for judging the letterforms. Those have to be looked at in the
+# game.
+FACES = {
+    4: ("arialbd.ttf", "arial.ttf", "segoeui.ttf"),
+    1: ("segoescb.ttf", "segoesc.ttf", "arialbi.ttf"),
+}
+
+
+def font_for(scale, font=4):
     # GTA font 4 is about 58px tall at scale 1.0 on a 1080-high screen. Approximate, and only
     # needs to be close enough to show whether a line of text fits where it was put.
     px = max(8, int(scale * 58))
-    for name in ("arialbd.ttf", "arial.ttf", "segoeui.ttf"):
+    for name in FACES.get(font, FACES[4]):
         try:
             return ImageFont.truetype(name, px)
         except OSError:
@@ -86,9 +98,16 @@ def font_for(scale):
     return ImageFont.load_default()
 
 
-def text(img, s, x, y, scale, colour, centre=False):
+def text_width(s, scale, font=4):
+    """Mirrors Hud.Width: how wide the run is as a fraction of the screen."""
+    f = font_for(scale, font)
+    layer = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    return layer.textbbox((0, 0), s, font=f)[2] / SCREEN_W
+
+
+def text(img, s, x, y, scale, colour, centre=False, font=4):
     """Text, composited for the same reason bar() is."""
-    f = font_for(scale)
+    f = font_for(scale, font)
 
     layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
@@ -173,7 +192,17 @@ def frame(t, fraction, litres, owed):
     rect(img, X, TOP + H / 2, W, H, (8, 8, 10, 212))
     rect(img, X, TOP + 0.0016, W, 0.0032, (245, 175, 55, 235))
 
-    text(img, "XERO - DAVIS AVENUE", X, TOP + 0.0065, 0.28, (235, 200, 120, 220), True)
+    # Brand in script, location in the block font, centred as a unit.
+    brand, place = "Xero", "Davis Avenue"
+    brand_scale, place_scale, lift = 0.42, 0.28, 0.0062
+
+    tail = "  -  " + place.upper()
+    bw = text_width(brand, brand_scale, 1)
+    tw = text_width(tail, place_scale, 4)
+    start = X - (bw + tw) / 2
+
+    text(img, brand, start, TOP + 0.0065 - lift, brand_scale, (250, 200, 110, 240), False, 1)
+    text(img, tail, start + bw, TOP + 0.0065, place_scale, (220, 205, 175, 210), False, 4)
 
     lift = math.sin(t * math.pi * 2 / 1.9) * 0.006 if not full else 0.0
     tilt = math.sin(t * math.pi * 2 / 2.7) * 7.0 if not full else 0.0
@@ -196,9 +225,9 @@ def frame(t, fraction, litres, owed):
     bar(img, tx + 0.0026, ty + 0.004, 0.0012, TANK_H - 0.008, (255, 255, 255, 38))
     bar(img, tx + TANK_W - 0.0034, ty + 0.004, 0.0009, TANK_H - 0.008, (255, 255, 255, 22))
 
-    status = "TANK FULL" if full else "TANK   %d%%" % round(fraction * 100)
-    text(img, status, X, TOP + 0.114, 0.29,
-         (150, 235, 160, 235) if full else (215, 215, 215, 210), True)
+    status = "FULL" if full else "%d%%" % round(fraction * 100)
+    text(img, status, tx + TANK_W / 2, TOP + 0.112, 0.30,
+         (150, 235, 160, 235) if full else (220, 220, 220, 215), True)
 
     # Crop to the panel with a margin, since the rest is empty desktop.
     pad = 0.02

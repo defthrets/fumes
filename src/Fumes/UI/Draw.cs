@@ -86,6 +86,40 @@ namespace Fumes.UI
         }
 
         /// <summary>
+        /// How wide a string will be, as a fraction of the screen.
+        ///
+        /// The font and scale have to be set BEFORE the measuring command begins, exactly as
+        /// they do before drawing -- the game measures with whatever is currently selected,
+        /// not with anything passed to the measure call. Getting that order wrong returns the
+        /// width the string would have had in the previous font, which is a very quiet way to
+        /// mis-centre a line.
+        ///
+        /// This exists so two different fonts can sit on one line and still be centred as a
+        /// unit: measure both, then place each from the left.
+        /// </summary>
+        public static float Width(string text, float scale, int font = 4)
+        {
+            if (string.IsNullOrEmpty(text)) return 0f;
+            if (text.Length > 99) text = text.Substring(0, 99);
+
+            try
+            {
+                Function.Call(Hash.SET_TEXT_FONT, font);
+                Function.Call(Hash.SET_TEXT_SCALE, 0f, scale);
+
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, "STRING");
+                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, text);
+
+                return Function.Call<float>(Hash.END_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("text-width", "Could not measure text: " + ex.Message);
+                return 0f;
+            }
+        }
+
+        /// <summary>
         /// The game's own help box, top left.
         ///
         /// Used rather than drawn text for anything that is an INSTRUCTION, because this is

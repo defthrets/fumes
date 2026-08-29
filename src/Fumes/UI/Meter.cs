@@ -40,7 +40,17 @@ namespace Fumes.UI
         private const float X = 0.5f;
         private const float Top = 0.715f;
         private const float W = 0.25f;
-        private const float H = 0.145f;
+        private const float H = 0.138f;
+
+        /// <summary>
+        /// GTA's font 1 is Sign Painter House Script -- the hand-lettered signwriter's
+        /// script the game uses for area names. It is what a forecourt brand is written in
+        /// on a real sign, which is the entire reason it is here.
+        /// </summary>
+        private const int Script = 1;
+
+        /// <summary>Chalet Comprime Cologne. The block font everything else uses.</summary>
+        private const int Plain = 4;
 
         /// <summary>The upright tank, in the same fractions.</summary>
         private const float TankW = 0.034f;
@@ -62,7 +72,8 @@ namespace Fumes.UI
             _gauge = gauge;
         }
 
-        public void Draw(string station, float litres, float pricePerLitre, float owed, bool free, Tank tank)
+        public void Draw(string brand, string place, float litres, float pricePerLitre,
+                         float owed, bool free, Tank tank)
         {
             try
             {
@@ -81,8 +92,7 @@ namespace Fumes.UI
                 Hud.Rect(X, Top + H / 2f, W, H, Color.FromArgb(212, 8, 8, 10));
                 Hud.Rect(X, Top + 0.0016f, W, 0.0032f, Color.FromArgb(235, 245, 175, 55));
 
-                Hud.Text(string.IsNullOrEmpty(station) ? "PUMP" : station.ToUpperInvariant(),
-                         X, Top + 0.0065f, 0.28f, Color.FromArgb(220, 235, 200, 120), 4, true);
+                Header(Top + 0.0065f, brand, place);
 
                 // The pump, bobbing away on the left, dripping while fuel moves. It goes still
                 // when the tank is full -- a logo swaying on a finished pump reads as a stuck
@@ -109,19 +119,63 @@ namespace Fumes.UI
                 Hud.Text(money, left + 0.108f, Top + 0.069f, 0.30f,
                          Color.FromArgb(220, 225, 225, 225), 4, true);
 
-                TankGlass(left + 0.198f, Top + 0.019f, fraction, full);
+                var tankX = left + 0.198f;
+                TankGlass(tankX, Top + 0.019f, fraction, full);
 
+                // The reading belongs UNDER THE THING IT DESCRIBES. It used to sit centred
+                // across the whole panel, which put it nearer the price than the tank and
+                // made it read as part of the transaction rather than as the level.
+                //
+                // "FULL" rather than "TANK FULL" for the same reason -- the tank is right
+                // above it, so the word "TANK" is saying something the picture already has,
+                // and the longer string overhangs the panel at this width.
                 var status = full
-                    ? "TANK FULL"
-                    : "TANK   " + (fraction * 100f).ToString("0", CultureInfo.InvariantCulture) + "%";
+                    ? "FULL"
+                    : (fraction * 100f).ToString("0", CultureInfo.InvariantCulture) + "%";
 
-                Hud.Text(status, X, Top + 0.114f, 0.29f,
-                         full ? Flourish() : Color.FromArgb(210, 215, 215, 215), 4, true);
+                Hud.Text(status, tankX + TankW / 2f, Top + 0.112f, 0.30f,
+                         full ? Flourish() : Color.FromArgb(215, 220, 220, 220), Plain, true);
             }
             catch (Exception ex)
             {
                 Log.Once("meter", "The pump display could not be drawn: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// The station line: brand in signwriter's script, location in the block font.
+        ///
+        /// Two fonts on one line means the pair has to be centred as a UNIT, which means both
+        /// runs have to be measured first and then each placed from the left -- there is no
+        /// way to centre a mixed line in one call.
+        ///
+        /// The script run is set larger and lifted slightly. A script face at the same nominal
+        /// scale reads smaller than a block face, and GTA positions text by the TOP of its
+        /// line box rather than by a baseline, so the taller run has to start higher or the
+        /// two sit on different lines.
+        /// </summary>
+        private void Header(float y, string brand, string place)
+        {
+            const float brandScale = 0.42f;
+            const float placeScale = 0.28f;
+            const float scriptLift = 0.0062f;
+
+            if (string.IsNullOrEmpty(brand)) brand = "PUMP";
+
+            var tail = string.IsNullOrEmpty(place) ? "" : "  -  " + place.ToUpperInvariant();
+
+            var brandW = Hud.Width(brand, brandScale, Script);
+            var tailW = Hud.Width(tail, placeScale, Plain);
+
+            var startX = X - (brandW + tailW) / 2f;
+
+            Hud.Text(brand, startX, y - scriptLift, brandScale,
+                     Color.FromArgb(240, 250, 200, 110), Script);
+
+            if (tail.Length == 0) return;
+
+            Hud.Text(tail, startX + brandW, y, placeScale,
+                     Color.FromArgb(210, 220, 205, 175), Plain);
         }
 
         // ==================================================================
