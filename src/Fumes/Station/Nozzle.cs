@@ -337,10 +337,14 @@ namespace Fumes.Station
 
                 Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, true, false, true, false);
 
-                if (_previousWeapon != WeaponHash.Unarmed)
-                {
-                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, me.Handle, (uint)_previousWeapon, true);
-                }
+                // EMPTY-HANDED, not back to whatever he had before.
+                //
+                // Restoring the previous weapon was the tidy-looking choice and the wrong one:
+                // you walk away from a pump with a pistol suddenly in your hand because you
+                // happened to be holding one when you arrived. Putting a nozzle down should
+                // leave you holding nothing, the way it would. Nothing is taken out of his
+                // inventory -- the weapon is still there, it is simply not drawn.
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, me.Handle, (uint)WeaponHash.Unarmed, true);
             }
             catch (Exception ex)
             {

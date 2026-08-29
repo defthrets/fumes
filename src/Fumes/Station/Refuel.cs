@@ -886,7 +886,34 @@ namespace Fumes.Station
         /// <summary>Set when the configured clip cannot work at all, so nothing keeps retrying.</summary>
         private bool _poseImpossible;
 
-        private bool _phaseDownKey, _phaseUpKey;
+        private bool _phaseDownKey, _phaseUpKey, _clipNextKey, _clipPrevKey, _saveKey;
+
+        /// <summary>
+        /// Clips worth trying for the filling pose, in the order they are cycled.
+        ///
+        /// A LIST RATHER THAN A CHOICE, because the thing that disqualifies a clip cannot be
+        /// checked from outside the game. TASK_PLAY_ANIM has no way to animate ONE ARM: the
+        /// upper-body flag takes the whole upper body, so a clip that raises the free arm
+        /// raises it whatever you do. Whether a given clip does that is not written down
+        /// anywhere -- you have to look at it.
+        ///
+        /// So the list is candidates, not answers. Cycle them at a pump, keep the one where
+        /// only the nozzle arm moves, and press save. Anything this game does not have is
+        /// skipped with a word in the log rather than silently doing nothing.
+        /// </summary>
+        private static readonly string[][] Clips =
+        {
+            new[] { "mp_ped_interaction", "handshake_guy_a" },
+            new[] { "mp_common", "givetake1_a" },
+            new[] { "mp_common", "givetake2_a" },
+            new[] { "anim@mp_player_intmenu@key_fob@", "fob_click" },
+            new[] { "amb@prop_human_parking_meter@male@idle_a", "idle_a" },
+            new[] { "anim@am_hold_up@male", "shoplift_high" },
+            new[] { "amb@world_human_bum_wash@male@low@idle_a", "idle_a" },
+            new[] { "weapons@misc@jerrycan@mp_male", "idle" }
+        };
+
+        private int _clip = -1;
 
         /// <summary>
         /// Nudges the frozen point of the pose while you are looking at it, when TuneNozzle is on.
@@ -908,15 +935,76 @@ namespace Fumes.Station
                 if (_cfg.FillAnimPhase < 0f) _cfg.FillAnimPhase = 0f;
                 if (_cfg.FillAnimPhase > 1f) _cfg.FillAnimPhase = 1f;
 
-                Draw.Text("POSE  [NumPad 7/9]  FillAnimPhase = " +
+                if (Edge(System.Windows.Forms.Keys.NumPad8, ref _clipNextKey)) CycleClip(1);
+                if (Edge(System.Windows.Forms.Keys.NumPad2, ref _clipPrevKey)) CycleClip(-1);
+                if (Edge(System.Windows.Forms.Keys.NumPad0, ref _saveKey)) KeepPose();
+
+                Draw.Text("POSE  [8/2] clip   [7/9] phase   [0] save",
+                          0.5f, 0.135f, 0.30f,
+                          System.Drawing.Color.FromArgb(230, 245, 200, 90), 4, true);
+
+                Draw.Text(_cfg.FillAnimDict + " / " + _cfg.FillAnimClip + "   @ " +
                           _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture),
-                          0.5f, 0.145f, 0.32f,
-                          System.Drawing.Color.FromArgb(235, 245, 200, 90), 4, true);
+                          0.5f, 0.163f, 0.32f,
+                          System.Drawing.Color.FromArgb(240, 255, 255, 255), 4, true);
             }
             catch (Exception ex)
             {
                 Log.Once("posetune", "The pose tuner fell over: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Moves to the next clip in the list, skipping any this game does not have.
+        ///
+        /// The skip is the useful part: a dict that is not in the build makes
+        /// REQUEST_ANIM_DICT wait for it forever, so a candidate list without this check would
+        /// stall on its first bad entry and look like the cycler was broken.
+        /// </summary>
+        private void CycleClip(int step)
+        {
+            for (var tried = 0; tried < Clips.Length; tried++)
+            {
+                _clip = ((_clip + step) % Clips.Length + Clips.Length) % Clips.Length;
+
+                var dict = Clips[_clip][0];
+
+                bool have;
+                try { have = Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict); }
+                catch { have = false; }
+
+                if (!have)
+                {
+                    Log.Info("Skipping " + dict + " -- this game does not have it.");
+                    continue;
+                }
+
+                StopFillPose();
+
+                _cfg.FillAnimDict = dict;
+                _cfg.FillAnimClip = Clips[_clip][1];
+                _poseImpossible = false;
+
+                Log.Info("Filling pose: " + _cfg.FillAnimDict + " / " + _cfg.FillAnimClip + ".");
+                return;
+            }
+
+            Log.Warn("None of the candidate filling clips exist in this game.");
+        }
+
+        /// <summary>Writes the pose straight into Fumes.ini, like the other tuners.</summary>
+        private void KeepPose()
+        {
+            var ok = IniFile.SetValue(Paths.Ini, "Nozzle", "FillAnimDict", _cfg.FillAnimDict)
+                   & IniFile.SetValue(Paths.Ini, "Nozzle", "FillAnimClip", _cfg.FillAnimClip)
+                   & IniFile.SetValue(Paths.Ini, "Nozzle", "FillAnimPhase",
+                                      _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture));
+
+            Log.Info("Filling pose saved: " + _cfg.FillAnimDict + " / " + _cfg.FillAnimClip +
+                     " @ " + _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture));
+
+            Notify(ok ? "~g~Filling pose saved~s~ to Fumes.ini."
+                      : "~y~Could not write Fumes.ini~s~ - it is in Fumes.log.");
         }
 
         private static bool Edge(System.Windows.Forms.Keys key, ref bool wasDown)
