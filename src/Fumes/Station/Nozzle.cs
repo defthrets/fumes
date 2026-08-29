@@ -121,6 +121,36 @@ namespace Fumes.Station
         }
 
         /// <summary>
+        /// Where the hose joins the nozzle.
+        ///
+        /// ON THE PROP, not on the hand. A hand bone is a hand's width from where a hose really
+        /// meets a nozzle, so ending it there ran the hose into his fist and out the far side.
+        /// Taken as an offset in the NOZZLE'S own space it also rotates with the nozzle, so
+        /// tilting the thing swings the hose with it the way a real one would -- which a bone
+        /// offset could never do, because the bone does not know the prop is turned.
+        ///
+        /// Falls back to the hand while the model is still streaming, so the hose has somewhere
+        /// to be in the second before the nozzle appears.
+        /// </summary>
+        public Vector3 HoseEnd()
+        {
+            try
+            {
+                if (Out)
+                {
+                    return _prop.GetOffsetPosition(
+                        new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ));
+                }
+            }
+            catch
+            {
+                // Fall through to the hand.
+            }
+
+            return HandPosition();
+        }
+
+        /// <summary>
         /// Puts the nozzle in his hand. Returns false only if the player is unreachable.
         ///
         /// Called repeatedly while the nozzle is meant to be out, not once: a model request
@@ -359,7 +389,8 @@ namespace Fumes.Station
 
         private static readonly string[] AxisNames =
         {
-            "OffsetX", "OffsetY", "OffsetZ", "RotX", "RotY", "RotZ"
+            "OffsetX", "OffsetY", "OffsetZ", "RotX", "RotY", "RotZ",
+            "HoseEndX", "HoseEndY", "HoseEndZ"
         };
 
         private int _axis;
@@ -390,11 +421,11 @@ namespace Fumes.Station
 
                 if (step != 0f)
                 {
-                    Nudge(step * (_axis < 3 ? 0.005f : 5f));
+                    Nudge(step * (_axis >= 3 && _axis <= 5 ? 5f : 0.005f));
                     Seat();
                 }
 
-                if (Edge(Keys.NumPad0, ref _dumpDown)) Log.Info("Nozzle placement:" + Environment.NewLine + IniBlock());
+                if (Edge(Keys.NumPad0, ref _dumpDown)) Keep();
 
                 UI.Draw.Text("NOZZLE TUNER   [NumPad 5] axis   [4/6] adjust   [0] log",
                              0.5f, 0.08f, 0.32f, System.Drawing.Color.FromArgb(230, 245, 200, 90), 4, true);
@@ -407,6 +438,43 @@ namespace Fumes.Station
             }
         }
 
+        /// <summary>
+        /// Writes the placement straight into Fumes.ini, for the reason given in Gauge.Keep.
+        /// </summary>
+        private void Keep()
+        {
+            var ok = Write("NozzleOffsetX", _cfg.NozzleOffsetX, "0.000")
+                   & Write("NozzleOffsetY", _cfg.NozzleOffsetY, "0.000")
+                   & Write("NozzleOffsetZ", _cfg.NozzleOffsetZ, "0.000")
+                   & Write("NozzleRotX", _cfg.NozzleRotX, "0.#")
+                   & Write("NozzleRotY", _cfg.NozzleRotY, "0.#")
+                   & Write("NozzleRotZ", _cfg.NozzleRotZ, "0.#")
+                   & Write("HoseEndX", _cfg.HoseEndX, "0.000")
+                   & Write("HoseEndY", _cfg.HoseEndY, "0.000")
+                   & Write("HoseEndZ", _cfg.HoseEndZ, "0.000")
+                   & Write("HoseRopeType", _cfg.HoseRopeType, "0");
+
+            Log.Info("Nozzle placement saved:" + Environment.NewLine + IniBlock());
+
+            try
+            {
+                GTA.UI.Notification.PostTicker(
+                    ok ? "~g~Nozzle placement saved~s~ to Fumes.ini."
+                       : "~y~Could not write Fumes.ini~s~ - numbers are in Fumes.log.",
+                    false, false);
+            }
+            catch
+            {
+                // The log line is the real record.
+            }
+        }
+
+        private static bool Write(string key, float value, string format)
+        {
+            return IniFile.SetValue(Paths.Ini, "Nozzle", key,
+                                    value.ToString(format, CultureInfo.InvariantCulture));
+        }
+
         private void Nudge(float by)
         {
             switch (_axis)
@@ -416,7 +484,10 @@ namespace Fumes.Station
                 case 2: _cfg.NozzleOffsetZ += by; break;
                 case 3: _cfg.NozzleRotX += by; break;
                 case 4: _cfg.NozzleRotY += by; break;
-                default: _cfg.NozzleRotZ += by; break;
+                case 5: _cfg.NozzleRotZ += by; break;
+                case 6: _cfg.HoseEndX += by; break;
+                case 7: _cfg.HoseEndY += by; break;
+                default: _cfg.HoseEndZ += by; break;
             }
         }
 
@@ -425,13 +496,14 @@ namespace Fumes.Station
             var v = new[]
             {
                 _cfg.NozzleOffsetX, _cfg.NozzleOffsetY, _cfg.NozzleOffsetZ,
-                _cfg.NozzleRotX, _cfg.NozzleRotY, _cfg.NozzleRotZ
+                _cfg.NozzleRotX, _cfg.NozzleRotY, _cfg.NozzleRotZ,
+                _cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ
             };
 
             var s = "";
             for (var i = 0; i < AxisNames.Length; i++)
             {
-                var value = v[i].ToString(i < 3 ? "0.000" : "0.#", CultureInfo.InvariantCulture);
+                var value = v[i].ToString(i >= 3 && i <= 5 ? "0.#" : "0.000", CultureInfo.InvariantCulture);
                 s += (i == _axis ? " >" : "  ") + AxisNames[i] + " " + value;
             }
 
@@ -447,7 +519,10 @@ namespace Fumes.Station
                    "Nozzle" + AxisNames[2] + " = " + _cfg.NozzleOffsetZ.ToString("0.000", CultureInfo.InvariantCulture) + nl +
                    "Nozzle" + AxisNames[3] + " = " + _cfg.NozzleRotX.ToString("0.#", CultureInfo.InvariantCulture) + nl +
                    "Nozzle" + AxisNames[4] + " = " + _cfg.NozzleRotY.ToString("0.#", CultureInfo.InvariantCulture) + nl +
-                   "Nozzle" + AxisNames[5] + " = " + _cfg.NozzleRotZ.ToString("0.#", CultureInfo.InvariantCulture);
+                   "Nozzle" + AxisNames[5] + " = " + _cfg.NozzleRotZ.ToString("0.#", CultureInfo.InvariantCulture) + nl +
+                   AxisNames[6] + " = " + _cfg.HoseEndX.ToString("0.000", CultureInfo.InvariantCulture) + nl +
+                   AxisNames[7] + " = " + _cfg.HoseEndY.ToString("0.000", CultureInfo.InvariantCulture) + nl +
+                   AxisNames[8] + " = " + _cfg.HoseEndZ.ToString("0.000", CultureInfo.InvariantCulture);
         }
 
         /// <summary>Rising edge for a key, since the input API only reports held.</summary>

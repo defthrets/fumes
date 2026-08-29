@@ -252,6 +252,20 @@ namespace Fumes.Core
         /// NumPad5 cycles the axis, NumPad4 and NumPad6 move it, NumPad0 writes the whole set
         /// to the log in ini form. Off by default: it is a workbench, not a feature.
         /// </summary>
+        /// <summary>
+        /// Where the hose meets the nozzle, in the NOZZLE'S own space.
+        ///
+        /// The hose used to end at the hand bone, which is a hand's width from where a hose
+        /// actually joins a nozzle -- so it ran into his fist and out the other side. Hung off
+        /// the prop instead, it follows the nozzle's own rotation for free, so tilting the
+        /// nozzle swings the hose with it exactly as a real one would.
+        ///
+        /// Negative Y is behind it. Dial it in with the tuner like the rest of the placement.
+        /// </summary>
+        public float HoseEndX = 0f;
+        public float HoseEndY = -0.12f;
+        public float HoseEndZ = 0f;
+
         public bool TuneNozzle = false;
 
         /// <summary>
@@ -349,10 +363,10 @@ namespace Fumes.Core
         /// </summary>
         public bool Vertical = true;
 
-        public float GaugeX = 0.1255f;
-        public float GaugeY = 0.8320f;
-        public float GaugeWidth = 0.0070f;
-        public float GaugeHeight = 0.1470f;
+        public float GaugeX = 0.1120f;
+        public float GaugeY = 0.8240f;
+        public float GaugeWidth = 0.0052f;
+        public float GaugeHeight = 0.1550f;
 
         /// <summary>
         /// Live placement for the gauge, the same workbench the nozzle has.
@@ -474,6 +488,9 @@ namespace Fumes.Core
                 s.NozzleRotZ = ini.GetFloat("Nozzle", "NozzleRotZ", s.NozzleRotZ, -360f, 360f);
                 s.TuneNozzle = ini.GetBool("Nozzle", "TuneNozzle", s.TuneNozzle);
                 s.LeftHand = ini.GetBool("Nozzle", "LeftHand", s.LeftHand);
+                s.HoseEndX = ini.GetFloat("Nozzle", "HoseEndX", s.HoseEndX, -1f, 1f);
+                s.HoseEndY = ini.GetFloat("Nozzle", "HoseEndY", s.HoseEndY, -1f, 1f);
+                s.HoseEndZ = ini.GetFloat("Nozzle", "HoseEndZ", s.HoseEndZ, -1f, 1f);
                 s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
                 s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
                 s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);

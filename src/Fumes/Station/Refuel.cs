@@ -258,7 +258,7 @@ namespace Fumes.Station
             LockHands();
 
             var anchor = Anchor();
-            _hose.Update(anchor, _nozzle.HandPosition());
+            _hose.Update(anchor, _nozzle.HoseEnd());
 
             if (_hazard.Update(_pump.Position, false)) { Abandon("the pump went up"); return; }
 
@@ -442,7 +442,7 @@ namespace Fumes.Station
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
             var anchor = Anchor();
-            _hose.Update(anchor, _nozzle.HandPosition());
+            _hose.Update(anchor, _nozzle.HoseEnd());
 
             if (_hazard.Update(_pump.Position, true)) { Abandon("the pump went up"); return; }
 

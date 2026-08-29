@@ -278,11 +278,7 @@ namespace Fumes.UI
                 _cfg.GaugeWidth = Clamp(_cfg.GaugeWidth, 0.02f, 0.8f);
                 _cfg.GaugeHeight = Clamp(_cfg.GaugeHeight, 0.004f, 0.2f);
 
-                if (Edge(Keys.NumPad0, ref _dumpDown))
-                {
-                    Log.Info("Gauge placement:" + Environment.NewLine + IniBlock());
-                    Say("Gauge numbers written to Fumes.log");
-                }
+                if (Edge(Keys.NumPad0, ref _dumpDown)) Keep();
 
                 Draw.Text("GAUGE TUNER   [8/2] up down   [4/6] left right   " +
                           "[7/9] width   [1/3] height   [0] log",
@@ -295,6 +291,35 @@ namespace Fumes.UI
             {
                 Log.Once("gauge-tune", "The gauge tuner fell over: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Writes where you have dragged it straight into Fumes.ini.
+        ///
+        /// This is the point of the tuner and it took too long to get here. Printing the
+        /// numbers to a log and asking somebody to copy four of them into a file by hand is
+        /// most of the work still left undone -- and every one of those four is a chance to
+        /// mistype a decimal. The edit is surgical: it finds the key, replaces what is after
+        /// the equals sign, and leaves every comment and blank line exactly where it was.
+        /// </summary>
+        private void Keep()
+        {
+            var ok = Write("X", _cfg.GaugeX)
+                   & Write("Y", _cfg.GaugeY)
+                   & Write("Width", _cfg.GaugeWidth)
+                   & Write("Height", _cfg.GaugeHeight);
+
+            Log.Info("Gauge placement saved:" + Environment.NewLine + IniBlock());
+
+            Say(ok
+                ? "~g~Gauge position saved~s~ to Fumes.ini."
+                : "~y~Could not write Fumes.ini~s~ - numbers are in Fumes.log.");
+        }
+
+        private static bool Write(string key, float value)
+        {
+            return IniFile.SetValue(Paths.Ini, "HUD", key,
+                                    value.ToString("0.0000", CultureInfo.InvariantCulture));
         }
 
         private string IniLine()

@@ -151,6 +151,108 @@ namespace Fumes.Core
             return n < min ? min : max;
         }
 
+        // The writer below is LIFTED FROM HOODRICH, same as Json.cs -- same author, same box,
+        // and a surgical ini editor is not worth writing twice. If a bug is found in one, fix
+        // it there and copy it back; do not let the two drift.
+
+        /// <summary>
+        /// Changes one value in the file on disk, and changes NOTHING else.
+        ///
+        /// A surgical line edit rather than a re-serialise. This ini is eighty lines of
+        /// hand-written comments explaining what every key does, grouped and spaced on purpose
+        /// -- rewriting it from the parsed dictionary would hand the player back a bare list
+        /// of key=value and throw all of that away the first time they changed a setting.
+        ///
+        /// So: find the section, find the key inside it, replace the text after the equals
+        /// sign, put the file back exactly as it was otherwise. A key that is not there is
+        /// appended at the end of its section; a section that is not there is appended at the
+        /// end of the file. Both keep every comment above them.
+        ///
+        /// Returns false rather than throwing. A settings screen that cannot write is a
+        /// setting that does not stick, which is worth reporting; it is not worth taking the
+        /// mod down over.
+        /// </summary>
+        public static bool SetValue(string path, string section, string key, string value)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(key)) return false;
+
+            try
+            {
+                if (!File.Exists(path)) return false;
+
+                var lines = new List<string>(File.ReadAllLines(path));
+
+                var inSection = string.IsNullOrEmpty(section);
+                var sectionEnd = -1;
+
+                for (var i = 0; i < lines.Count; i++)
+                {
+                    var line = lines[i];
+                    var trimmed = line.Trim();
+
+                    if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                    {
+                        var name = trimmed.Substring(1, trimmed.Length - 2).Trim();
+
+                        // Leaving the section we wanted without having found the key: this is
+                        // where it gets appended, before whatever comes next.
+                        if (inSection && !string.IsNullOrEmpty(section))
+                        {
+                            sectionEnd = i;
+                            break;
+                        }
+
+                        inSection = string.Equals(name, section, StringComparison.OrdinalIgnoreCase);
+                        continue;
+                    }
+
+                    if (!inSection) continue;
+                    if (trimmed.Length == 0 || trimmed[0] == ';' || trimmed[0] == '#') continue;
+
+                    var eq = line.IndexOf('=');
+                    if (eq <= 0) continue;
+
+                    if (!string.Equals(line.Substring(0, eq).Trim(), key,
+                                       StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    // Found it. Keep whatever indentation the line had.
+                    var lead = line.Substring(0, line.Length - line.TrimStart().Length);
+                    lines[i] = lead + key + "=" + value;
+
+                    File.WriteAllLines(path, lines.ToArray());
+                    return true;
+                }
+
+                // Not found. Put it where it belongs rather than at the bottom of the file.
+                if (sectionEnd >= 0)
+                {
+                    while (sectionEnd > 0 && lines[sectionEnd - 1].Trim().Length == 0) sectionEnd--;
+                    lines.Insert(sectionEnd, key + "=" + value);
+                }
+                else if (inSection)
+                {
+                    lines.Add(key + "=" + value);
+                }
+                else
+                {
+                    lines.Add("");
+                    lines.Add("[" + section + "]");
+                    lines.Add(key + "=" + value);
+                }
+
+                File.WriteAllLines(path, lines.ToArray());
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not write " + key + " to the ini: " + ex.Message);
+                return false;
+            }
+        }
+
         /// <summary>
         /// A key.
         ///
