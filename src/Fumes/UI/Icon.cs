@@ -89,6 +89,36 @@ namespace Fumes.UI
             }
         }
 
+        /// <summary>
+        /// Draws it with everything stated outright: no bob, no sway, no stored tint.
+        ///
+        /// For anything animating the icon ITSELF rather than just placing it -- a droplet
+        /// falling and fading has its own position, size and alpha every frame, and none of
+        /// them are the ones on this object.
+        /// </summary>
+        public void DrawRaw(float fx, float fy, float scale, Color tint, float rotation = 0f)
+        {
+            if (_missing) return;
+
+            try
+            {
+                if (!Ready()) return;
+
+                var side = scale * CanvasH;
+
+                _sprite.Size = new SizeF(side, side);
+                _sprite.Position = new PointF(fx * CanvasW, fy * CanvasH);
+                _sprite.Rotation = rotation;
+                _sprite.Color = tint;
+                _sprite.Draw();
+            }
+            catch (Exception ex)
+            {
+                _missing = true;
+                Log.Once("icon-" + _path, "Could not draw " + _path + ": " + ex.Message);
+            }
+        }
+
         private bool Ready()
         {
             if (_sprite != null) return true;

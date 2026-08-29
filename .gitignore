@@ -20,3 +20,7 @@ obj/
 bin/
 Thumbs.db
 desktop.ini
+
+# Contact sheets and scratch renders. meter.gif and meter_full.png are kept as
+# documentation; anything else under preview/ is something I made to squint at once.
+preview/meter_sheet.png
