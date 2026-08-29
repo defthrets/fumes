@@ -241,10 +241,23 @@ namespace Fumes.Core
         /// anybody can nudge by 0.01 while looking at it beats a formula nobody can check.
         /// These are measured off a real screenshot at this machine's aspect ratio.
         /// </summary>
-        public float GaugeX = 0.1425f;
-        public float GaugeY = 0.9775f;
-        public float GaugeWidth = 0.128f;
-        public float GaugeHeight = 0.0195f;
+        public float GaugeX = 0.1230f;
+        public float GaugeY = 0.9845f;
+        public float GaugeWidth = 0.1475f;
+        public float GaugeHeight = 0.0110f;
+
+        /// <summary>
+        /// Live placement for the gauge, the same workbench the nozzle has.
+        ///
+        /// The numbers above cannot be right for everybody and cannot be worked out from here:
+        /// where the minimap lands depends on the player's safe-zone slider and their aspect
+        /// ratio, and the game offers no honest way to ask. So rather than a formula nobody can
+        /// check, this lets it be dragged into place while looking at it.
+        ///
+        /// Only listens while you are NOT holding the nozzle, so it cannot fight the nozzle
+        /// tuner over the same keys.
+        /// </summary>
+        public bool TuneGauge = false;
         public Units Units = Units.Litres;
         public bool ShowNumbers = true;
 
@@ -361,6 +374,7 @@ namespace Fumes.Core
                 s.GaugeHeight = ini.GetFloat("HUD", "Height", s.GaugeHeight, 0.004f, 0.2f);
                 s.Units = ParseEnum(ini.GetString("HUD", "Units", "Litres"), s.Units);
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);
+                s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 
                 s.ForecourtHazard = ini.GetBool("Hazard", "ForecourtHazard", s.ForecourtHazard);
 
