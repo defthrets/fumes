@@ -269,14 +269,6 @@ namespace Fumes.Station
             // inside PumpReach as well.
             var atPump = me.Position.DistanceTo(_pump.Position) <= _cfg.HangUpReach;
 
-            // The second button means the same thing wherever you are standing: put it back if
-            // you are at the pump, put it down if you are not.
-            if (SecondaryPressed())
-            {
-                if (atPump) HangUp(); else DropIt("dropped");
-                return;
-            }
-
             var vehicle = NearestFillable(me, out var filler, out var inReach);
             var tank = vehicle == null ? null : _tanks.For(vehicle);
             var hasRoom = tank != null && tank.Litres < tank.Capacity - 0.05f;
@@ -301,7 +293,6 @@ namespace Fumes.Station
             {
                 Prompt(Control.Context, "Fill the " + vehicle.LocalizedName +
                                         "   $" + _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L");
-                Prompt(Control.ContextSecondary, atPump ? "Hang up" : "Drop it");
 
                 if (!Pressed()) return;
 
@@ -324,15 +315,18 @@ namespace Fumes.Station
 
             if (vehicle != null && inReach && !hasRoom)
             {
-                Draw.Help(vehicle.LocalizedName + " is full. Take the nozzle back to the pump.");
-                Prompt(Control.ContextSecondary, "Drop it");
+                Draw.Help(vehicle.LocalizedName + " is full. Hang the nozzle back on the pump.");
                 return;
             }
 
+            // NO "DROP IT" ANY MORE. Putting the nozzle back is the end of the interaction, and
+            // an escape hatch that skipped it made the walk back optional -- which is most of
+            // what the mod is. It can still be pulled out of your hands by walking too far, and
+            // it still ends up on the tarmac if you get into a car with it, but neither of
+            // those is a button you press.
             Draw.Help(vehicle == null
                           ? "Walk the nozzle to the filler on the side of your vehicle."
                           : "Take the nozzle to the filler on the " + vehicle.LocalizedName + ".");
-            Prompt(Control.ContextSecondary, "Drop it");
         }
 
         /// <summary>
@@ -454,6 +448,7 @@ namespace Fumes.Station
 
             LockHands();
             HoldStill(me);
+            FillPose(me);
 
             var filler = Filler.On(_target, out var exact);
             FaceThe(me, filler);
@@ -520,21 +515,68 @@ namespace Fumes.Station
             if (!_cfg.ChargeMoney) return;
 
             var due = (int)Math.Floor(_owed);
-            if (due <= _paid) return;
+            if (due > _paid) Charge(due - _paid);
+        }
+
+        /// <summary>
+        /// Takes money, and CHECKS THAT IT WENT.
+        ///
+        /// The old version marked the bill paid whether or not the write landed, which is the
+        /// worst of both worlds: no money leaves the player's wallet and the mod believes it
+        /// has been paid, so nothing anywhere reports a thing. There are real reasons the write
+        /// can do nothing --
+        ///
+        ///   * SHVDN's Player.Money reads and writes SP0/SP1/SP2_TOTAL_CASH chosen by the
+        ///     player's MODEL. On any ped that is not Michael, Franklin or Trevor -- an online
+        ///     model, a ped another mod put you in -- the getter returns 0 and the setter is a
+        ///     no-op, silently.
+        ///   * Another script writing the same stat every frame simply overwrites it.
+        ///
+        /// So the balance is read back. If it did not move, the charge is reported once and
+        /// then abandoned for the session rather than pretending, because a pump that says it
+        /// is charging you and is not is worse than one that says it cannot.
+        /// </summary>
+        private void Charge(int amount)
+        {
+            if (amount <= 0 || _cannotCharge) return;
 
             try
             {
-                Game.Player.Money -= due - _paid;
-                _paid = due;
+                var before = Game.Player.Money;
+                Game.Player.Money = before - amount;
+                var after = Game.Player.Money;
+
+                if (after < before)
+                {
+                    _paid += before - after;
+                    return;
+                }
+
+                _cannotCharge = true;
+
+                Log.Warn("Tried to take $" + amount + " and the balance did not move (" +
+                         before + " before, " + after + " after). Player.Money works off the " +
+                         "SP0/SP1/SP2_TOTAL_CASH stat picked by the player's MODEL, so it does " +
+                         "nothing on a ped that is not one of the three protagonists -- and " +
+                         "another mod writing the same stat will overwrite it. Fuel is free for " +
+                         "the rest of this session and the pump will say so.");
+
+                Notify("~y~The pump could not take payment~s~ - see Fumes.log.");
             }
             catch (Exception ex)
             {
-                Log.Once("charge", "Could not take payment: " + ex.Message + " - fuel is free this session.");
+                _cannotCharge = true;
+                Log.Error("Could not take payment; fuel is free this session.", ex);
             }
         }
 
+        /// <summary>Set once the wallet has proved it will not move. Stops the mod lying about it.</summary>
+        private bool _cannotCharge;
+
         private void Stop(Ped me, string because)
         {
+            StopFillPose();
+
             var litres = _dispensed;
             var owed = _owed;
 
@@ -543,7 +585,6 @@ namespace Fumes.Station
             _targetTank = null;
             _dispensed = 0f;
             _owed = 0f;
-            _paid = 0;
 
             if (litres < 0.05f)
             {
@@ -551,18 +592,31 @@ namespace Fumes.Station
                 return;
             }
 
+            // The last part-dollar. Settle only ever takes WHOLE dollars as it goes, so
+            // without this the final few cents of every fill were quietly forgiven -- small,
+            // but it made the receipt a number that had not actually been charged.
+            if (_cfg.ChargeMoney)
+            {
+                var total = (int)Math.Ceiling(owed - 0.001f);
+                if (total > _paid) Charge(total - _paid);
+            }
+
             var receipt = _gauge.Volume(litres);
             if (_cfg.ChargeMoney)
             {
-                receipt += " ~s~for ~g~$" + owed.ToString("0.00", CultureInfo.InvariantCulture) + "~s~";
+                receipt += _cannotCharge
+                    ? " ~s~- ~y~not charged~s~"
+                    : " ~s~for ~g~$" + owed.ToString("0.00", CultureInfo.InvariantCulture) + "~s~";
             }
+
+            _paid = 0;
 
             Notify(_stationName + ": " + receipt + (because == null ? "." : " - " + because + "."));
 
             // You are still holding it. Said once, on the transition, rather than left to the
             // prompt -- the prompt only appears once you are back within reach of something,
             // and the moment you need telling is the moment the pump stops.
-            Notify("Hang the nozzle back on the pump, or ~b~" + SecondaryName() + "~s~ to drop it.");
+            Notify("Hang the nozzle back on the pump.");
         }
 
         // ==================================================================
@@ -600,6 +654,8 @@ namespace Fumes.Station
         private void Abandon(string why)
         {
             Log.Debug("Refuel abandoned: " + why + ".");
+
+            StopFillPose();
 
             _nozzle.PutBack();
             _hose.Retract();
@@ -756,6 +812,71 @@ namespace Fumes.Station
         }
 
         /// <summary>Whether InteractKey is still the key the context control itself is on.</summary>
+        /// <summary>
+        /// The filling pose: one arm out to the car, over whatever his legs are doing.
+        ///
+        /// FLAG 51 is what makes it usable. The native's own table calls 48-63 "upper body,
+        /// controllable" -- it blends over the lower body and leaves the player in charge, so
+        /// he can still turn and be shoved about. A full-body clip would plant him rigid at the
+        /// car, which is a cutscene, not a pose.
+        ///
+        /// Asked for every frame but only STARTED when it is not already running: TASK_PLAY_ANIM
+        /// restarts from the first frame every time it is called, so calling it unconditionally
+        /// is an arm that twitches back to the start sixty times a second.
+        /// </summary>
+        private void FillPose(Ped me)
+        {
+            if (string.IsNullOrEmpty(_cfg.FillAnimDict) || string.IsNullOrEmpty(_cfg.FillAnimClip)) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, _cfg.FillAnimDict))
+                {
+                    // Requested every frame until it arrives. A single request that gets dropped
+                    // under streaming pressure is never made again.
+                    Function.Call(Hash.REQUEST_ANIM_DICT, _cfg.FillAnimDict);
+                    return;
+                }
+
+                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle,
+                                        _cfg.FillAnimDict, _cfg.FillAnimClip, 3))
+                {
+                    _posing = true;
+                    return;
+                }
+
+                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, _cfg.FillAnimDict, _cfg.FillAnimClip,
+                              4f, -4f, -1, 51, 0f, false, false, false);
+                _posing = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("fillpose", "Could not play the filling animation: " + ex.Message +
+                                     " - he will hold the nozzle still instead.");
+            }
+        }
+
+        private bool _posing;
+
+        /// <summary>Ends the pose. Safe whenever; does the work once.</summary>
+        private void StopFillPose()
+        {
+            if (!_posing) return;
+            _posing = false;
+
+            try
+            {
+                var me = Player();
+                if (me == null) return;
+
+                Function.Call(Hash.STOP_ANIM_TASK, me.Handle, _cfg.FillAnimDict, _cfg.FillAnimClip, -4f);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not stop the filling animation: " + ex.Message);
+            }
+        }
+
         private bool IsDefaultKey()
         {
             return string.Equals(KeyName(), "E", StringComparison.Ordinal);

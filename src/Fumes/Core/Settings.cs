@@ -142,7 +142,15 @@ namespace Fumes.Core
         public float DryRestartSeconds = 1.6f;
 
         // ---- the forecourt ----------------------------------------------------
-        public float PumpReach = 2.6f;
+        /// <summary>
+        /// How close you have to stand for a pump to offer you its nozzle.
+        ///
+        /// Measured from the pump PROP'S ORIGIN, which sits at the middle of its base -- so a
+        /// figure that sounds generous is tighter than it reads, and one that sounds right
+        /// lets you take a nozzle from the far side of the forecourt. 1.8 is about arm's reach
+        /// of the machine itself.
+        /// </summary>
+        public float PumpReach = 1.8f;
         public float CapReach = 1.9f;
 
         /// <summary>
@@ -250,6 +258,20 @@ namespace Fumes.Core
         public bool ShowFillerMarker = false;
 
         /// <summary>
+        /// The clip he plays while fuel is going in: arm out, holding the nozzle to the car.
+        ///
+        /// anim@am_hold_up@male / shoplift_high is a hold-up pose -- one arm extended forward
+        /// at about the right height with the hand closed round something. Nothing in the game
+        /// is animated for refuelling, so this is the nearest shape that exists, and with a
+        /// nozzle in the hand instead of a pistol it reads exactly right.
+        ///
+        /// In the ini so it can be swapped for a better one without a rebuild. Empty turns it
+        /// off and he stands there holding it.
+        /// </summary>
+        public string FillAnimDict = "anim@am_hold_up@male";
+        public string FillAnimClip = "shoplift_high";
+
+        /// <summary>
         /// Where on the pump the hose is bolted, in the pump's own local space.
         ///
         /// Exposed because the six pump models in the game are not the same shape, and a
@@ -285,10 +307,21 @@ namespace Fumes.Core
         /// anybody can nudge by 0.01 while looking at it beats a formula nobody can check.
         /// These are measured off a real screenshot at this machine's aspect ratio.
         /// </summary>
-        public float GaugeX = 0.1470f;
-        public float GaugeY = 0.9845f;
-        public float GaugeWidth = 0.1235f;
-        public float GaugeHeight = 0.0110f;
+        /// <summary>
+        /// Upright, down the side of the minimap, rather than a strip beneath it.
+        ///
+        /// Upright is the better shape for this: a fuel level is a HEIGHT IN A CONTAINER, and
+        /// the pump display already draws it as one, so the two readings of the same number now
+        /// look like the same instrument. It also stops competing for the sliver of screen
+        /// between the minimap and the bottom edge, which was never big enough for a bar and a
+        /// line of text at once.
+        /// </summary>
+        public bool Vertical = true;
+
+        public float GaugeX = 0.1345f;
+        public float GaugeY = 0.8360f;
+        public float GaugeWidth = 0.0085f;
+        public float GaugeHeight = 0.1400f;
 
         /// <summary>
         /// Live placement for the gauge, the same workbench the nozzle has.
@@ -303,7 +336,7 @@ namespace Fumes.Core
         /// </summary>
         public bool TuneGauge = false;
         public Units Units = Units.Litres;
-        public bool ShowNumbers = true;
+        public bool ShowNumbers = false;
 
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
@@ -410,6 +443,8 @@ namespace Fumes.Core
                 s.NozzleRotZ = ini.GetFloat("Nozzle", "NozzleRotZ", s.NozzleRotZ, -360f, 360f);
                 s.TuneNozzle = ini.GetBool("Nozzle", "TuneNozzle", s.TuneNozzle);
                 s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
+                s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
+                s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);
 
                 s.Prompts = ParseEnum(ini.GetString("HUD", "Prompts", "HelpText"), s.Prompts);
                 s.ShowGauge = ini.GetBool("HUD", "ShowGauge", s.ShowGauge);
@@ -418,6 +453,7 @@ namespace Fumes.Core
                 s.GaugeY = ini.GetFloat("HUD", "Y", s.GaugeY, 0f, 1f);
                 s.GaugeWidth = ini.GetFloat("HUD", "Width", s.GaugeWidth, 0.02f, 0.8f);
                 s.GaugeHeight = ini.GetFloat("HUD", "Height", s.GaugeHeight, 0.004f, 0.2f);
+                s.Vertical = ini.GetBool("HUD", "Vertical", s.Vertical);
                 s.Units = ParseEnum(ini.GetString("HUD", "Units", "Litres"), s.Units);
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);
                 s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);

@@ -55,35 +55,55 @@ namespace Fumes.UI
 
                 var fraction = Clamp01(tank.Fraction);
 
-                // Border first, then the well, then the fill. Drawn as three rectangles
-                // because there is no rounded-rect primitive and nobody has ever noticed.
-                Draw.Bar(x - 0.0022f, y - 0.0022f, w + 0.0044f, h + 0.0044f, Color.FromArgb(190, 0, 0, 0));
-                Draw.Bar(x, y, w, h, Color.FromArgb(150, 30, 30, 32));
+                // Border, well, fill. Three rectangles, because there is no rounded-rect
+                // primitive and nobody has ever noticed.
+                Draw.Bar(x - 0.0022f, y - 0.0022f, w + 0.0044f, h + 0.0044f, Color.FromArgb(200, 0, 0, 0));
+                Draw.Bar(x, y, w, h, Color.FromArgb(165, 28, 28, 32));
 
-                if (fraction > 0.001f)
+                var colour = Level(fraction);
+
+                if (_cfg.Vertical)
                 {
-                    Draw.Bar(x, y, w * fraction, h, Level(fraction));
-                }
+                    // FILLED FROM THE BOTTOM, which is the only way up is up. A vertical bar
+                    // that fills downward from the top is a loading bar stood on its end; one
+                    // that fills from the floor is a level in a container, and that is what a
+                    // tank is. It also matches the glass on the pump display exactly, so the
+                    // two things that show the same number look like the same instrument.
+                    if (fraction > 0.001f)
+                    {
+                        var fill = h * fraction;
+                        Draw.Bar(x, y + h - fill, w, fill, colour);
+                    }
 
-                // The reserve mark, so "low" is a place on the gauge rather than a message
-                // that has already gone.
-                var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
-                Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f, Color.FromArgb(220, 235, 180, 60));
+                    // The reserve mark, measured from the bottom for the same reason.
+                    var reserveY = y + h * (1f - Clamp01(_cfg.ReserveFraction));
+                    Draw.Bar(x - 0.0016f, reserveY, w + 0.0032f, 0.0011f,
+                             Color.FromArgb(225, 235, 180, 60));
+                }
+                else
+                {
+                    if (fraction > 0.001f) Draw.Bar(x, y, w * fraction, h, colour);
+
+                    var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
+                    Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f,
+                             Color.FromArgb(225, 235, 180, 60));
+                }
 
                 if (!_cfg.ShowNumbers) return;
 
-                // THE READOUT SITS INSIDE THE BAR, which is not where it started. It used to be
-                // a label row above -- fine in the bottom-right corner, impossible under the
-                // minimap: there is about two hundredths of a screen between the minimap and
-                // the bottom edge, which fits a bar or a line of text but not both. Overlaid on
-                // the bar it needs no room of its own, and the outline the text already carries
-                // is enough to keep it readable over any fill colour.
+                // NOTHING IS WRITTEN ON A VERTICAL BAR. It is a finger's width across, and any
+                // text long enough to say something useful is several times wider than the
+                // thing it labels -- which stops being a label and becomes a caption sitting in
+                // the middle of the map. The colour is the reading: green through amber to red
+                // is a number anybody can take in without looking straight at it, which is the
+                // whole reason for the ramp.
                 //
-                // The stall state takes the label's place rather than adding a line, for the
-                // same reason -- and it reads better anyway, because an empty bar and a bar
-                // with a drop left in it look identical at a glance.
-                var label = stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun;
+                // So numbers are a horizontal-bar affair, and there they go INSIDE the bar,
+                // because between the minimap and the bottom of the screen there is room for a
+                // bar or a line of text and not for both.
+                if (_cfg.Vertical) return;
 
+                var label = stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun;
                 var reading = label + "   " + Volume(tank.Litres) + " / " + Volume(tank.Capacity);
 
                 Draw.Text(reading, x + w / 2f, y - 0.0008f, 0.215f,
@@ -111,20 +131,80 @@ namespace Fumes.UI
         }
 
         /// <summary>
-        /// Green down to the reserve mark, amber below it, red and flashing on empty.
+        /// Where the ramp turns, from empty on the left to full on the right.
         ///
-        /// The flash is on wall-clock time rather than a frame counter so it blinks at the
+        /// YELLOW AT FULL THROUGH TO RED AT EMPTY -- no green in it anywhere. Green reads as
+        /// "fine, ignore me", and a fuel gauge is never saying that: even a full tank is a thing
+        /// you are spending. Yellow to red is one hue sliding down its own scale, which the eye
+        /// reads as a quantity rather than as three separate verdicts.
+        ///
+        /// Six stops rather than a straight two-colour blend, because a blend from yellow to red
+        /// runs through a muddy brown at the halfway point. Putting real gold, amber and orange
+        /// in the middle keeps every part of the range a colour somebody would name.
+        /// </summary>
+        private static readonly float[] Stops = { 0f, 0.12f, 0.30f, 0.50f, 0.72f, 1f };
+
+        private static readonly Color[] Ramp =
+        {
+            Color.FromArgb(235, 212,  52,  46),   // empty      red
+            Color.FromArgb(235, 224,  84,  48),   // reserve    red-orange
+            Color.FromArgb(235, 233, 126,  48),   // a third    orange
+            Color.FromArgb(235, 240, 166,  54),   // half       amber
+            Color.FromArgb(235, 245, 196,  60),   // most       gold
+            Color.FromArgb(235, 248, 220,  74)    // full       yellow
+        };
+
+        /// <summary>
+        /// The bar's colour at a given level: a continuous ramp, flashing under the reserve.
+        ///
+        /// It used to be three steps -- green, amber, red -- which meant half a tank and a full
+        /// one were the same green, and the gauge said nothing at all until it was nearly too
+        /// late. A ramp is reading the number for you.
+        ///
+        /// The flash is on wall-clock time rather than a frame counter, so it blinks at the
         /// same speed whatever the framerate is doing.
         /// </summary>
         private Color Level(float fraction)
         {
-            if (fraction > _cfg.ReserveFraction * 2f) return Color.FromArgb(225, 105, 205, 120);
-            if (fraction > _cfg.ReserveFraction) return Color.FromArgb(230, 235, 190, 70);
+            var colour = OnRamp(Clamp01(fraction));
 
+            if (fraction > _cfg.ReserveFraction) return colour;
+
+            // Below the reserve mark it also pulses, because by then the colour alone has
+            // nowhere left to go -- it is already as red as it gets.
             if (_blinkSince == 0) _blinkSince = Environment.TickCount;
-            var on = ((Environment.TickCount - _blinkSince) / 420) % 2 == 0;
 
-            return on ? Color.FromArgb(235, 220, 70, 60) : Color.FromArgb(150, 130, 45, 40);
+            var on = ((Environment.TickCount - _blinkSince) / 420) % 2 == 0;
+            if (on) return colour;
+
+            return Color.FromArgb(150, colour.R / 2, colour.G / 2, colour.B / 2);
+        }
+
+        private static Color OnRamp(float t)
+        {
+            if (t <= Stops[0]) return Ramp[0];
+            if (t >= Stops[Stops.Length - 1]) return Ramp[Ramp.Length - 1];
+
+            for (var i = 1; i < Stops.Length; i++)
+            {
+                if (t > Stops[i]) continue;
+
+                var span = Stops[i] - Stops[i - 1];
+                var u = span <= 0.0001f ? 0f : (t - Stops[i - 1]) / span;
+
+                return Mix(Ramp[i - 1], Ramp[i], u);
+            }
+
+            return Ramp[Ramp.Length - 1];
+        }
+
+        private static Color Mix(Color a, Color b, float t)
+        {
+            return Color.FromArgb(
+                (int)(a.A + (b.A - a.A) * t),
+                (int)(a.R + (b.R - a.R) * t),
+                (int)(a.G + (b.G - a.G) * t),
+                (int)(a.B + (b.B - a.B) * t));
         }
 
         // ==================================================================
