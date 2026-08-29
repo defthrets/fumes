@@ -273,13 +273,13 @@ def frame(t, fraction, litres, owed, price=1.27):
     # Pump icon, top right, with its drip.
     bob = math.sin(t * math.pi * 2 / 1.9) * 0.006 if not full else 0.0
     tilt = math.sin(t * math.pi * 2 / 2.7) * 7.0 if not full else 0.0
-    icon(img, "fuel.png", left + W - 0.034, TOP + 0.064 + bob, 0.050, (245, 175, 55, 235), tilt)
+    icon(img, "fuel.png", left + W - 0.034, TOP + 0.084 + bob, 0.050, (245, 175, 55, 235), tilt)
 
     if not full:
         p = (t % 1.25) / 1.25
         alpha = int(210 * min(p * 6.0, min((1.0 - p) * 3.5, 1.0)))
         if alpha > 4:
-            icon(img, "drop.png", left + W - 0.034, TOP + 0.024 + p * p * 0.022, 0.016,
+            icon(img, "drop.png", left + W - 0.034, TOP + 0.036 + p * p * 0.030, 0.016,
                  (245, 185, 70, alpha))
 
     # Numbers: labels hard left, values hard right.

@@ -58,6 +58,9 @@ namespace Fumes
         /// <summary>Whether the engine under the player is currently being held off for want of fuel.</summary>
         private bool _stalled;
 
+        /// <summary>Seconds since the last look round for pumps to correct the map with.</summary>
+        private float _sinceSurvey;
+
         public Main()
         {
             _cfg = Core.Settings.Load();
@@ -105,6 +108,8 @@ namespace Fumes
 
                 _stations.ShowBlips();
                 _tanks.Update(dt);
+
+                Survey(dt);
 
                 Watch(me);
                 Burn(dt);
@@ -289,6 +294,46 @@ namespace Fumes
             }
         }
 
+        /// <summary>
+        /// Looks round for a real petrol pump and moves the map onto it.
+        ///
+        /// The shipped station list was written down by hand and some of it is wrong -- a blip
+        /// on the far side of a block from the forecourt it names. Nothing depends on those
+        /// numbers, because pumps are found as OBJECTS and not by coordinate, so a bad one only
+        /// ever misplaced a marker. But a misplaced marker is still the thing you navigate by,
+        /// and there is no way to check twenty-six coordinates by hand that is not simply
+        /// driving to all of them.
+        ///
+        /// So the mod checks them itself, out of the only source that cannot be wrong: the
+        /// pumps. Drive within sight of one and whichever station is nearest snaps onto it.
+        ///
+        /// Every two seconds, and only that: a sweep is seven native calls and the answer
+        /// cannot change faster than a car can move.
+        /// </summary>
+        private void Survey(float dt)
+        {
+            if (!_cfg.LearnStations) return;
+
+            _sinceSurvey += dt;
+            if (_sinceSurvey < 2f) return;
+            _sinceSurvey = 0f;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var pump = _pumps.Sweep(me.Position, 70f);
+                if (pump == null || !pump.Exists()) return;
+
+                if (_stations.Learn(pump.Position)) _stations.Reblip();
+            }
+            catch (Exception ex)
+            {
+                Log.Once("survey", "Could not check the station map: " + ex.Message);
+            }
+        }
+
         private void Fail(Exception ex)
         {
             _failures++;
@@ -331,6 +376,7 @@ namespace Fumes
             try { _refuel.Shutdown(); } catch (Exception ex) { Log.Error("Refuel shutdown", ex); }
             try { _buttons.Dispose(); } catch (Exception ex) { Log.Error("Button bar cleanup", ex); }
             try { _stations.RemoveBlips(); } catch (Exception ex) { Log.Error("Blip cleanup", ex); }
+            try { _stations.SaveCorrections(); } catch (Exception ex) { Log.Error("Station corrections", ex); }
             try { _tanks.SaveToDisk(); } catch (Exception ex) { Log.Error("Final save", ex); }
 
             Log.Info(Build.Name + " stopped cleanly.");

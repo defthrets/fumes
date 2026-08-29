@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using GTA;
 using GTA.Math;
@@ -40,6 +41,12 @@ namespace Fumes.Station
 
         /// <summary>Which way this instance settled, once it has had to decide.</summary>
         private HoseMode _mode;
+
+        /// <summary>Lengthways bands the hose is shaded in. See Stroke.</summary>
+        private const int Bands = 5;
+
+        /// <summary>Most segments the hose is drawn in, however many vertices the rope has.</summary>
+        private const int MaxSegments = 14;
 
         public Hose(Settings cfg)
         {
@@ -285,11 +292,6 @@ namespace Fumes.Station
         {
             if (points == null || points.Length < 2) return;
 
-            var colour = Color.FromArgb(255,
-                                        Clamp255(_cfg.HoseRed),
-                                        Clamp255(_cfg.HoseGreen),
-                                        Clamp255(_cfg.HoseBlue));
-
             var radius = _cfg.HoseThickness * 0.5f;
             if (radius < 0.002f) radius = 0.002f;
 
@@ -297,41 +299,97 @@ namespace Fumes.Station
             try { eye = GameplayCamera.Position; }
             catch { eye = points[0]; }
 
-            var haveEdge = false;
-            Vector3 prevLeft = Vector3.Zero, prevRight = Vector3.Zero;
+            // A stride, so a rope with forty vertices does not cost forty times the polygons.
+            // Over three or four metres of hose the curve is smooth at a dozen segments and
+            // nobody can tell; the band shading below multiplies whatever this costs by five.
+            var stride = 1 + points.Length / MaxSegments;
 
-            for (var i = 0; i < points.Length; i++)
+            var centres = new List<Vector3>();
+            var sides = new List<Vector3>();
+
+            for (var i = 0; i < points.Length; i += stride)
             {
-                // The hose's direction AT this point: the span between its neighbours, so the
-                // ribbon turns smoothly through a bend instead of kinking at every vertex.
+                // Always include the very last point, or the hose stops short of the hand.
+                var index = i;
+                if (i + stride >= points.Length) index = points.Length - 1;
+
                 Vector3 dir;
-                if (i == 0) dir = points[1] - points[0];
-                else if (i == points.Length - 1) dir = points[i] - points[i - 1];
-                else dir = points[i + 1] - points[i - 1];
+                if (index == 0) dir = points[1] - points[0];
+                else if (index == points.Length - 1) dir = points[index] - points[index - 1];
+                else dir = points[Math.Min(index + stride, points.Length - 1)] - points[index - 1];
 
                 if (dir.Length() < 0.00001f) continue;
 
-                var toEye = eye - points[i];
-
-                var side = Vector3.Cross(dir, toEye);
+                var side = Vector3.Cross(dir, eye - points[index]);
                 if (side.Length() < 0.00001f) side = Vector3.Cross(dir, Vector3.WorldUp);
                 if (side.Length() < 0.00001f) continue;
 
                 side.Normalize();
-                side *= radius;
 
-                var l = points[i] + side;
-                var r = points[i] - side;
+                centres.Add(points[index]);
+                sides.Add(side * radius);
 
-                if (haveEdge)
-                {
-                    Quad(prevLeft, prevRight, l, r, colour);
-                }
-
-                prevLeft = l;
-                prevRight = r;
-                haveEdge = true;
+                if (index == points.Length - 1) break;
             }
+
+            if (centres.Count < 2) return;
+
+            // ROUNDNESS IS SHADING, NOT GEOMETRY.
+            //
+            // The ribbon is one flat strip facing the camera, and a flat strip of one colour
+            // looks exactly like what it is: a flat strip. Building an actual tube out of
+            // triangles would be six or eight times the polygons for something nobody can see
+            // the far side of anyway.
+            //
+            // So the strip is split lengthways into bands and each is shaded as if it were a
+            // cylinder: dark at the rims, lifting through the middle, with a narrow sheen down
+            // the centre. That is the whole trick behind every drawn cable in every game, and
+            // at this size it is indistinguishable from the real thing.
+            for (var b = 0; b < Bands; b++)
+            {
+                // Across the width, -1 at one rim to +1 at the other.
+                var u0 = -1f + 2f * b / Bands;
+                var u1 = -1f + 2f * (b + 1) / Bands;
+                var mid = (u0 + u1) * 0.5f;
+
+                var colour = Rubber(mid);
+
+                for (var i = 0; i < centres.Count - 1; i++)
+                {
+                    var a0 = centres[i] + sides[i] * u0;
+                    var a1 = centres[i] + sides[i] * u1;
+                    var b0 = centres[i + 1] + sides[i + 1] * u0;
+                    var b1 = centres[i + 1] + sides[i + 1] * u1;
+
+                    Quad(a0, a1, b0, b1, colour);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The colour of the hose at a point across its width, u running -1 rim to +1 rim.
+        ///
+        /// sqrt(1 - u squared) is the height of a circle at that width -- which, for a cylinder
+        /// lit from the viewer's side, is also how square-on its surface is to the light. So it
+        /// doubles as the shading term and costs one square root. The power term on top of it
+        /// is the sheen: narrow, because a wide one turns rubber into chrome.
+        /// </summary>
+        private Color Rubber(float u)
+        {
+            var round = (float)Math.Sqrt(Math.Max(0f, 1f - u * u));
+
+            var tone = 0.40f + 0.60f * round;
+            var sheen = (float)Math.Pow(round, 9) * 0.85f;
+
+            return Color.FromArgb(255,
+                                  Shade(_cfg.HoseRed, tone, sheen),
+                                  Shade(_cfg.HoseGreen, tone, sheen),
+                                  Shade(_cfg.HoseBlue, tone, sheen));
+        }
+
+        private static int Shade(int channel, float tone, float sheen)
+        {
+            return Clamp255((int)(Clamp255(channel) * tone + 58f * sheen));
         }
 
         /// <summary>

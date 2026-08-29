@@ -103,12 +103,12 @@ namespace Fumes.UI
                 // The pump, top right, bobbing and dripping while fuel moves. It goes still at
                 // full: a logo swaying on a finished pump reads as a stuck animation, not life.
                 _pump.Scale = 0.050f;
-                _pump.Draw(left + W - 0.034f, Top + 0.064f, !full);
+                _pump.Draw(left + W - 0.034f, Top + 0.084f, !full);
 
                 // The drip hangs ABOVE the bowser rather than under it. Under, it fell into
                 // the numbers column and read as a stray dot on the price; above, the pump has
-                // clear panel over it and the drop has somewhere to be.
-                Drip(left + W - 0.034f, Top + 0.024f, !full);
+                // clear panel over it and the drop has somewhere to fall toward.
+                Drip(left + W - 0.034f, Top + 0.036f, !full);
 
                 Numbers(left, litres, pricePerLitre, owed, free);
 
@@ -466,7 +466,7 @@ namespace Fumes.UI
             if (!flowing || _drip.Missing) return;
 
             const float period = 1.25f;
-            const float fall = 0.022f;
+            const float fall = 0.030f;
 
             var p = (Environment.TickCount % (int)(period * 1000)) / (period * 1000f);
 

@@ -15,6 +15,9 @@ namespace Fumes.Station
         public float PriceMultiplier = 1f;
         public Blip Blip;
 
+        /// <summary>Whether this position came from a real pump rather than the shipped list.</summary>
+        public bool Learned;
+
         public string Title => Brand + " - " + Name;
     }
 
@@ -38,6 +41,7 @@ namespace Fumes.Station
         {
             _cfg = cfg;
             Load();
+            LoadCorrections();
         }
 
         public int Count => _all.Count;
@@ -83,6 +87,41 @@ namespace Fumes.Station
 
         /// <summary>When the blips are next worth checking on. See ShowBlips.</summary>
         private int _nextBlipCheck;
+
+        /// <summary>How far a listed station may be from a real pump before it is moved onto it.</summary>
+        private const float Tolerance = 12f;
+
+        /// <summary>
+        /// How far afield a pump will look for a station to move.
+        ///
+        /// EIGHTY METRES, AND THE NUMBER IS NOT A FEELING. The two closest stations in the
+        /// shipped list -- Route 68 West and Route 68 East -- are 168m apart, and Grove Street
+        /// and Davis Avenue are 181m. A claim radius has to stay under HALF the closest pair,
+        /// or a pump sitting between two stations can be claimed by the wrong one, and both of
+        /// them can end up snapped onto the same forecourt. Half of 168 is 84.
+        ///
+        /// The first draft of this used 250m, which would have done exactly that.
+        ///
+        /// If stations are ever added to the data file closer together than about 170m, this
+        /// number has to come down with them.
+        /// </summary>
+        private const float Claim = 80f;
+
+        /// <summary>
+        /// Near enough that a pump is presumed to belong to a listed station we simply cannot
+        /// move -- so it is reported rather than duplicated.
+        ///
+        /// The band between Claim and this is the honest gap: a pump 80-250m from a listed
+        /// station either means that station's coordinate is badly wrong, or means there is a
+        /// second forecourt there that nothing has listed. Nothing in the position alone can
+        /// tell those apart, so the mod does neither and says so in the log instead.
+        /// </summary>
+        private const float Quiet = 250f;
+
+        private bool _correctionsDirty;
+
+        /// <summary>Corrections could not be read, so they must not be overwritten either.</summary>
+        private bool _correctionsUnreadable;
 
         /// <summary>
         /// Puts the map blips down. Safe to call every tick; it does the work once.
@@ -146,6 +185,213 @@ namespace Fumes.Station
             }
 
             return best;
+        }
+
+        // ==================================================================
+        // Correcting itself
+        // ==================================================================
+
+        /// <summary>
+        /// Moves the nearest listed station onto a pump that has actually been seen, or adds
+        /// one where nothing is listed at all.
+        ///
+        /// Returns true when something changed, so the caller can put the blips down again.
+        /// </summary>
+        public bool Learn(Vector3 pump)
+        {
+            if (!_cfg.LearnStations) return false;
+
+            try
+            {
+                var best = Nearest(pump, Claim);
+                var bestDist = best == null ? float.MaxValue : best.Position.DistanceTo(pump);
+
+                if (best == null)
+                {
+                    // Nothing close enough to move. Before inventing a station, check whether
+                    // there is one just outside claiming range -- because that is far more
+                    // likely to be a badly written-down coordinate than a second forecourt, and
+                    // adding one would leave the map showing two.
+                    var stray = Nearest(pump, Quiet);
+
+                    if (stray != null)
+                    {
+                        Log.Once("stray-" + stray.Title,
+                                 stray.Title + " is " + stray.Position.DistanceTo(pump).ToString("0") +
+                                 "m from a real pump -- too far to move safely, since stations in " +
+                                 "the list come as close as 168m to each other. Its coordinate in " +
+                                 "stations.json is probably wrong. Nothing has been changed.");
+                        return false;
+                    }
+
+                    // Genuinely nothing listed anywhere near: a station the shipped list does
+                    // not know about, which is exactly what a map mod produces. The brand is
+                    // unknowable, so it is not invented.
+                    var place = Zone(pump);
+
+                    _all.Add(new Forecourt
+                    {
+                        Name = place,
+                        Brand = "Fuel",
+                        Position = pump,
+                        PriceMultiplier = 1f,
+                        Learned = true
+                    });
+
+                    Log.Info("Found a station nothing had listed, at " + place + ".");
+                    _correctionsDirty = true;
+                    return true;
+                }
+
+                if (bestDist <= Tolerance) return false;
+
+                Log.Info(best.Title + " was " + bestDist.ToString("0") +
+                         "m from its pumps; moved onto them.");
+
+                best.Position = pump;
+                best.Learned = true;
+                _correctionsDirty = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("learn", "Could not correct a station: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>The closest station to a point within a radius, or null.</summary>
+        private Forecourt Nearest(Vector3 to, float radius)
+        {
+            Forecourt best = null;
+            var bestDist = radius;
+
+            foreach (var f in _all)
+            {
+                var d = f.Position.DistanceTo(to);
+                if (d >= bestDist) continue;
+
+                best = f;
+                bestDist = d;
+            }
+
+            return best;
+        }
+
+        private static string Zone(Vector3 at)
+        {
+            try
+            {
+                var name = World.GetZoneLocalizedName(at);
+                return string.IsNullOrEmpty(name) ? "Gas Station" : name;
+            }
+            catch
+            {
+                return "Gas Station";
+            }
+        }
+
+        /// <summary>Takes the blips down so the next ShowBlips puts them back in the right place.</summary>
+        public void Reblip()
+        {
+            RemoveBlips();
+            _nextBlipCheck = 0;
+        }
+
+        private void LoadCorrections()
+        {
+            var root = JsonFile.Read(Paths.StationsLocalFile, out var how);
+
+            if (how == ReadResult.Missing) return;
+
+            if (how != ReadResult.Ok || root == null)
+            {
+                // Deliberately NOT starting empty. A file that is there but unreadable is a
+                // file with somebody's corrections in it, and rewriting it would throw them
+                // away. Leave it for a human and do not touch it this session.
+                Log.Error("stations.local.json is there but could not be read - leaving it alone. " +
+                          "Learned positions will not be saved this session.");
+                _correctionsUnreadable = true;
+                return;
+            }
+
+            try
+            {
+                var applied = 0;
+
+                foreach (var node in root["stations"].Items)
+                {
+                    var brand = node["brand"].AsString("");
+                    var name = node["name"].AsString("");
+                    var at = new Vector3(node["x"].AsFloat(0f), node["y"].AsFloat(0f), node["z"].AsFloat(0f));
+
+                    var existing = _all.Find(f =>
+                        string.Equals(f.Brand, brand, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
+
+                    if (existing != null)
+                    {
+                        existing.Position = at;
+                        existing.Learned = true;
+                    }
+                    else
+                    {
+                        _all.Add(new Forecourt
+                        {
+                            Brand = string.IsNullOrEmpty(brand) ? "Fuel" : brand,
+                            Name = string.IsNullOrEmpty(name) ? "Gas Station" : name,
+                            Position = at,
+                            PriceMultiplier = node["price"].AsFloat(1f),
+                            Learned = true
+                        });
+                    }
+
+                    applied++;
+                }
+
+                if (applied > 0) Log.Info("Applied " + applied + " corrected station position(s).");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("stations.local.json is not shaped as expected.", ex);
+                _correctionsUnreadable = true;
+            }
+        }
+
+        /// <summary>Writes the corrections. Safe to call when there are none.</summary>
+        public void SaveCorrections()
+        {
+            if (!_correctionsDirty || _correctionsUnreadable) return;
+
+            try
+            {
+                var list = Json.Array();
+
+                foreach (var f in _all)
+                {
+                    if (!f.Learned) continue;
+
+                    list.Add(Json.Object()
+                        .Set("brand", f.Brand)
+                        .Set("name", f.Name)
+                        .Set("x", Math.Round(f.Position.X, 2))
+                        .Set("y", Math.Round(f.Position.Y, 2))
+                        .Set("z", Math.Round(f.Position.Z, 2))
+                        .Set("price", f.PriceMultiplier));
+                }
+
+                var root = Json.Object()
+                    .Set("_readme", "Station positions this install worked out from real pumps. " +
+                                    "Delete this file to go back to the shipped coordinates.")
+                    .Set("version", Build.Version)
+                    .Set("stations", list);
+
+                if (JsonFile.Write(Paths.StationsLocalFile, root)) _correctionsDirty = false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not save corrected station positions.", ex);
+            }
         }
 
         /// <summary>

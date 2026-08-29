@@ -86,6 +86,19 @@ namespace Fumes.Station
             return _found;
         }
 
+        /// <summary>
+        /// A pump anywhere within radius, WITHOUT touching the interaction cache.
+        ///
+        /// Separate from Nearest on purpose. Nearest holds on to what it found so a prompt does
+        /// not flicker and a hose in use is not dropped mid-frame; the surveyor asks about a
+        /// completely different radius for a completely different reason, and letting the two
+        /// share a cache would have one of them answering the other one's question.
+        /// </summary>
+        public Prop Sweep(Vector3 from, float radius)
+        {
+            return Scan(from, radius);
+        }
+
         private Prop Scan(Vector3 from, float radius)
         {
             Prop best = null;

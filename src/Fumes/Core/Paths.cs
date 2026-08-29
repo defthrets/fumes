@@ -189,9 +189,18 @@ namespace Fumes.Core
             }
         }
 
-        // WRITTEN, so both follow the writability fallback rather than sitting next to the dll.
+        // WRITTEN, so these follow the writability fallback rather than sitting next to the dll.
         public static string LogFile => Path.Combine(Writable, "Fumes.log");
         public static string TanksFile => Path.Combine(Writable, "tanks.json");
+
+        /// <summary>
+        /// Station positions the mod worked out for itself, kept APART from the shipped list.
+        ///
+        /// stations.json is content: it ships, it gets replaced by updates, and a player may
+        /// have edited it. Corrections are neither of those things -- they belong to this
+        /// install and they must survive an update that rewrites the shipped file.
+        /// </summary>
+        public static string StationsLocalFile => Path.Combine(Writable, "stations.local.json");
 
         private static void EnsureDir(string path)
         {

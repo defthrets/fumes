@@ -161,6 +161,20 @@ namespace Fumes.Core
         public float PriceVariance = 0.18f;
 
         public bool ShowBlips = true;
+
+        /// <summary>
+        /// Whether the mod corrects its own station coordinates from the pumps it finds.
+        ///
+        /// The shipped list was written down by hand and some of it is simply wrong -- a blip
+        /// on the far side of a block from the forecourt it names. Nothing depends on those
+        /// numbers (pumps are found as objects, not by coordinate) so a wrong one only ever
+        /// misplaced a marker, but a misplaced marker is still the thing you navigate by.
+        ///
+        /// With this on, driving within sight of any petrol pump moves the nearest listed
+        /// station onto it, and a pump with no station listed anywhere near becomes a new one.
+        /// Corrections go to stations.local.json, never to the shipped file.
+        /// </summary>
+        public bool LearnStations = true;
         public bool ChargeMoney = true;
 
         // ---- the nozzle and its hose -----------------------------------------
@@ -220,7 +234,7 @@ namespace Fumes.Core
         public float NozzleOffsetX = 0.055f;
         public float NozzleOffsetY = 0.02f;
         public float NozzleOffsetZ = 0.0f;
-        public float NozzleRotX = 0f;
+        public float NozzleRotX = 45f;
         public float NozzleRotY = 270f;
         public float NozzleRotZ = 0f;
 
@@ -253,7 +267,7 @@ namespace Fumes.Core
         /// the payment panel. The base-game pumps are a little under two metres, so this sits
         /// just below the light box on the lid.
         /// </summary>
-        public float HoseAnchorZ = 1.52f;
+        public float HoseAnchorZ = 1.85f;
 
         // ---- HUD --------------------------------------------------------------
         /// <summary>Top-left help box, or the bottom-right button bar.</summary>
@@ -369,6 +383,7 @@ namespace Fumes.Core
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
                 s.ShowBlips = ini.GetBool("Station", "ShowBlips", s.ShowBlips);
+                s.LearnStations = ini.GetBool("Station", "LearnStations", s.LearnStations);
                 s.ChargeMoney = ini.GetBool("Station", "ChargeMoney", s.ChargeMoney);
 
                 s.InteractKey = ini.GetKey("Nozzle", "InteractKey", s.InteractKey);
