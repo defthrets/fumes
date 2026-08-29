@@ -14,7 +14,7 @@ curves clean at the size these are actually drawn.
 """
 
 import os
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), "data", "icons")
@@ -90,10 +90,72 @@ def droplet():
     save(img, "drop.png")
 
 
+# ---------------------------------------------------------------------------
+# Rotated glyphs for the upright gauge
+# ---------------------------------------------------------------------------
+#
+# GTA CANNOT ROTATE TEXT. DRAW_TEXT takes no angle and there is no argument that
+# gives it one -- but CustomSprite has a Rotation, and a sprite is just a PNG. So
+# text that has to run up the side of a vertical bar is not text at all: it is
+# rendered here, turned on its side, and drawn as pictures.
+#
+# One file per character rather than a strip, because CustomSprite has no
+# texture-coordinate rectangle -- it draws a whole file or nothing, so a sprite
+# sheet could not be indexed into.
+
+GLYPH = 56          # canvas per character, before rotation
+
+
+def _face(px):
+    for name in ("ariblk.ttf", "arialbd.ttf", "arial.ttf", "segoeuib.ttf"):
+        try:
+            return ImageFont.truetype(name, px)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def _rotated(text, box_w, box_h, px):
+    """Draws text into a box and turns it a quarter turn, so it reads bottom-to-top."""
+    img = Image.new("RGBA", (box_w, box_h), CLEAR)
+    d = ImageDraw.Draw(img)
+    f = _face(px)
+
+    left, top, right, bottom = d.textbbox((0, 0), text, font=f)
+    d.text(((box_w - (right - left)) / 2 - left,
+            (box_h - (bottom - top)) / 2 - top), text, font=f, fill=WHITE)
+
+    # Anti-clockwise, so the first character sits at the bottom and the eye reads
+    # upward -- the way a vertical label on a machine is written.
+    return img.rotate(90, expand=True, resample=Image.BICUBIC)
+
+
+def _save_exact(img, name):
+    """Saves without the square resize the icons use; these are already the right shape."""
+    if not os.path.isdir(OUT):
+        os.makedirs(OUT)
+
+    path = os.path.join(OUT, name)
+    img.save(path, "PNG")
+    print("  %-16s %d x %d" % (name, img.size[0], img.size[1]))
+
+
+def glyphs():
+    for n in range(10):
+        _save_exact(_rotated(str(n), GLYPH, GLYPH, 44), "g%d.png" % n)
+
+    _save_exact(_rotated("%", GLYPH, GLYPH, 38), "gpct.png")
+
+    # The word as one picture. Kerning inside a word is not worth four more files,
+    # and it only ever says one thing.
+    _save_exact(_rotated("FUEL", GLYPH * 4, GLYPH, 40), "label_fuel.png")
+
+
 def main():
     print("Writing icons to " + OUT)
     fuel_pump()
     droplet()
+    glyphs()
     print("Done. Deploy with:  .\\build.ps1 -Deploy -FreshData")
 
 

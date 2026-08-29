@@ -19,6 +19,7 @@ namespace Fumes.UI
     internal sealed class Gauge
     {
         private readonly Settings _cfg;
+        private readonly Glyphs _glyphs = new Glyphs();
 
         /// <summary>Flash phase for the empty warning. Wall clock, so it blinks at the same rate always.</summary>
         private int _blinkSince;
@@ -72,7 +73,27 @@ namespace Fumes.UI
                     if (fraction > 0.001f)
                     {
                         var fill = h * fraction;
-                        Draw.Bar(x, y + h - fill, w, fill, colour);
+                        var top = y + h - fill;
+
+                        Draw.Bar(x, top, w, fill, colour);
+
+                        // A highlight sliding up the fuel. The bar moves about a pixel a
+                        // minute on its own, which is not movement anybody can see -- without
+                        // something travelling, a working gauge looks like a painted one.
+                        if (fill > 0.012f)
+                        {
+                            var band = 0.010f;
+                            var phase = (Environment.TickCount % 2400) / 2400f;
+                            var bandY = y + h - (fill + band) * phase;
+
+                            var lo = bandY < top ? top : bandY;
+                            var hi = bandY + band > y + h ? y + h : bandY + band;
+
+                            if (hi > lo)
+                            {
+                                Draw.Bar(x, lo, w, hi - lo, Color.FromArgb(60, 255, 250, 225));
+                            }
+                        }
                     }
 
                     // The reserve mark, measured from the bottom for the same reason.
@@ -91,17 +112,23 @@ namespace Fumes.UI
 
                 if (!_cfg.ShowNumbers) return;
 
-                // NOTHING IS WRITTEN ON A VERTICAL BAR. It is a finger's width across, and any
-                // text long enough to say something useful is several times wider than the
-                // thing it labels -- which stops being a label and becomes a caption sitting in
-                // the middle of the map. The colour is the reading: green through amber to red
-                // is a number anybody can take in without looking straight at it, which is the
-                // whole reason for the ramp.
-                //
-                // So numbers are a horizontal-bar affair, and there they go INSIDE the bar,
-                // because between the minimap and the bottom of the screen there is room for a
-                // bar or a line of text and not for both.
-                if (_cfg.Vertical) return;
+                if (_cfg.Vertical)
+                {
+                    // TURNED ON ITS SIDE, because a bar this narrow cannot hold upright text
+                    // and GTA cannot rotate any. The letters are pictures -- see Glyphs -- and
+                    // they run up the bar, which is the only direction there is room in.
+                    var ink = Color.FromArgb(215, 18, 18, 20);
+
+                    var pct = (int)Math.Round(fraction * 100f);
+                    if (pct > 99) pct = 99;
+
+                    var pitch = w * 1.25f;
+                    var text = pct.ToString(CultureInfo.InvariantCulture) + "%";
+
+                    _glyphs.Number(text, x + w / 2f, y + h - 0.004f, w * 0.85f, pitch, ink);
+                    _glyphs.Label(x + w / 2f, y + 0.026f, w * 0.85f, 0.040f, ink);
+                    return;
+                }
 
                 var label = stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun;
                 var reading = label + "   " + Volume(tank.Litres) + " / " + Volume(tank.Capacity);

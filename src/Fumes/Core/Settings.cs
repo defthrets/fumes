@@ -204,7 +204,7 @@ namespace Fumes.Core
         /// little of it that shows through the drawn hose reads as shadow rather than as beige
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 5;
+        public int HoseRopeType = 4;
 
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
         public int HoseRed = 20;
@@ -244,7 +244,7 @@ namespace Fumes.Core
         public float NozzleOffsetZ = 0.0f;
         public float NozzleRotX = 0f;
         public float NozzleRotY = 270f;
-        public float NozzleRotZ = 45f;
+        public float NozzleRotZ = -90f;
 
         /// <summary>
         /// In-game tuning for the six numbers above.
@@ -253,6 +253,19 @@ namespace Fumes.Core
         /// to the log in ini form. Off by default: it is a workbench, not a feature.
         /// </summary>
         public bool TuneNozzle = false;
+
+        /// <summary>
+        /// Which hand the nozzle goes in.
+        ///
+        /// LEFT, because the filling animation says so. Every clip reaches with one particular
+        /// arm, and the handshake reaches with the left -- so a nozzle bolted to the right hand
+        /// leaves him extending an empty hand at the car while the nozzle hangs at his other
+        /// side. Nothing about the prop is wrong there; it is simply in the wrong hand.
+        ///
+        /// Changing the fill animation to one that reaches with the right means changing this
+        /// back. They are two halves of one decision.
+        /// </summary>
+        public bool LeftHand = true;
 
         /// <summary>Whether a marker is drawn on the vehicle's filler while you carry the nozzle.</summary>
         public bool ShowFillerMarker = false;
@@ -336,10 +349,10 @@ namespace Fumes.Core
         /// </summary>
         public bool Vertical = true;
 
-        public float GaugeX = 0.1345f;
-        public float GaugeY = 0.8360f;
-        public float GaugeWidth = 0.0085f;
-        public float GaugeHeight = 0.1400f;
+        public float GaugeX = 0.1255f;
+        public float GaugeY = 0.8320f;
+        public float GaugeWidth = 0.0070f;
+        public float GaugeHeight = 0.1470f;
 
         /// <summary>
         /// Live placement for the gauge, the same workbench the nozzle has.
@@ -354,7 +367,7 @@ namespace Fumes.Core
         /// </summary>
         public bool TuneGauge = false;
         public Units Units = Units.Litres;
-        public bool ShowNumbers = false;
+        public bool ShowNumbers = true;
 
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
@@ -460,6 +473,7 @@ namespace Fumes.Core
                 s.NozzleRotY = ini.GetFloat("Nozzle", "NozzleRotY", s.NozzleRotY, -360f, 360f);
                 s.NozzleRotZ = ini.GetFloat("Nozzle", "NozzleRotZ", s.NozzleRotZ, -360f, 360f);
                 s.TuneNozzle = ini.GetBool("Nozzle", "TuneNozzle", s.TuneNozzle);
+                s.LeftHand = ini.GetBool("Nozzle", "LeftHand", s.LeftHand);
                 s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
                 s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
                 s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);

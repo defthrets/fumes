@@ -241,7 +241,7 @@ namespace Fumes.Station
                 // Fall through to whatever we can still name.
             }
 
-            return _pump != null && _pump.Exists() ? _pump.Position : Nozzle.HandPosition();
+            return _pump != null && _pump.Exists() ? _pump.Position : _nozzle.HandPosition();
         }
 
         // ==================================================================
@@ -258,7 +258,7 @@ namespace Fumes.Station
             LockHands();
 
             var anchor = Anchor();
-            _hose.Update(anchor, Nozzle.HandPosition());
+            _hose.Update(anchor, _nozzle.HandPosition());
 
             if (_hazard.Update(_pump.Position, false)) { Abandon("the pump went up"); return; }
 
@@ -442,7 +442,7 @@ namespace Fumes.Station
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
             var anchor = Anchor();
-            _hose.Update(anchor, Nozzle.HandPosition());
+            _hose.Update(anchor, _nozzle.HandPosition());
 
             if (_hazard.Update(_pump.Position, true)) { Abandon("the pump went up"); return; }
 

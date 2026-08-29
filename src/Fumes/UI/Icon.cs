@@ -119,6 +119,34 @@ namespace Fumes.UI
             }
         }
 
+        /// <summary>
+        /// Draws it at an explicit width and height rather than square.
+        ///
+        /// The square Draw is right for icons, which are square files. A letter turned on its
+        /// side is not: label_fuel.png is one part wide to four tall, and drawn square it is
+        /// either a smear or a postage stamp.
+        /// </summary>
+        public void DrawSized(float centreX, float centreY, float width, float height, Color tint)
+        {
+            if (_missing) return;
+
+            try
+            {
+                if (!Ready()) return;
+
+                _sprite.Size = new SizeF(width * CanvasW, height * CanvasH);
+                _sprite.Position = new PointF(centreX * CanvasW, centreY * CanvasH);
+                _sprite.Rotation = 0f;
+                _sprite.Color = tint;
+                _sprite.Draw();
+            }
+            catch (Exception ex)
+            {
+                _missing = true;
+                Log.Once("icon-" + _path, "Could not draw " + _path + ": " + ex.Message);
+            }
+        }
+
         private bool Ready()
         {
             if (_sprite != null) return true;

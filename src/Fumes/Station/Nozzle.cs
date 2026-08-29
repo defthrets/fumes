@@ -46,17 +46,21 @@ namespace Fumes.Station
         };
 
         /// <summary>
-        /// PH_R_Hand.
+        /// PH_R_Hand and PH_L_Hand.
         ///
         /// NOT SKEL_R_Hand (57005), which is the wrist joint the arm deforms around -- a prop
         /// hung off that sits beside the fist and moves again with every clip that changes the
-        /// grip. 28422 is a non-deforming helper the animators put there specifically to hang
-        /// props on.
+        /// grip. These two are non-deforming helpers the animators put there specifically to
+        /// hang props on.
         ///
-        /// Props AUTHORED for that bone want no offset and no rotation. This one is not: it is
-        /// a scene prop whose origin is not its grip, so it needs the placement in Settings.
+        /// Props AUTHORED for those bones want no offset and no rotation. This one is not: it
+        /// is a scene prop whose origin is not its grip, so it needs the placement in Settings.
         /// </summary>
         private const int RightHand = 28422;
+        private const int LeftHand = 60309;
+
+        /// <summary>Whichever hand the settings put it in. See Settings.LeftHand.</summary>
+        private int HandBone => _cfg.LeftHand ? LeftHand : RightHand;
 
         private readonly Settings _cfg;
 
@@ -91,13 +95,21 @@ namespace Fumes.Station
         /// <summary>Whether the nozzle is currently in his hand.</summary>
         public bool Out => _prop != null && _prop.Exists();
 
-        /// <summary>The hand, which is where the hose really ends.</summary>
-        public static Vector3 HandPosition()
+        /// <summary>
+        /// The hand, which is where the hose really ends.
+        ///
+        /// No longer static: which hand it is comes from the settings now, and a hose that
+        /// still ran to the right hand while the nozzle sat in the left would cross his body.
+        /// </summary>
+        public Vector3 HandPosition()
         {
             try
             {
                 var me = Game.Player.Character;
-                if (me != null && me.Exists()) return me.Bones[Bone.PHRightHand].Position;
+                if (me != null && me.Exists())
+                {
+                    return me.Bones[_cfg.LeftHand ? Bone.PHLeftHand : Bone.PHRightHand].Position;
+                }
             }
             catch
             {
@@ -184,7 +196,7 @@ namespace Fumes.Station
                 var me = Game.Player.Character;
                 if (me == null || !me.Exists() || !Out) return;
 
-                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, RightHand);
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, HandBone);
 
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _prop.Handle, me.Handle, bone,
                               _cfg.NozzleOffsetX, _cfg.NozzleOffsetY, _cfg.NozzleOffsetZ,
