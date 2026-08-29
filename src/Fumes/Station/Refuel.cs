@@ -137,7 +137,12 @@ namespace Fumes.Station
             // end the same way, and none of them should leave a hose hanging in the air.
             if (!me.IsAlive || me.IsInVehicle() || me.IsEnteringVehicle)
             {
-                if (Busy) Abandon("the player left on foot");
+                // DROPPED, NOT DELETED. Getting into a car with the nozzle still in your hand
+                // used to make it vanish, which quietly made "put it back" optional -- you
+                // could always just drive off and the mod would tidy up after you. Now it ends
+                // up on the tarmac like it would if you really did that, and the only two ways
+                // to finish cleanly are to hang it up or to put it down.
+                if (Busy) DropIt("left on the forecourt");
                 return;
             }
 
@@ -552,6 +557,11 @@ namespace Fumes.Station
             }
 
             Notify(_stationName + ": " + receipt + (because == null ? "." : " - " + because + "."));
+
+            // You are still holding it. Said once, on the transition, rather than left to the
+            // prompt -- the prompt only appears once you are back within reach of something,
+            // and the moment you need telling is the moment the pump stops.
+            Notify("Hang the nozzle back on the pump, or ~b~" + SecondaryName() + "~s~ to drop it.");
         }
 
         // ==================================================================
@@ -721,12 +731,27 @@ namespace Fumes.Station
         {
             if (control == Control.Context && !IsDefaultKey()) label += "   [" + KeyName() + "]";
 
-            _buttons.Show(control, label);
+            if (_cfg.Prompts == PromptStyle.ButtonBar)
+            {
+                _buttons.Show(control, label);
+                if (!_buttons.Failed) return;
+            }
 
-            if (!_buttons.Failed) return;
-
-            var line = NameOf(control) + " - " + label;
+            // Help text, top left, with a REAL BUTTON GLYPH in it. ~INPUT_...~ resolves to
+            // whatever the player has that control bound to, on keyboard or pad -- and help
+            // text is the only place in the game where those tags resolve at all. Anywhere
+            // else they draw nothing, not even as literal text, which is indistinguishable
+            // from a broken icon.
+            var line = Tag(control) + " " + label;
             _fallback = string.IsNullOrEmpty(_fallback) ? line : _fallback + "~n~" + line;
+        }
+
+        /// <summary>The help-text token that draws a control as its button.</summary>
+        private static string Tag(Control control)
+        {
+            return control == Control.ContextSecondary
+                ? "~INPUT_CONTEXT_SECONDARY~"
+                : "~INPUT_CONTEXT~";
         }
 
         /// <summary>Whether InteractKey is still the key the context control itself is on.</summary>

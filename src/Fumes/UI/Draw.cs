@@ -129,12 +129,23 @@ namespace Fumes.UI
         public static void Help(string text)
         {
             if (string.IsNullOrEmpty(text)) return;
-            if (text.Length > 99) text = text.Substring(0, 99);
 
             try
             {
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_HELP, "STRING");
-                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, text);
+
+                // FED IN CHUNKS RATHER THAN TRUNCATED. One text component takes at most 99
+                // characters, and this used to just cut the string there -- which is fine for
+                // a sentence and ruinous for a prompt, because a cut landing inside a
+                // ~INPUT_CONTEXT~ tag leaves half a tag on screen as literal tildes and drops
+                // the button glyph entirely.
+                //
+                // Chunks are split on SPACES, which is what makes it safe: a formatting tag
+                // never contains one, so no split can ever land inside a tag.
+                foreach (var chunk in Chunks(text, 96))
+                {
+                    Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, chunk);
+                }
                 // playSound = FALSE. This is called every frame for as long as a prompt is
                 // on screen, and with the sound on that is the help chime sixty times a
                 // second for as long as you stand near a pump.
@@ -144,6 +155,29 @@ namespace Fumes.UI
             {
                 Log.Once("draw-help", "Help text failed: " + ex.Message);
             }
+        }
+
+        /// <summary>Splits on spaces into pieces no longer than the limit. Never splits a ~tag~.</summary>
+        private static System.Collections.Generic.List<string> Chunks(string text, int limit)
+        {
+            var pieces = new System.Collections.Generic.List<string>();
+            var current = "";
+
+            foreach (var word in text.Split(' '))
+            {
+                var candidate = current.Length == 0 ? word : current + " " + word;
+
+                if (candidate.Length <= limit) { current = candidate; continue; }
+
+                if (current.Length > 0) pieces.Add(current);
+
+                // A single word longer than the limit can only be cut, but at least it is cut
+                // here and not through the middle of the sentence.
+                current = word.Length <= limit ? word : word.Substring(0, limit);
+            }
+
+            if (current.Length > 0) pieces.Add(current);
+            return pieces;
         }
 
         /// <summary>Clears a help box early, so a prompt does not linger after you walk away.</summary>

@@ -264,58 +264,98 @@ namespace Fumes.Station
         }
 
         /// <summary>
-        /// Draws a run of points as something that reads as a TUBE rather than a wire.
+        /// Draws a run of points as a SOLID hose, out of triangles.
         ///
-        /// DRAW_LINE is one pixel wide at any distance, so a single pass looks like fishing
-        /// line however dark it is. Each segment is therefore drawn five times: once down the
-        /// middle and once at each of four offsets around it, forming a cross-section. Four
-        /// rather than two because two only look thick from one side, and the player walks all
-        /// the way round this thing.
+        /// This used to be a bundle of parallel DRAW_LINEs, and that approach cannot be made
+        /// to work however many you add. DRAW_LINE is ONE PIXEL WIDE AT ANY DISTANCE -- it does
+        /// not get thicker as you walk up to it -- so lines offset by real-world centimetres
+        /// converge into one hairline at range and separate into visibly distinct wires up
+        /// close. There is no thickness at which it reads as a hose from both.
+        ///
+        /// DRAW_POLY draws a filled triangle in world space, which does scale with distance. So
+        /// the hose is a ribbon: two triangles per segment, running down the whole length.
+        ///
+        /// The ribbon is BILLBOARDED. Its width is laid out along the axis perpendicular to
+        /// both the hose and the line to the camera, so it always presents its full width to
+        /// the viewer and reads as a round tube from every angle. A ribbon with a fixed
+        /// orientation vanishes to nothing the moment you look at it edge-on, which on a hose
+        /// you walk all the way around is most of the time.
         /// </summary>
         private void Stroke(Vector3[] points)
         {
             if (points == null || points.Length < 2) return;
 
-            var colour = Color.FromArgb(240,
+            var colour = Color.FromArgb(255,
                                         Clamp255(_cfg.HoseRed),
                                         Clamp255(_cfg.HoseGreen),
                                         Clamp255(_cfg.HoseBlue));
 
             var radius = _cfg.HoseThickness * 0.5f;
+            if (radius < 0.002f) radius = 0.002f;
 
-            for (var i = 0; i < points.Length - 1; i++)
+            Vector3 eye;
+            try { eye = GameplayCamera.Position; }
+            catch { eye = points[0]; }
+
+            var haveEdge = false;
+            Vector3 prevLeft = Vector3.Zero, prevRight = Vector3.Zero;
+
+            for (var i = 0; i < points.Length; i++)
             {
-                var a = points[i];
-                var b = points[i + 1];
+                // The hose's direction AT this point: the span between its neighbours, so the
+                // ribbon turns smoothly through a bend instead of kinking at every vertex.
+                Vector3 dir;
+                if (i == 0) dir = points[1] - points[0];
+                else if (i == points.Length - 1) dir = points[i] - points[i - 1];
+                else dir = points[i + 1] - points[i - 1];
 
-                var dir = b - a;
-                if (dir.Length() < 0.0005f) continue;
+                if (dir.Length() < 0.00001f) continue;
 
-                var side = Vector3.Cross(dir, Vector3.WorldUp);
-                if (side.Length() < 0.0005f) side = Vector3.Cross(dir, Vector3.RelativeFront);
-                if (side.Length() < 0.0005f) continue;
+                var toEye = eye - points[i];
+
+                var side = Vector3.Cross(dir, toEye);
+                if (side.Length() < 0.00001f) side = Vector3.Cross(dir, Vector3.WorldUp);
+                if (side.Length() < 0.00001f) continue;
 
                 side.Normalize();
                 side *= radius;
 
-                var up = Vector3.Cross(dir, side);
-                if (up.Length() < 0.0005f) continue;
+                var l = points[i] + side;
+                var r = points[i] - side;
 
-                up.Normalize();
-                up *= radius;
+                if (haveEdge)
+                {
+                    Quad(prevLeft, prevRight, l, r, colour);
+                }
 
-                Segment(a, b, colour);
-                Segment(a + side, b + side, colour);
-                Segment(a - side, b - side, colour);
-                Segment(a + up, b + up, colour);
-                Segment(a - up, b - up, colour);
+                prevLeft = l;
+                prevRight = r;
+                haveEdge = true;
             }
         }
 
-        private static void Segment(Vector3 a, Vector3 b, Color colour)
+        /// <summary>
+        /// One quad of the ribbon, as two triangles -- and each of those drawn both ways round.
+        ///
+        /// The reversed winding is not waste. A hose you carry around a car is seen from both
+        /// sides within a few seconds, and a back-face-culled triangle is simply not there from
+        /// behind: the hose would vanish in halves as you walked past it. Four polygons a
+        /// segment is nothing next to that.
+        /// </summary>
+        private static void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color colour)
         {
-            Function.Call(Hash.DRAW_LINE, a.X, a.Y, a.Z, b.X, b.Y, b.Z,
-                          colour.R, colour.G, colour.B, colour.A);
+            try
+            {
+                World.DrawPolygon(a, b, c, colour);
+                World.DrawPolygon(b, d, c, colour);
+
+                World.DrawPolygon(c, b, a, colour);
+                World.DrawPolygon(c, d, b, colour);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hose-poly", "Could not draw the hose body: " + ex.Message);
+            }
         }
 
         private static int Clamp255(int v)

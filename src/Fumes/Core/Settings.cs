@@ -39,6 +39,26 @@ namespace Fumes.Core
         None
     }
 
+    /// <summary>Where the forecourt prompts are shown.</summary>
+    internal enum PromptStyle
+    {
+        /// <summary>
+        /// The game's help box, TOP LEFT. The default.
+        ///
+        /// It reads button glyphs too -- ~INPUT_CONTEXT~ resolves to the key or pad button
+        /// actually bound, and help text is the only place in the game where it does.
+        /// </summary>
+        HelpText,
+
+        /// <summary>
+        /// The instructional button bar, bottom right.
+        ///
+        /// Prettier, and fixed where it is: the position is baked into Rockstar's scaleform
+        /// and there is no argument that moves it.
+        /// </summary>
+        ButtonBar
+    }
+
     /// <summary>What the player's hands do while the nozzle is out.</summary>
     internal enum NozzlePose
     {
@@ -165,12 +185,19 @@ namespace Fumes.Core
         public int HoseRopeType = 5;
 
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
-        public int HoseRed = 16;
-        public int HoseGreen = 16;
-        public int HoseBlue = 18;
+        public int HoseRed = 20;
+        public int HoseGreen = 20;
+        public int HoseBlue = 23;
 
-        /// <summary>How thick a painted hose is drawn, in metres across.</summary>
-        public float HoseThickness = 0.05f;
+        /// <summary>
+        /// How thick the hose is, in metres across.
+        ///
+        /// A real forecourt hose is nearer 3cm, and this is deliberately fatter than
+        /// that: it is being read at four to eight metres against dark tarmac at night,
+        /// where honest scale disappears. Thick enough to be a hose, not so thick it is a
+        /// pipe.
+        /// </summary>
+        public float HoseThickness = 0.075f;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
         public float HoseSag = 1.22f;
@@ -229,6 +256,9 @@ namespace Fumes.Core
         public float HoseAnchorZ = 1.52f;
 
         // ---- HUD --------------------------------------------------------------
+        /// <summary>Top-left help box, or the bottom-right button bar.</summary>
+        public PromptStyle Prompts = PromptStyle.HelpText;
+
         public bool ShowGauge = true;
         public bool GaugeOnlyInVehicle = true;
         /// <summary>
@@ -366,6 +396,7 @@ namespace Fumes.Core
                 s.TuneNozzle = ini.GetBool("Nozzle", "TuneNozzle", s.TuneNozzle);
                 s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
 
+                s.Prompts = ParseEnum(ini.GetString("HUD", "Prompts", "HelpText"), s.Prompts);
                 s.ShowGauge = ini.GetBool("HUD", "ShowGauge", s.ShowGauge);
                 s.GaugeOnlyInVehicle = ini.GetBool("HUD", "OnlyInVehicle", s.GaugeOnlyInVehicle);
                 s.GaugeX = ini.GetFloat("HUD", "X", s.GaugeX, 0f, 1f);
