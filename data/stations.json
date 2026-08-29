@@ -1,0 +1,44 @@
+{
+  "_readme": [
+    "Petrol stations, for MAP BLIPS and for PRICING only.",
+    "",
+    "Refuelling does NOT use this file. The mod finds the pump you are standing at by asking",
+    "the game for the nearest pump PROP, so a station missing from this list still works and a",
+    "coordinate that is a metre out cannot break anything. If a blip sits slightly off the",
+    "forecourt, fix the number here and restart -- nothing else depends on it.",
+    "",
+    "'brand' is only the name shown on the blip and in the receipt. 'price' is a per-station",
+    "multiplier on [Station] PricePerLitre; leave it out for 1.0.",
+    "",
+    "Add your own stations by appending to the list. Nothing validates the order."
+  ],
+
+  "stations": [
+    { "name": "Grove Street",        "brand": "Xero",         "x": 49.42,    "y": -1897.17, "z": 28.71,  "price": 0.94 },
+    { "name": "Innocence Boulevard", "brand": "LTD Gasoline", "x": 263.89,   "y": -1261.31, "z": 28.29,  "price": 1.02 },
+    { "name": "Route 68 West",       "brand": "RON",          "x": 1039.96,  "y": 2671.13,  "z": 38.55,  "price": 1.08 },
+    { "name": "Route 68 East",       "brand": "Xero",         "x": 1207.26,  "y": 2660.18,  "z": 36.20,  "price": 1.06 },
+    { "name": "Senora Freeway",      "brand": "RON",          "x": 2539.69,  "y": 2594.19,  "z": 36.94,  "price": 1.10 },
+    { "name": "Harmony",             "brand": "Globe Oil",    "x": 2679.86,  "y": 3263.95,  "z": 54.24,  "price": 1.05 },
+    { "name": "Sandy Shores",        "brand": "RON",          "x": 2005.06,  "y": 3773.89,  "z": 31.40,  "price": 1.03 },
+    { "name": "Grapeseed",           "brand": "Xero",         "x": 1687.16,  "y": 4929.39,  "z": 41.08,  "price": 1.01 },
+    { "name": "Mount Chiliad",       "brand": "RON",          "x": 1701.31,  "y": 6416.03,  "z": 31.86,  "price": 1.12 },
+    { "name": "Paleto Bay",          "brand": "Globe Oil",    "x": 179.86,   "y": 6602.84,  "z": 30.87,  "price": 1.07 },
+    { "name": "Paleto Boulevard",    "brand": "RON",          "x": -94.46,   "y": 6419.59,  "z": 30.54,  "price": 1.07 },
+    { "name": "Great Chaparral",     "brand": "RON",          "x": -2554.99, "y": 2334.40,  "z": 32.62,  "price": 1.09 },
+    { "name": "Banham Canyon",       "brand": "Xero",         "x": -1800.38, "y": 803.66,   "z": 137.65, "price": 1.14 },
+    { "name": "Morningwood",         "brand": "Xero",         "x": -1437.62, "y": -276.75,  "z": 45.20,  "price": 1.16 },
+    { "name": "Pacific Bluffs",      "brand": "RON",          "x": -2096.24, "y": -320.29,  "z": 12.16,  "price": 1.13 },
+    { "name": "Little Seoul",        "brand": "LTD Gasoline", "x": -724.62,  "y": -935.16,  "z": 18.21,  "price": 0.99 },
+    { "name": "Strawberry Avenue",   "brand": "Globe Oil",    "x": -526.02,  "y": -1211.00, "z": 17.18,  "price": 0.97 },
+    { "name": "Davis Avenue",        "brand": "Xero",         "x": -70.21,   "y": -1761.79, "z": 28.53,  "price": 0.95 },
+    { "name": "Harmony Route 68",    "brand": "RON",          "x": 265.65,   "y": 2606.46,  "z": 43.98,  "price": 1.08 },
+    { "name": "La Mesa",             "brand": "RON",          "x": 842.78,   "y": -1019.50, "z": 27.19,  "price": 1.00 },
+    { "name": "El Burro Heights",    "brand": "Globe Oil",    "x": 1208.95,  "y": -1402.57, "z": 34.22,  "price": 0.98 },
+    { "name": "Mirror Park",         "brand": "Xero",         "x": 1181.38,  "y": -330.85,  "z": 68.31,  "price": 1.11 },
+    { "name": "Downtown Vinewood",   "brand": "RON",          "x": 620.84,   "y": 268.10,   "z": 102.09, "price": 1.15 },
+    { "name": "Tataviam Mountains",  "brand": "RON",          "x": 2581.32,  "y": 362.04,   "z": 107.46, "price": 1.09 },
+    { "name": "Popular Street",      "brand": "LTD Gasoline", "x": -319.29,  "y": -1471.72, "z": 29.42,  "price": 0.96 },
+    { "name": "Alhambra Drive",      "brand": "RON",          "x": 1785.30,  "y": 3330.55,  "z": 41.35,  "price": 1.04 }
+  ]
+}

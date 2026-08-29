@@ -1,0 +1,22 @@
+# Self-contained build toolchain, restored by tools/README.md. Somebody else's
+# binaries; they do not belong in our history.
+tools/roslyn/
+tools/refasm/
+
+# Build output and packaged releases.
+build/
+release/*/
+release/*.zip
+
+# Runtime state, if anybody ever runs the mod from inside the repo.
+*.log
+*.log.1
+tanks.json
+*.bak
+
+# Editor and OS noise.
+.vs/
+obj/
+bin/
+Thumbs.db
+desktop.ini
