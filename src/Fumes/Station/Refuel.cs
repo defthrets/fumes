@@ -903,14 +903,20 @@ namespace Fumes.Station
         /// </summary>
         private static readonly string[][] Clips =
         {
-            new[] { "mp_ped_interaction", "handshake_guy_a" },
-            new[] { "mp_common", "givetake1_a" },
-            new[] { "mp_common", "givetake2_a" },
+            // Ordered by how little of him each one is likely to move, smallest first.
+            //
+            // What is wanted is ONE ARM, LIFTED A LITTLE, and the clips most likely to give
+            // that are the ones authored for somebody operating a small object at waist
+            // height: a key fob, a parking meter, a hand-over. A greeting or a hold-up moves
+            // the whole torso because that is what those gestures are.
             new[] { "anim@mp_player_intmenu@key_fob@", "fob_click" },
             new[] { "amb@prop_human_parking_meter@male@idle_a", "idle_a" },
-            new[] { "anim@am_hold_up@male", "shoplift_high" },
-            new[] { "amb@world_human_bum_wash@male@low@idle_a", "idle_a" },
-            new[] { "weapons@misc@jerrycan@mp_male", "idle" }
+            new[] { "mp_common", "givetake1_a" },
+            new[] { "mp_common", "givetake2_a" },
+            new[] { "weapons@misc@jerrycan@mp_male", "idle" },
+            new[] { "anim@heists@humane_labs@finale@keycards", "ped_a_enter_loop" },
+            new[] { "mp_ped_interaction", "handshake_guy_a" },
+            new[] { "anim@am_hold_up@male", "shoplift_high" }
         };
 
         private int _clip = -1;

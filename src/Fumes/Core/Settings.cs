@@ -304,8 +304,8 @@ namespace Fumes.Core
         /// The first attempt was a hold-up pose, and it was wrong for a reason worth writing
         /// down: it aims a pistol, so the arm sits at chest height. Right idea, wrong altitude.
         /// </summary>
-        public string FillAnimDict = "mp_ped_interaction";
-        public string FillAnimClip = "handshake_guy_a";
+        public string FillAnimDict = "anim@mp_player_intmenu@key_fob@";
+        public string FillAnimClip = "fob_click";
 
         /// <summary>
         /// Where in the clip to stop, 0 at the first frame and 1 at the last.
@@ -315,7 +315,7 @@ namespace Fumes.Core
         /// Frozen at the reach it is a pose, and a pose is what refuelling needs. Negative
         /// lets the clip play through normally.
         /// </summary>
-        public float FillAnimPhase = 0.45f;
+        public float FillAnimPhase = 0.55f;
 
         /// <summary>
         /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
