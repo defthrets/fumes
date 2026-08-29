@@ -258,18 +258,36 @@ namespace Fumes.Core
         public bool ShowFillerMarker = false;
 
         /// <summary>
-        /// The clip he plays while fuel is going in: arm out, holding the nozzle to the car.
+        /// The clip he holds while fuel is going in: one arm out to the car.
         ///
-        /// anim@am_hold_up@male / shoplift_high is a hold-up pose -- one arm extended forward
-        /// at about the right height with the hand closed round something. Nothing in the game
-        /// is animated for refuelling, so this is the nearest shape that exists, and with a
-        /// nozzle in the hand instead of a pistol it reads exactly right.
+        /// A HANDSHAKE, FROZEN PART WAY THROUGH. Nothing in the game is animated for
+        /// refuelling, so the job is to find an existing clip whose shape is right and stop it
+        /// there. A handshake reaches forward at waist height with the hand closed -- which is
+        /// exactly where a nozzle goes.
         ///
-        /// In the ini so it can be swapped for a better one without a rebuild. Empty turns it
-        /// off and he stands there holding it.
+        /// The first attempt was a hold-up pose, and it was wrong for a reason worth writing
+        /// down: it aims a pistol, so the arm sits at chest height. Right idea, wrong altitude.
         /// </summary>
-        public string FillAnimDict = "anim@am_hold_up@male";
-        public string FillAnimClip = "shoplift_high";
+        public string FillAnimDict = "mp_ped_interaction";
+        public string FillAnimClip = "handshake_guy_a";
+
+        /// <summary>
+        /// Where in the clip to stop, 0 at the first frame and 1 at the last.
+        ///
+        /// THE WHOLE POINT. A handshake is a movement -- reach, grip, shake, withdraw -- and
+        /// playing it gives an arm that pumps up and down and then drops back to his side.
+        /// Frozen at the reach it is a pose, and a pose is what refuelling needs. Negative
+        /// lets the clip play through normally.
+        /// </summary>
+        public float FillAnimPhase = 0.45f;
+
+        /// <summary>
+        /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
+        /// what blends the clip over his legs and leaves the player in charge instead of
+        /// planting him in a cutscene. 50 is that band plus hold-last-frame and NOT loop --
+        /// looping a handshake shakes forever.
+        /// </summary>
+        public int FillAnimFlag = 50;
 
         /// <summary>
         /// Where on the pump the hose is bolted, in the pump's own local space.
@@ -445,6 +463,8 @@ namespace Fumes.Core
                 s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
                 s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
                 s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);
+                s.FillAnimPhase = ini.GetFloat("Nozzle", "FillAnimPhase", s.FillAnimPhase, -1f, 1f);
+                s.FillAnimFlag = ini.GetInt("Nozzle", "FillAnimFlag", s.FillAnimFlag, 0, 255);
 
                 s.Prompts = ParseEnum(ini.GetString("HUD", "Prompts", "HelpText"), s.Prompts);
                 s.ShowGauge = ini.GetBool("HUD", "ShowGauge", s.ShowGauge);

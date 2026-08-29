@@ -449,6 +449,7 @@ namespace Fumes.Station
             LockHands();
             HoldStill(me);
             FillPose(me);
+            TunePose();
 
             var filler = Filler.On(_target, out var exact);
             FaceThe(me, filler);
@@ -828,8 +829,22 @@ namespace Fumes.Station
         {
             if (string.IsNullOrEmpty(_cfg.FillAnimDict) || string.IsNullOrEmpty(_cfg.FillAnimClip)) return;
 
+            if (_poseImpossible) return;
+
             try
             {
+                // Checked rather than assumed: a dict name that is not in the game makes
+                // REQUEST_ANIM_DICT wait forever, so without this a typo in the ini is a pose
+                // that never appears and never explains itself.
+                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, _cfg.FillAnimDict))
+                {
+                    _poseImpossible = true;
+                    Log.Warn("[Nozzle] FillAnimDict '" + _cfg.FillAnimDict + "' is not an " +
+                             "animation dictionary this game has. He will hold the nozzle " +
+                             "still instead.");
+                    return;
+                }
+
                 if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, _cfg.FillAnimDict))
                 {
                     // Requested every frame until it arrives. A single request that gets dropped
@@ -838,22 +853,81 @@ namespace Fumes.Station
                     return;
                 }
 
-                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle,
-                                        _cfg.FillAnimDict, _cfg.FillAnimClip, 3))
+                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle,
+                                         _cfg.FillAnimDict, _cfg.FillAnimClip, 3))
                 {
-                    _posing = true;
-                    return;
+                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, _cfg.FillAnimDict, _cfg.FillAnimClip,
+                                  4f, -4f, -1, _cfg.FillAnimFlag, 0f, false, false, false);
                 }
 
-                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, _cfg.FillAnimDict, _cfg.FillAnimClip,
-                              4f, -4f, -1, 51, 0f, false, false, false);
                 _posing = true;
+
+                if (_cfg.FillAnimPhase < 0f) return;
+
+                // HELD, NOT PLAYED, and held EVERY FRAME rather than once.
+                //
+                // A handshake is a movement -- reach, grip, shake, withdraw -- so letting it run
+                // gives an arm that pumps and then drops back to his side. Stopping it at the
+                // reach turns the movement into a pose. Speed zero freezes it and the time is
+                // re-set each frame because the task keeps its own clock: set once, it creeps.
+                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle,
+                              _cfg.FillAnimDict, _cfg.FillAnimClip, 0f);
+
+                Function.Call(Hash.SET_ENTITY_ANIM_CURRENT_TIME, me.Handle,
+                              _cfg.FillAnimDict, _cfg.FillAnimClip, _cfg.FillAnimPhase);
             }
             catch (Exception ex)
             {
                 Log.Once("fillpose", "Could not play the filling animation: " + ex.Message +
                                      " - he will hold the nozzle still instead.");
             }
+        }
+
+        /// <summary>Set when the configured clip cannot work at all, so nothing keeps retrying.</summary>
+        private bool _poseImpossible;
+
+        private bool _phaseDownKey, _phaseUpKey;
+
+        /// <summary>
+        /// Nudges the frozen point of the pose while you are looking at it, when TuneNozzle is on.
+        ///
+        /// The right phase of a clip is not something that can be reasoned to -- it is wherever
+        /// that particular animation happens to have the arm in the right place, which you can
+        /// only see. NumPad 7 and 9, because the gauge tuner that also uses them is switched off
+        /// while your hands are full.
+        /// </summary>
+        private void TunePose()
+        {
+            if (!_cfg.TuneNozzle) return;
+
+            try
+            {
+                if (Edge(System.Windows.Forms.Keys.NumPad7, ref _phaseDownKey)) _cfg.FillAnimPhase -= 0.02f;
+                if (Edge(System.Windows.Forms.Keys.NumPad9, ref _phaseUpKey)) _cfg.FillAnimPhase += 0.02f;
+
+                if (_cfg.FillAnimPhase < 0f) _cfg.FillAnimPhase = 0f;
+                if (_cfg.FillAnimPhase > 1f) _cfg.FillAnimPhase = 1f;
+
+                Draw.Text("POSE  [NumPad 7/9]  FillAnimPhase = " +
+                          _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture),
+                          0.5f, 0.145f, 0.32f,
+                          System.Drawing.Color.FromArgb(235, 245, 200, 90), 4, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("posetune", "The pose tuner fell over: " + ex.Message);
+            }
+        }
+
+        private static bool Edge(System.Windows.Forms.Keys key, ref bool wasDown)
+        {
+            bool down;
+            try { down = Game.IsKeyPressed(key); }
+            catch { down = false; }
+
+            var edge = down && !wasDown;
+            wasDown = down;
+            return edge;
         }
 
         private bool _posing;
