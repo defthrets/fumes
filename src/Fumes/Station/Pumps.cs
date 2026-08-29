@@ -42,17 +42,10 @@ namespace Fumes.Station
 
         private int[] _hashes;
 
-        private readonly Settings _cfg;
-
         /// <summary>The scan is not free, so it runs on a clock rather than every frame.</summary>
         private int _nextScan;
 
         private Prop _found;
-
-        public Pumps(Settings cfg)
-        {
-            _cfg = cfg;
-        }
 
         /// <summary>Hashes are computed once, lazily, for the reason given in Tank.Electrics.</summary>
         private int[] Hashes()
@@ -132,30 +125,5 @@ namespace Fumes.Station
             return best;
         }
 
-        /// <summary>
-        /// Where the hose comes out of a pump.
-        ///
-        /// In the pump's own space, so it rotates with the pump and does not need a per-station
-        /// number. The sign of X is chosen per pump so that the hose leaves the side the player
-        /// is standing on -- both sides of a real pump have a nozzle, and picking the far one
-        /// runs the hose straight through the machine.
-        /// </summary>
-        public Vector3 AnchorOn(Prop pump, Vector3 standingAt)
-        {
-            if (pump == null || !pump.Exists()) return standingAt;
-
-            try
-            {
-                var local = pump.GetPositionOffset(standingAt);
-                var side = local.X >= 0f ? 1f : -1f;
-
-                return pump.GetOffsetPosition(
-                    new Vector3(_cfg.HoseAnchorX * side, _cfg.HoseAnchorY, _cfg.HoseAnchorZ));
-            }
-            catch
-            {
-                return pump.Position + new Vector3(0f, 0f, _cfg.HoseAnchorZ);
-            }
-        }
     }
 }

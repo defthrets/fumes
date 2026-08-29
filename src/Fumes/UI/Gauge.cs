@@ -37,7 +37,7 @@ namespace Fumes.UI
                 : litres.ToString("0.0", CultureInfo.InvariantCulture) + " L";
         }
 
-        public void Update(Vehicle vehicle, Tank tank, bool refuelling)
+        public void Update(Vehicle vehicle, Tank tank, bool refuelling, bool stalled = false)
         {
             if (!_cfg.ShowGauge || tank == null) return;
 
@@ -68,6 +68,15 @@ namespace Fumes.UI
                 // that has already gone.
                 var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
                 Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f, Color.FromArgb(220, 235, 180, 60));
+
+                if (stalled)
+                {
+                    // An empty bar and a bar with a drop left in it look the same at a
+                    // glance, and only one of them means the car is not going anywhere.
+                    Draw.Text(tank.Electric ? "FLAT" : "DRY",
+                              x + w / 2f, y + h + 0.004f, 0.28f,
+                              Color.FromArgb(235, 220, 70, 60), 4, true);
+                }
 
                 if (!_cfg.ShowNumbers) return;
 

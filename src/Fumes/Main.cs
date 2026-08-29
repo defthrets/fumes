@@ -54,6 +54,9 @@ namespace Fumes
         /// <summary>How long since traffic was last looked at, when traffic is being looked at.</summary>
         private float _sinceTraffic;
 
+        /// <summary>Whether the engine under the player is currently being held off for want of fuel.</summary>
+        private bool _stalled;
+
         public Main()
         {
             _cfg = Core.Settings.Load();
@@ -61,7 +64,7 @@ namespace Fumes
             _tanks = new Tanks(_cfg);
             _burn = new Consumption(_cfg);
             _starve = new Starvation(_cfg);
-            _pumps = new Pumps(_cfg);
+            _pumps = new Pumps();
             _stations = new Stations(_cfg);
             _gauge = new Gauge(_cfg);
             _meter = new Meter(_cfg, _gauge);
@@ -112,7 +115,7 @@ namespace Fumes
                 // being filled -- two gauges for two different vehicles is just confusing.
                 if (_refuel.TargetTank == null && _watched != null && _watched.Exists())
                 {
-                    _gauge.Update(_watched, _tanks.For(_watched), false);
+                    _gauge.Update(_watched, _tanks.For(_watched), false, _stalled);
                 }
 
                 _failures = 0;
@@ -199,7 +202,15 @@ namespace Fumes
                 // Treat as not in it.
             }
 
-            if (inIt) _starve.Update(_watched, tank);
+            if (inIt)
+            {
+                _starve.Update(_watched, tank);
+                _stalled = _starve.Stalled;
+            }
+            else
+            {
+                _stalled = false;
+            }
 
             // The save follows real change, not every frame: without the threshold this is a
             // dirty flag set sixty times a second forever.
