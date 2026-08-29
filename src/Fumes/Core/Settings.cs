@@ -365,7 +365,7 @@ namespace Fumes.Core
 
         public float GaugeX = 0.1120f;
         public float GaugeY = 0.8240f;
-        public float GaugeWidth = 0.0052f;
+        public float GaugeWidth = 0.0034f;
         public float GaugeHeight = 0.1550f;
 
         /// <summary>

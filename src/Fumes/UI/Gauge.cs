@@ -122,11 +122,11 @@ namespace Fumes.UI
                     var pct = (int)Math.Round(fraction * 100f);
                     if (pct > 99) pct = 99;
 
-                    var pitch = w * 1.25f;
+                    var pitch = w * 1.05f;
                     var text = pct.ToString(CultureInfo.InvariantCulture) + "%";
 
-                    _glyphs.Number(text, x + w / 2f, y + h - 0.004f, w * 0.85f, pitch, ink);
-                    _glyphs.Label(x + w / 2f, y + 0.026f, w * 0.85f, 0.040f, ink);
+                    _glyphs.Number(text, x + w / 2f, y + h - 0.003f, w * 0.78f, pitch, ink);
+                    _glyphs.Label(x + w / 2f, y + 0.020f, w * 0.78f, 0.030f, ink);
                     return;
                 }
 
@@ -260,22 +260,26 @@ namespace Fumes.UI
 
             try
             {
-                const float move = 0.0015f;
-                const float size = 0.0020f;
+                // A STEP HAS TO SUIT WHAT IT IS MOVING. The width of this bar is now three
+                // thousandths of the screen, so the old two-thousandth size step changed it by
+                // most of itself in one press -- a tuner you cannot creep up on is not a tuner.
+                const float move = 0.0010f;
+                const float wide = 0.0004f;
+                const float tall = 0.0020f;
 
                 if (Edge(Keys.NumPad8, ref _upDown)) _cfg.GaugeY -= move;
                 if (Edge(Keys.NumPad2, ref _downDown)) _cfg.GaugeY += move;
                 if (Edge(Keys.NumPad4, ref _leftDown)) _cfg.GaugeX -= move;
                 if (Edge(Keys.NumPad6, ref _rightDown)) _cfg.GaugeX += move;
 
-                if (Edge(Keys.NumPad7, ref _narrowDown)) _cfg.GaugeWidth -= size;
-                if (Edge(Keys.NumPad9, ref _wideDown)) _cfg.GaugeWidth += size;
-                if (Edge(Keys.NumPad1, ref _thinDown)) _cfg.GaugeHeight -= size * 0.4f;
-                if (Edge(Keys.NumPad3, ref _fatDown)) _cfg.GaugeHeight += size * 0.4f;
+                if (Edge(Keys.NumPad7, ref _narrowDown)) _cfg.GaugeWidth -= wide;
+                if (Edge(Keys.NumPad9, ref _wideDown)) _cfg.GaugeWidth += wide;
+                if (Edge(Keys.NumPad1, ref _thinDown)) _cfg.GaugeHeight -= tall;
+                if (Edge(Keys.NumPad3, ref _fatDown)) _cfg.GaugeHeight += tall;
 
                 _cfg.GaugeX = Clamp(_cfg.GaugeX, 0f, 0.95f);
                 _cfg.GaugeY = Clamp(_cfg.GaugeY, 0f, 0.99f);
-                _cfg.GaugeWidth = Clamp(_cfg.GaugeWidth, 0.02f, 0.8f);
+                _cfg.GaugeWidth = Clamp(_cfg.GaugeWidth, 0.0015f, 0.8f);
                 _cfg.GaugeHeight = Clamp(_cfg.GaugeHeight, 0.004f, 0.2f);
 
                 if (Edge(Keys.NumPad0, ref _dumpDown)) Keep();
