@@ -254,11 +254,26 @@ namespace Fumes.Station
             }
         }
 
-        /// <summary>Gives him the invisible weapon, remembering what he had.</summary>
+        /// <summary>Whether what he was carrying has been written down yet.</summary>
+        private bool _recorded;
+
+        /// <summary>
+        /// Gives him the invisible weapon, and KEEPS CHECKING IT TOOK.
+        ///
+        /// This used to run once and latch, which was the bug: walk up to a pump holding a
+        /// pistol and the selection would not take, so he ended up standing in a gunman's
+        /// stance with a fuel nozzle where the pistol had been -- two-handed grip, weapon
+        /// walk, the lot. The prop was right and everything around it was a gun.
+        ///
+        /// Now the selected weapon is read back every frame. If it is not ours, it is put
+        /// right, so nothing that steals the weapon back -- another mod, a cutscene, picking
+        /// something up -- can leave the pose wrong for more than a frame.
+        ///
+        /// What he was carrying is recorded ONCE, though, or the second pass would faithfully
+        /// record the extinguisher as the thing to give him back afterwards.
+        /// </summary>
         private void Pose()
         {
-            if (_posed) return;
-
             var want = PoseWeapon();
             if (want == WeaponHash.Unarmed) return;
 
@@ -267,13 +282,37 @@ namespace Fumes.Station
                 var me = Game.Player.Character;
                 if (me == null || !me.Exists()) return;
 
-                _previousWeapon = me.Weapons.Current == null ? WeaponHash.Unarmed : me.Weapons.Current.Hash;
-                _poseWeapon = want;
+                if (!_recorded)
+                {
+                    _recorded = true;
+                    _previousWeapon = me.Weapons.Current == null ? WeaponHash.Unarmed : me.Weapons.Current.Hash;
+                    _poseWeapon = want;
 
-                _hadOwn = Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, (uint)want, false);
-                _ownAmmo = _hadOwn
-                    ? Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, (uint)want)
-                    : 0;
+                    _hadOwn = Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, (uint)want, false);
+                    _ownAmmo = _hadOwn
+                        ? Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, (uint)want)
+                        : 0;
+                }
+
+                var held = Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, me.Handle);
+
+                if (held == (uint)want)
+                {
+                    // Right weapon already. Only the hiding is worth repeating -- anything that
+                    // reselects a weapon makes its model visible again.
+                    Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, false, false, true, false);
+                    _posed = true;
+                    return;
+                }
+
+                // UNARMED FIRST, and this is the part that was missing. Going straight from a
+                // pistol to the extinguisher can leave the pistol's movement and strafe clipsets
+                // in place, which is what the gunman's stance actually was -- the weapon had
+                // changed and the way he stood had not. Passing through unarmed and clearing
+                // the clipsets makes the change complete.
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, me.Handle, (uint)WeaponHash.Unarmed, true);
+                Function.Call(Hash.RESET_PED_WEAPON_MOVEMENT_CLIPSET, me.Handle);
+                Function.Call(Hash.RESET_PED_STRAFE_CLIPSET, me.Handle);
 
                 // A notional unit of ammunition, because a weapon with none is not selectable.
                 // Refuel disables the attack control for as long as the nozzle is out, which is
@@ -337,6 +376,11 @@ namespace Fumes.Station
 
                 Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, true, false, true, false);
 
+                // The stance goes back with the weapon, for the same reason it had to be
+                // cleared going in.
+                Function.Call(Hash.RESET_PED_WEAPON_MOVEMENT_CLIPSET, me.Handle);
+                Function.Call(Hash.RESET_PED_STRAFE_CLIPSET, me.Handle);
+
                 // EMPTY-HANDED, not back to whatever he had before.
                 //
                 // Restoring the previous weapon was the tidy-looking choice and the wrong one:
@@ -355,6 +399,7 @@ namespace Fumes.Station
             _poseWeapon = WeaponHash.Unarmed;
             _hadOwn = false;
             _ownAmmo = 0;
+            _recorded = false;
         }
 
         /// <summary>
