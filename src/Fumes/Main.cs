@@ -66,6 +66,10 @@ namespace Fumes
         {
             _cfg = Core.Settings.Load();
 
+            // Before anything can ask for a rope: picks up a probe file left behind by a
+            // session that ended in a crash, and blacklists whatever it was holding.
+            RopeProbe.Review(_cfg);
+
             _tanks = new Tanks(_cfg);
             _burn = new Consumption(_cfg);
             _starve = new Starvation(_cfg);

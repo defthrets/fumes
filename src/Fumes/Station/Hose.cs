@@ -38,6 +38,7 @@ namespace Fumes.Station
         private Rope _rope;
         private bool _texturesAsked;
         private int _gaveUpOnRopeAt;
+        private int _spawnedAt;
 
         /// <summary>Which way this instance settled, once it has had to decide.</summary>
         private HoseMode _mode;
@@ -110,6 +111,14 @@ namespace Fumes.Station
                 return;
             }
 
+            // Survived. A rope that has existed for a second and a half did not crash the
+            // game, so the note naming its type comes off the disk.
+            if (_spawnedAt != 0 && Game.GameTime - _spawnedAt > 1500)
+            {
+                _spawnedAt = 0;
+                RopeProbe.Disarm();
+            }
+
             Pin(from, to);
 
             // Painted mode: the rope did the physics, we do the colour. See HoseMode.Painted.
@@ -165,6 +174,11 @@ namespace Fumes.Station
                 // gameplay leash, enforced by Refuel, and a rope whose physical maximum is the
                 // same number goes taut and starts fighting the pin a moment before the leash
                 // ever fires.
+                // WRITTEN DOWN FIRST. ADD_ROPE with a type past the end of the game's rope
+                // table does not throw, it ends the process -- so the only way to learn which
+                // types those are is to record the attempt somewhere that outlives the attempt.
+                RopeProbe.Arm(_cfg.HoseRopeType);
+
                 var handle = Function.Call<int>(Hash.ADD_ROPE,
                     from.X, from.Y, from.Z,
                     0f, 0f, 0f,
@@ -188,6 +202,7 @@ namespace Fumes.Station
                 _rope = new Rope(handle);
                 _rope.ActivatePhysics();
                 _gaveUpOnRopeAt = 0;
+                _spawnedAt = Game.GameTime;
 
                 Log.Debug("Hose out: rope " + handle + ", " + _rope.VertexCount + " vertices.");
                 return true;

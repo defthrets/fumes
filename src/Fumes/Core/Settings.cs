@@ -206,6 +206,16 @@ namespace Fumes.Core
         /// </summary>
         public int HoseRopeType = 3;
 
+        /// <summary>
+        /// Rope types that have crashed this install, comma separated.
+        ///
+        /// ADD_ROPE does not validate its type -- it indexes a table, and an index past the end
+        /// takes the process with it. 8 is here because it did exactly that. RopeProbe adds to
+        /// this by surviving the crash rather than by anyone predicting it; clearing an entry
+        /// only means it gets tried once more.
+        /// </summary>
+        public string BadRopeTypes = "8";
+
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
         public int HoseRed = 20;
         public int HoseGreen = 20;
@@ -524,7 +534,10 @@ namespace Fumes.Core
                 s.Hose = ParseEnum(ini.GetString("Nozzle", "Hose", "Auto"), s.Hose);
                 s.HoseMaxMetres = ini.GetFloat("Nozzle", "HoseMaxMetres", s.HoseMaxMetres, 2f, 40f);
                 s.HoseWarnFraction = ini.GetFloat("Nozzle", "HoseWarnFraction", s.HoseWarnFraction, 0.2f, 0.98f);
-                s.HoseRopeType = ini.GetInt("Nozzle", "HoseRopeType", s.HoseRopeType, 0, 8);
+                // 0-7, not 0-8. Type 8 is off the end of the game's rope table and killed the
+                // process the first time it was ever asked for.
+                s.HoseRopeType = ini.GetInt("Nozzle", "HoseRopeType", s.HoseRopeType, 0, RopeProbe.MaxType);
+                s.BadRopeTypes = ini.GetString("Nozzle", "BadRopeTypes", s.BadRopeTypes);
                 s.HoseRed = ini.GetInt("Nozzle", "HoseRed", s.HoseRed, 0, 255);
                 s.HoseGreen = ini.GetInt("Nozzle", "HoseGreen", s.HoseGreen, 0, 255);
                 s.HoseBlue = ini.GetInt("Nozzle", "HoseBlue", s.HoseBlue, 0, 255);

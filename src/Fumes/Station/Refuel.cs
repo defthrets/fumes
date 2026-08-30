@@ -1112,7 +1112,7 @@ namespace Fumes.Station
         private void TuneHose()
         {
             // NOT BEHIND TuneNozzle, and gating it there was a real mistake. Choosing between
-            // nine rope textures is not debugging -- it is the ONLY way to choose at all,
+            // the rope textures is not debugging -- it is the ONLY way to choose at all,
             // because the types have no names, no previews and no documentation. Putting it
             // behind a setting that defaults to false meant the answer to "which rope?" was
             // locked inside a switch nobody had been told to turn on, and the key looked broken.
@@ -1121,14 +1121,18 @@ namespace Fumes.Station
             // is actually in your hand, and each says what it did rather than sitting on screen.
             if (Edge(System.Windows.Forms.Keys.Multiply, ref _ropeKeyDown))
             {
-                _cfg.HoseRopeType = (_cfg.HoseRopeType + 1) % 9;
+                // Through RopeProbe rather than a modulo, because "% 9" is what caused this:
+                // it offered a type the game's rope table does not have, and asking for it
+                // ended the process. Next() skips the fatal ones and stops at 7.
+                _cfg.HoseRopeType = RopeProbe.Next(_cfg.HoseRopeType);
 
                 // The type is baked in at ADD_ROPE, so the rope has to be thrown away and made
                 // again. It respawns on the next frame from Carrying.
                 _hose.Retract();
 
                 Log.Info("Hose rope type is now " + _cfg.HoseRopeType + ".");
-                Notify("Hose rope ~b~" + _cfg.HoseRopeType + "~s~ of 0-8.   NumPad 0 to keep it.");
+                Notify("Hose rope ~b~" + _cfg.HoseRopeType + "~s~ of 0-" + RopeProbe.MaxType +
+                       ".   NumPad 0 to keep it.");
             }
 
             // Which end of the nozzle the hose leaves from -- the one thing the model's
