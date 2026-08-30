@@ -307,7 +307,7 @@ namespace Fumes.Core
         /// This one is applied AFTER the offset is turned into a world position, so it is up.
         /// Not up-ish, not up in the prop's opinion: up.
         /// </summary>
-        public float HoseEndLift = 0.08f;
+        public float HoseEndLift = 0.12f;
 
         /// <summary>
         /// How far to HIS RIGHT the hose joins, in metres. Negative is his left.
@@ -319,7 +319,7 @@ namespace Fumes.Core
         /// still means the same thing on screen from any angle, because the camera is behind
         /// him whenever anyone is looking at this.
         /// </summary>
-        public float HoseEndSide = 0f;
+        public float HoseEndSide = -0.01f;
 
         /// <summary>
         /// Work the hose attachment out from the nozzle's own SHAPE rather than from numbers.
@@ -339,7 +339,7 @@ namespace Fumes.Core
         public int HoseEndSign = -1;
 
         /// <summary>How far along toward that end, 1.0 being the very tip of the bounding box.</summary>
-        public float HoseEndReach = 1.0f;
+        public float HoseEndReach = 1.2f;
 
         public bool TuneNozzle = false;
 
