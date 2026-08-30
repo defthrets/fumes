@@ -100,7 +100,7 @@ def fuel_pump_bar():
     # The ink's bounding box in fuel_pump's design space, plus two either side to keep the
     # anti-aliased edge off the boundary.
     ox, oy = 42, 38
-    cw, ch = 174, 204
+    cw, ch = 148, 204
 
     img = Image.new("RGBA", (cw * SS, ch * SS), CLEAR)
     d = ImageDraw.Draw(img)
@@ -116,11 +116,13 @@ def fuel_pump_bar():
     r((76, 62, 132, 112), 8, CLEAR)
     r((76, 128, 132, 142), 5, CLEAR)
 
-    # The hose arm: up the right-hand side, over, and down into a nozzle. This is the bit that
-    # makes it a pump rather than a box, which is why it is back.
-    r((150, 96, 178, 112), 8, WHITE)
-    r((178, 64, 196, 112), 9, WHITE)
-    r((186, 44, 214, 74), 12, WHITE)
+    # The hose arm, TUCKED IN. On the full icon it reaches to x=214 against a body that ends
+    # at 150 -- two thirds of the body's own width hanging off the side, which is honest at
+    # forty pixels and a spindly aerial at sixteen. Same three shapes, same shape of gesture,
+    # reaching to 188 instead: enough to say "pump", not enough to be most of the silhouette.
+    r((150, 96, 170, 110), 7, WHITE)
+    r((170, 68, 186, 110), 8, WHITE)
+    r((164, 50, 188, 76), 11, WHITE)
 
     _save_exact(img.resize((cw, ch), Image.LANCZOS), "fuel_bar.png")
 

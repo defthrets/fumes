@@ -330,34 +330,92 @@ namespace Fumes.UI
         }
 
         /// <summary>
-        /// The fuel in the bar: a flat level, a surface, and bubbles rising through it.
+        /// The fuel in the bar: a moving surface, and bubbles rising through it.
         ///
-        /// THE SURFACE IS FLAT. It was sliced into six columns each riding its own pair of sine
-        /// waves -- the pump display's technique, which works there because that glass is four
-        /// times as wide. At sixteen pixels a column is two and a half, so a wave of a couple of
-        /// pixels across six of them is not read as a moving liquid; it is read as the top edge
-        /// being ragged. The effect needed width the bar does not have.
+        /// THE BODY IS ONE RECTANGLE AND ONLY THE SURFACE IS COLUMNS. That is the whole fix for
+        /// the lines running down the bar, and they were not a rounding artefact -- they were
+        /// alpha.
         ///
-        /// What survives is what worked: a brighter line riding the surface, so the top is a
-        /// surface and not just where the colour stops, and the bubbles. Those do not need
-        /// width -- they need height, and the bar is two hundred pixels of it.
+        /// Every column used to be drawn from its own wavy top ALL THE WAY DOWN to the foot of
+        /// the bar, each overlapping its neighbour by a hair to keep a gap from opening between
+        /// them. But the fuel is translucent, and two translucent rectangles over the same
+        /// pixel do not come out the same as one: 1-(1-a)^2, not a. So every seam was a bright
+        /// stripe two hundred pixels long, and the fix that was supposed to hide the seams was
+        /// what drew them.
+        ///
+        /// Now the body is filled once, in a single rectangle, up to the LOWEST the surface can
+        /// swing. Only the few pixels of wave above that line are columns, they tile exactly
+        /// instead of overlapping, and there is nothing left to double up. Eight columns rather
+        /// than six as well, since a two-pixel strip is fine for a surface profile when it is
+        /// not also painting the whole bar.
         /// </summary>
         private void Liquid(float x, float y, float w, float h, float fraction, Color body,
                             bool filling)
         {
+            const int columns = 8;
+
+            var t = Environment.TickCount / 1000f;
+
             var level = h * fraction;
-            var top = y + h - level;
+            var surfaceY = y + h - level;
 
-            Draw.Bar(x, top, w, level, body);
+            // The waves die away as it fills, so a finished tank settles rather than sloshing
+            // forever -- and lift while fuel is going in, the one moment a surface has a reason
+            // to be disturbed.
+            var settle = Math.Min(fraction * 6f, 1f) * (1f - fraction * 0.55f);
+            if (filling) settle = Math.Min(settle * 2.2f + 0.35f, 1.5f);
 
-            // Mixed off the body rather than fixed, because the body runs the whole ramp from
-            // yellow to red and a fixed crest would come loose from it near empty.
-            if (level > 0.004f)
+            var a1 = 0.0013f * settle;
+            var a2 = 0.0008f * settle;
+
+            var amplitude = a1 + a2;
+
+            // The body, once, up to the deepest the surface can go. No seams because there is
+            // nothing to seam: it is one rectangle the full width of the bar.
+            var bodyTop = surfaceY + amplitude;
+            if (bodyTop < y) bodyTop = y;
+
+            if (bodyTop < y + h) Draw.Bar(x, bodyTop, w, y + h - bodyTop, body);
+
+            if (level <= 0.002f) return;
+
+            // A brighter line riding the surface, so the top is a surface and not just where
+            // the colour stops. Mixed off the body rather than fixed, because the body runs the
+            // whole ramp from yellow to red and a fixed crest would come loose from it.
+            var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 195), 0.55f);
+
+            if (amplitude < 0.00004f)
             {
-                Draw.Bar(x, top, w, 0.0011f, Mix(body, Color.FromArgb(body.A, 255, 240, 195), 0.55f));
+                Draw.Bar(x, surfaceY, w, 0.0011f, crest);
+            }
+            else
+            {
+                for (var i = 0; i < columns; i++)
+                {
+                    // EXACT TILING, not overlapping. One column's right edge is the next one's
+                    // left edge, computed from the same expression, so no pixel is covered
+                    // twice and no seam can brighten.
+                    var left = x + w * i / columns;
+                    var right = x + w * (i + 1) / columns;
+
+                    var u = (float)i / (columns - 1);
+
+                    // Two waves rather than one, at frequencies that do not divide into each
+                    // other: a single sine reads as a machine and two read as a liquid.
+                    var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
+                                       Math.Sin(t * 5.1f - u * 11.7f) * a2);
+
+                    var top = surfaceY + wave;
+                    if (top < y) top = y;
+
+                    // Only the sliver above the body line. A handful of pixels, not the bar.
+                    if (top < bodyTop) Draw.Bar(left, top, right - left, bodyTop - top, body);
+
+                    Draw.Bar(left, top, right - left, 0.0011f, crest);
+                }
             }
 
-            Bubbles(x, y, w, h, level, Environment.TickCount / 1000f, filling);
+            Bubbles(x, y, w, h, level, t, filling);
         }
 
         /// <summary>
