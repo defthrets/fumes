@@ -37,6 +37,7 @@ namespace Fumes
         private readonly Pumps _pumps;
         private readonly Stations _stations;
         private readonly Gauge _gauge;
+        private readonly Menu _menu;
         private readonly Meter _meter;
         private readonly Buttons _buttons;
         private readonly Refuel _refuel;
@@ -76,6 +77,7 @@ namespace Fumes
             _pumps = new Pumps();
             _stations = new Stations(_cfg);
             _gauge = new Gauge(_cfg);
+            _menu = new Menu(_cfg, _gauge);
             _meter = new Meter(_cfg, _gauge);
             _buttons = new Buttons();
             _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter, _buttons);
@@ -111,6 +113,12 @@ namespace Fumes
                 // single frame after an alt-tab.
                 if (dt <= 0f || dt > 0.5f) dt = dt > 0.5f ? 0.5f : 0f;
 
+                // FIRST, so a key pressed to open the menu is not also read by the refuel
+                // prompts on the same frame, and so Placing is known before anything draws.
+                _menu.Update();
+
+                _refuel.InputBlocked = _menu.IsOpen;
+
                 _stations.ShowBlips();
                 _tanks.Update(dt);
 
@@ -125,7 +133,10 @@ namespace Fumes
 
                 // The gauge, unless the refuel screen is already showing one for the thing
                 // being filled -- two gauges for two different vehicles is just confusing.
-                if (_refuel.TargetTank == null && _watched != null && _watched.Exists())
+                // Not while the positioner has it: that draws its own copy, at a made-up
+                // level, and two gauges in the same place is a smear rather than a preview.
+                if (!_menu.Placing &&
+                    _refuel.TargetTank == null && _watched != null && _watched.Exists())
                 {
                     _gauge.Update(_watched, _tanks.For(_watched), false, _stalled);
                 }

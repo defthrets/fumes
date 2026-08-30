@@ -44,6 +44,15 @@ First release.
   * Both GTA V editions from one build. No asset mods, no OpenIV, no RPF edits,
     and no dependency beyond ScriptHookVDotNet itself.
 
+  * A settings menu on Shift + F, built out of rectangles rather than a menu
+    library, so it stays a mod with no dependencies. Changes apply as you make
+    them and are written back to the ini when you close it.
+
+  * A live gauge positioner in that menu. Where the minimap lands depends on the
+    safe-zone slider and the aspect ratio and a mod cannot ask, so the gauge can
+    only ship right for one screen; now it can be dragged into place on yours,
+    with the size shown in real pixels as you do it.
+
   * The hose is one of the game's eight ropes and you can pick which. NumPad *
     with the nozzle in hand steps through them, NumPad 0 keeps the one you are
     looking at.

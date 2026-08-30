@@ -55,6 +55,8 @@ PLAYING
 
   Fuel gauge        the upright bar to the left of the minimap
 
+  Shift + F         the settings menu
+
   NumPad *          with the nozzle in hand, change which of the game's eight
                     ropes the hose is made of
   NumPad 0          keep the one you are looking at
@@ -69,10 +71,36 @@ persistent per vehicle and survives a save and a reload.
 Your money is really taken. Prices differ by station.
 
 
+THE MENU
+========
+
+Shift + F opens it. TAB changes page, UP and DOWN move, LEFT and RIGHT change a
+setting, ENTER works a row, BACKSPACE saves and closes.
+
+Everything you change shows on screen as you change it, and is written back into
+Fumes.ini when you close the menu - in place, keeping every comment, and only the
+lines that actually moved.
+
+The first row on the HUD page is MOVE AND SIZE THE GAUGE. That one matters more
+than it looks: where the minimap lands depends on your safe-zone slider and your
+aspect ratio, and there is no way for a mod to ask - so the gauge beside it can
+only be right on the screen it was tuned on, which is not yours. Press ENTER on
+that row and the gauge is yours to place:
+
+  ARROWS            move it
+  SHIFT + ARROWS    resize it
+  CTRL              hold for fine steps
+  ENTER             keep it
+
+It shows what it is in fractions AND in real pixels while you do, because "16 px
+wide" is a number both ends of a conversation can check and "0.0046" is not.
+
+
 SETTINGS
 ========
 
-Everything lives in scripts\Fumes.ini and every entry is commented in place.
+Everything the menu shows also lives in scripts\Fumes.ini, along with a great
+deal it does not, and every entry is commented in place.
 The sections are:
 
   [General]      units, whether the mod logs

@@ -189,7 +189,7 @@ namespace Fumes.Station
         /// </summary>
         private void RopePicker()
         {
-            if (!_cfg.RopePicker) return;
+            if (!_cfg.RopePicker || InputBlocked) return;
 
             if (Edge(System.Windows.Forms.Keys.Multiply, ref _ropeKeyDown))
             {
@@ -1122,8 +1122,19 @@ namespace Fumes.Station
         /// Both the configured keyboard key AND the game's own context control, so a controller
         /// works without anybody configuring anything.
         /// </summary>
+        /// <summary>
+        /// Set while the settings menu has the keyboard.
+        ///
+        /// Only the INPUT stops. The hose still hangs, the animation still plays and the tank
+        /// still fills -- pausing the interaction because a menu is open would strand a nozzle
+        /// in mid-air. It is Enter and the arrow keys that have to mean one thing at a time.
+        /// </summary>
+        public bool InputBlocked;
+
         private bool Pressed()
         {
+            if (InputBlocked) return false;
+
             if (_keyEdge) return true;
 
             try { return Game.IsControlJustPressed(Control.Context); }

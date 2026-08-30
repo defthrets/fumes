@@ -6,6 +6,15 @@ using GTA;
 namespace Fumes.Core
 {
     /// <summary>How a volume is written on screen.</summary>
+    /// <summary>What has to be held down with the menu key.</summary>
+    internal enum MenuModifier
+    {
+        None,
+        Shift,
+        Control,
+        Alt
+    }
+
     internal enum Units
     {
         Litres,
@@ -100,6 +109,18 @@ namespace Fumes.Core
         public bool Enabled = true;
         public LogLevel LogLevel = LogLevel.Info;
         public bool AnnounceOnLoad = true;
+
+        /// <summary>
+        /// The key that opens the settings menu, and what has to be held with it.
+        ///
+        /// A MODIFIER BY DEFAULT, and Shift specifically. A bare letter is one keystroke away
+        /// from whatever else the player has bound it to, and this game has mods bound to most
+        /// of the alphabet -- the hotkey map for this machine alone lists a hundred and twenty
+        /// one bindings. Shift+F is free on both installs here and is not a combination any
+        /// vanilla control uses.
+        /// </summary>
+        public Keys MenuKey = Keys.F;
+        public MenuModifier MenuModifier = MenuModifier.Shift;
 
         // ---- what burns fuel --------------------------------------------------
         /// <summary>
@@ -618,6 +639,8 @@ namespace Fumes.Core
 
                 s.Enabled = ini.GetBool("General", "Enabled", s.Enabled);
                 s.AnnounceOnLoad = ini.GetBool("General", "AnnounceOnLoad", s.AnnounceOnLoad);
+                s.MenuKey = ini.GetKey("General", "MenuKey", s.MenuKey);
+                s.MenuModifier = ParseEnum(ini.GetString("General", "MenuModifier", "Shift"), s.MenuModifier);
                 s.LogLevel = ParseEnum(ini.GetString("General", "LogLevel", "Info"), s.LogLevel);
 
                 s.ConsumptionMultiplier = ini.GetFloat("Fuel", "ConsumptionMultiplier", s.ConsumptionMultiplier, 0.05f, 20f);

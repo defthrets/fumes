@@ -138,6 +138,27 @@ namespace Fumes.UI
             }
         }
 
+        /// <summary>
+        /// Draws the gauge with a made-up tank, for the positioner in the menu.
+        ///
+        /// It has to draw whatever the game thinks: the gauge is normally only shown from
+        /// inside a vehicle, and the one moment you most want to place it is standing in front
+        /// of the minimap on foot with the menu open. refuelling = true is what waives that
+        /// check, and ShowGauge is forced because positioning a gauge you have switched off is
+        /// otherwise an empty screen and no explanation.
+        /// </summary>
+        public void Preview()
+        {
+            var was = _cfg.ShowGauge;
+            _cfg.ShowGauge = true;
+
+            try { Update(null, _previewTank, true); }
+            finally { _cfg.ShowGauge = was; }
+        }
+
+        /// <summary>A tank that does not exist, at a level that shows the fill and the icon.</summary>
+        private readonly Tank _previewTank = new Tank { Capacity = 65f, Litres = 41f, Known = true };
+
         public void Update(Vehicle vehicle, Tank tank, bool refuelling, bool stalled = false)
         {
             if (!_cfg.ShowGauge || tank == null) return;
