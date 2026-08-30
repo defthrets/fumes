@@ -1,6 +1,31 @@
 FUMES -- changes
 
 
+0.1.1
+=====
+
+  * The settings menu names its pages across the head -- HUD, FUEL, STATION,
+    HOSE, current one lit -- instead of reading "HUD 1/4". The number sat in the
+    same column as the ON, OFF and 0.72 beneath it and read as a value belonging
+    to the row under it. A label that has to be explained is not a label.
+
+  * Fixed: leaving the gauge positioner with the menu key threw the placement
+    away. It stayed where you put it for the rest of the session and the ini
+    never heard about it, so it sprang back on the next reload with nothing to
+    explain why. Enter saved and the menu key did not; both do now.
+
+  * Fixed: the positioner read its two exit keys as `a || b`, and || short
+    circuits -- so on any frame Enter produced an edge, Backspace's edge was
+    never evaluated. That call is also what updates the remembered key state, so
+    a Backspace held through that frame stayed recorded as up and would register
+    a phantom press later.
+
+  Note: the 0.1.0 asset was replaced in place after it was published, so a copy
+  downloaded early does not match one downloaded late. That is what this version
+  number is for, and it will not happen again -- anything that changes after a
+  release goes out gets a new one.
+
+
 0.1.0
 =====
 
