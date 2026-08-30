@@ -44,5 +44,10 @@ First release.
   * Both GTA V editions from one build. No asset mods, no OpenIV, no RPF edits,
     and no dependency beyond ScriptHookVDotNet itself.
 
+  * The hose is one of the game's eight ropes and you can pick which. NumPad *
+    with the nozzle in hand steps through them, NumPad 0 keeps the one you are
+    looking at.
+
   * A rope type that crashes the game is remembered across the crash and never
-    offered again.
+    offered again -- written down before the call that might crash, and read back
+    on the next launch.

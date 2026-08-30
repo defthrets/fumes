@@ -55,6 +55,14 @@ PLAYING
 
   Fuel gauge        the upright bar to the left of the minimap
 
+  NumPad *          with the nozzle in hand, change which of the game's eight
+                    ropes the hose is made of
+  NumPad 0          keep the one you are looking at
+
+The rope keys do nothing at any other time, and nothing at all if you never pick
+up a nozzle. Set [Nozzle] RopePicker = false to give the keys back once you have
+settled on one.
+
 The gauge shows the car you are in, or the one you are filling. Fuel is
 persistent per vehicle and survives a save and a reload.
 
