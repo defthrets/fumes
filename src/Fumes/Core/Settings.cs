@@ -211,7 +211,16 @@ namespace Fumes.Core
         public float BlinkerArmSeconds = 1.0f;
 
         /// <summary>How long a moving car goes without steering that way before it cancels.</summary>
-        public float BlinkerCancelSeconds = 1.0f;
+        public float BlinkerCancelSeconds = 2.0f;
+
+        /// <summary>
+        /// How long the wheel must be held the OTHER way before it cancels.
+        ///
+        /// Short, but not nothing. Coming out of a turn you hold the wheel over for the best
+        /// part of a second; lining the car up between two turns the same way is a flick, and
+        /// cancelling on that flick puts the indicator out exactly when you want it on.
+        /// </summary>
+        public float BlinkerOppositeSeconds = 0.6f;
 
         /// <summary>How far the wheel counts as turned at all, 0 to 1.</summary>
         public float BlinkerDeadzone = 0.35f;
@@ -740,6 +749,7 @@ namespace Fumes.Core
                 s.Blinkers = ini.GetBool("Engine", "Blinkers", s.Blinkers);
                 s.BlinkerArmSeconds = ini.GetFloat("Engine", "BlinkerArmSeconds", s.BlinkerArmSeconds, 0.1f, 5f);
                 s.BlinkerCancelSeconds = ini.GetFloat("Engine", "BlinkerCancelSeconds", s.BlinkerCancelSeconds, 0.1f, 10f);
+                s.BlinkerOppositeSeconds = ini.GetFloat("Engine", "BlinkerOppositeSeconds", s.BlinkerOppositeSeconds, 0f, 5f);
                 s.BlinkerDeadzone = ini.GetFloat("Engine", "BlinkerDeadzone", s.BlinkerDeadzone, 0.05f, 0.95f);
                 s.BlinkerMinSpeed = ini.GetFloat("Engine", "BlinkerMinSpeed", s.BlinkerMinSpeed, 0f, 20f);
                 s.BlinkerInvert = ini.GetBool("Engine", "BlinkerInvert", s.BlinkerInvert);

@@ -88,12 +88,23 @@ namespace Fumes.Fuel
                 // ---- going off -------------------------------------------------
                 if (_side == 0) return;
 
-                // Steering the other way. Straightening out of a turn IS steering the other
-                // way, which is exactly why a real indicator cancels there and why this needs
-                // no separate rule for "the turn is finished".
+                // Steering the other way -- BUT HELD, not merely touched.
+                //
+                // Straightening out of a turn IS steering the other way, which is why a real
+                // indicator cancels there and why this needs no separate rule for "the turn is
+                // finished". The catch is that straightening between two turns THE SAME WAY is
+                // also steering the other way: left at one junction, a flick of right to line
+                // the car up, left again at the next. Cancelling on the input alone killed the
+                // indicator in the gap, on the one manoeuvre where you most want it to stay.
+                //
+                // A duration separates them, because they differ in duration and in nothing
+                // else. Coming out of a turn you hold the wheel over for the best part of a
+                // second; lining the car up between two turns is a flick.
                 if (wheel == -_side)
                 {
-                    Set(car, 0);
+                    if (now - _steeringSince >= (int)(_cfg.BlinkerOppositeSeconds * 1000f))
+                        Set(car, 0);
+
                     return;
                 }
 
