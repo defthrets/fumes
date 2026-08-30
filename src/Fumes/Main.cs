@@ -38,7 +38,6 @@ namespace Fumes
         private readonly Stations _stations;
         private readonly Gauge _gauge;
         private readonly Menu _menu;
-        private readonly Ignition _ignition;
         private readonly Meter _meter;
         private readonly Buttons _buttons;
         private readonly Refuel _refuel;
@@ -79,7 +78,6 @@ namespace Fumes
             _stations = new Stations(_cfg);
             _gauge = new Gauge(_cfg);
             _menu = new Menu(_cfg, _gauge);
-            _ignition = new Ignition(_cfg, _tanks);
             _meter = new Meter(_cfg, _gauge);
             _buttons = new Buttons();
             _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter, _buttons);
@@ -120,10 +118,6 @@ namespace Fumes
                 _menu.Update();
 
                 _refuel.InputBlocked = _menu.IsOpen;
-
-                // Not while the menu has the keyboard, or Backspace and the arrows would be
-                // steering a car nobody is looking at.
-                if (!_menu.IsOpen) _ignition.Update(me);
 
                 _stations.ShowBlips();
                 _tanks.Update(dt);
