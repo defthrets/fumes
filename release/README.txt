@@ -1,0 +1,133 @@
+FUMES 0.1.0
+Persistent vehicle fuel for GTA V, with a refuel you walk through.
+by spitmux
+
+
+WHAT IT IS
+==========
+
+Every vanilla and online vehicle carries a real fuel tank. It empties as you
+drive and it is still empty when you come back to that car tomorrow.
+
+Refuelling is not a menu. Get out, walk to the pump, take the nozzle off it --
+it goes in your hand and the hose comes with you on a real physics rope. Walk
+round to wherever that model's filler actually is, fill up, then walk the nozzle
+back and hang it on the pump. Walk too far and the hose pulls it out of your
+hands.
+
+Runs on BOTH editions, Legacy and Enhanced, from one build. Pure
+ScriptHookVDotNet: no asset mods, no OpenIV, nothing to install into an RPF.
+
+
+REQUIREMENTS
+============
+
+  Script Hook V
+  ScriptHookVDotNet 3 (3.9 or later)
+
+Nothing else. No NativeUI, no LemonUI, no iFruitAddon.
+
+
+INSTALLING
+==========
+
+Copy the "scripts" folder from this zip into your GTA V folder, so you end up
+with:
+
+  Grand Theft Auto V\scripts\Fumes.dll
+  Grand Theft Auto V\scripts\Fumes.ini
+  Grand Theft Auto V\scripts\Fumes\stations.json
+  Grand Theft Auto V\scripts\Fumes\icons\*.png
+
+The icons folder is not optional decoration -- without it the HUD still works
+but has no pictures in it.
+
+To uninstall, delete those. Nothing is written anywhere else, and nothing in the
+game's own files is touched.
+
+
+PLAYING
+=======
+
+  E                 take the nozzle, start filling, hang it back up
+                    (the game's CONTEXT control, so it follows a rebind and
+                     shows the right button on a pad)
+
+  Fuel gauge        the upright bar to the left of the minimap
+
+The gauge shows the car you are in, or the one you are filling. Fuel is
+persistent per vehicle and survives a save and a reload.
+
+Your money is really taken. Prices differ by station.
+
+
+ADJUSTING THE HOSE AND THE POSE, IN GAME
+========================================
+
+The hose join and the filling pose are the two things no setting can be right
+about in advance -- they depend on the nozzle model that streamed in and on
+which animation you like. Both are adjustable while you play, and NumPad 0
+writes whatever you have to Fumes.ini so it survives.
+
+While the nozzle is in your hand:
+
+  ]  [              hose join up / down            (1 cm a press)
+  ;  /              hose join back / forward along the nozzle
+  .  ,              hose join right / left
+  NumPad *          next rope type (0-7)
+  NumPad -          flip which end of the nozzle the hose leaves from
+  NumPad 0          save all of the above to Fumes.ini
+
+While filling:
+
+  NumPad 7  9       arm lower / higher in the filling animation
+  NumPad 0          save
+
+These keys do nothing at any other time, and nothing at all if you never pick
+up a nozzle.
+
+
+SETTINGS
+========
+
+Everything lives in scripts\Fumes.ini and every entry is commented in place.
+The sections are:
+
+  [General]      units, whether the mod logs
+  [Fuel]         tank sizes, how fast things drink, prices
+  [Engine]       what an empty tank does to the car
+  [Station]      how close you have to be, refuel speed
+  [Nozzle]       the nozzle prop, the hose, the filling animation
+  [HUD]          the gauge and the pump display
+  [Hazard]       the odds a shootout at the pumps sets the vapour off
+  [Consumption]  per-class thirst
+
+Two of them are worth knowing about up front:
+
+  [Station] LearnStations   25 forecourts ship with the mod and some of the
+                       hand-written coordinates are simply wrong -- a blip on the
+                       far side of a block from the forecourt it names. Nothing
+                       depends on those numbers, since pumps are found as objects
+                       rather than by coordinate, but a misplaced blip is still
+                       the thing you navigate by. With this on, driving within
+                       sight of any pump moves the nearest listed station onto
+                       it, and a pump with no station listed near it becomes a
+                       new one. That goes to stations.local.json, never to the
+                       shipped file, so an update cannot undo it.
+
+  [HUD] Opacity        the whole gauge, one number.
+
+There are also full tuners behind [Nozzle] TuneNozzle and [HUD] TuneGauge, off
+by default, which put a caption on screen and give the numpad over to moving
+things a fraction at a time. You do not need them for normal play.
+
+
+NOTES
+=====
+
+Fuel levels are saved to scripts\Fumes\tanks.json, or to Documents\Fumes if the
+game folder is not writable. A log goes beside it when [General] Log is on;
+it is the first place to look if something is not behaving.
+
+If a rope type ever crashes the game, Fumes notices on the next launch and puts
+that type on [Nozzle] BadRopeTypes so it is never offered again.

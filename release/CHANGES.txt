@@ -1,0 +1,46 @@
+FUMES -- changes
+
+
+0.1.0
+=====
+
+First release.
+
+  * Persistent fuel for every vanilla and online vehicle. Tanks are saved per
+    vehicle and survive a save, a reload and a session.
+
+  * A refuel you walk through rather than a menu: take the nozzle off the pump,
+    carry it on a real physics rope, fill at the model's actual filler, walk it
+    back and hang it up. Walk too far and it is pulled out of your hands.
+
+  * The nozzle is a real prop in your hand, held on an invisible weapon so the
+    pose is right, and it goes back to melee when you hang up.
+
+  * Pump display on the forecourt: brand, price, litres, running total, and a
+    sight glass with the fuel rising in it.
+
+  * Fuel gauge beside the minimap. Colour ramps yellow to red with the level,
+    bubbles rise through it, and the surface moves.
+
+  * Money is really taken, and the charge is read back rather than assumed --
+    Player.Money is a no-op on non-protagonist models, and a bill nobody paid is
+    worse than no bill.
+
+  * Pumps are found as OBJECTS, not by coordinate, so the mod works at
+    forecourts it has never heard of. It also corrects its own station list from
+    the pumps it finds, into a local file an update cannot overwrite.
+
+  * Empty means empty: the engine dies, and an electric car goes flat rather
+    than dry.
+
+  * 25 stations, each with its own price.
+
+  * Both GTA V editions from one build. No asset mods, no OpenIV, no RPF edits,
+    and no dependency beyond ScriptHookVDotNet itself.
+
+  * Live tuning for the two things a setting cannot be right about in advance --
+    where the hose meets the nozzle, and how far into the filling animation the
+    arm stops -- with NumPad 0 writing them back to the ini.
+
+  * A rope type that crashes the game is remembered across the crash and never
+    offered again.
