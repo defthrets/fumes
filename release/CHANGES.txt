@@ -35,6 +35,12 @@ First release.
 
   * 25 stations, each with its own price.
 
+  * A running-fuel sound while filling. GTA has no fuel-pump sound of its own --
+    vanilla has no refuelling, so one was never authored -- so this borrows the
+    car wash spray, which is pressurised liquid on a loop. If it will not play,
+    Fumes works out that it did not and moves on rather than going quiet with no
+    explanation.
+
   * Both GTA V editions from one build. No asset mods, no OpenIV, no RPF edits,
     and no dependency beyond ScriptHookVDotNet itself.
 

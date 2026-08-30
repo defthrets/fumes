@@ -73,16 +73,17 @@ namespace Fumes.Station
         /// </summary>
         private static readonly string[][] Candidates =
         {
-            // A meter filling. Tried first because collect_water, which played perfectly
-            // well, sounded like water being collected -- which is the trouble with borrowing
-            // sounds: the probe can tell you a sound is REAL and playing, and cannot tell you
-            // it suits. That part only you can hear.
-            new[] { "Meter_Fill_Loop", "DLC_IE_Tail_Vehicle_Sounds", "DLC_IE_Tail_Vehicle_Sounds" },
-
-            // A car wash spraying a car: pressurised liquid, loops for as long as the wash
-            // runs, and it is a base-game set with no DLC bank behind it.
+            // THE ONE. A car wash spraying a car: pressurised liquid, loops for as long as
+            // the wash runs, and -- the part that matters for shipping it -- a BASE-GAME set
+            // with no DLC bank behind it, so it needs nothing requested and cannot be missing
+            // from anybody's install.
+            //
+            // Chosen by ear after auditioning the others. Nothing below it is broken; they are
+            // simply the ones that sounded less like a hose.
             new[] { "SPRAY", "CARWASH_SOUNDS", null },
             new[] { "SPRAY_CAR", "CARWASH_SOUNDS", null },
+
+            new[] { "Meter_Fill_Loop", "DLC_IE_Tail_Vehicle_Sounds", "DLC_IE_Tail_Vehicle_Sounds" },
 
             // A cutting torch: a continuous gas hiss, which is most of what a pump running
             // actually sounds like from arm's length.
