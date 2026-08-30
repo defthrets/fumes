@@ -14,14 +14,17 @@ namespace Fumes.Station
     /// game's audio metadata at runtime. A name that does not exist is not an error: the call
     /// returns nothing, no exception is thrown, and the result is silence that looks exactly
     /// like a volume problem, an occlusion problem or a mod conflict. There is no native that
-    /// lists the valid names and no file on this machine that holds them -- I looked, including
-    /// through every other script installed here, for a corpus of real ones. There was none.
+    /// lists the valid names and nothing on this machine holds them either -- not the game
+    /// folders, not the strings of any other script installed in them.
     ///
-    /// So the names below are CANDIDATES, not knowledge, and they are treated that way. The
-    /// probe is HAS_SOUND_FINISHED: a looping sound that is really playing does not finish, so
-    /// one that reports finished half a second after being started never started at all. That
-    /// candidate is struck off and the next is tried, and the one that survives is named in the
-    /// log so it can become the default.
+    /// The names in Candidates ARE real: they come from a dump of the game's own audio
+    /// metadata. But real is not the same as working -- a DLC sound needs its bank loaded, and
+    /// a one-shot will not loop for the length of a fill -- so every one is still probed.
+    ///
+    /// The probe is HAS_SOUND_FINISHED: a looping sound that is really playing does not finish,
+    /// so one that reports finished half a second after being started never started at all.
+    /// That candidate is struck off and the next is tried, and the one that survives is named
+    /// in the log so it can become the default.
     ///
     /// This is the same shape as the animation clip list and the rope probe, and for the same
     /// reason: where the game will not tell you in advance, ask it afterwards. Guessing once
@@ -52,21 +55,39 @@ namespace Fumes.Station
         }
 
         /// <summary>
-        /// Candidate (sound, set, audio bank) triples, best guess first.
+        /// Candidate (sound, set, audio bank) triples, best first.
         ///
-        /// The bank is requested before playing where one is named, because a sound whose bank
-        /// is not loaded behaves exactly like a sound that does not exist -- which would make
-        /// the probe strike off a name that was fine.
+        /// THESE ARE REAL NAMES NOW, not invented ones. The first five were guesses and all
+        /// five failed the probe in two and a half seconds -- which is what the probe is for,
+        /// but a guess with a 0-for-5 record is not worth another round. These come out of
+        /// DurtyFree's gta-v-data-dumps soundNames.json, 2204 sounds across 501 sets pulled
+        /// from the game's own audio metadata, filtered for anything that flows.
+        ///
+        /// The game has no fuel-pump sound, because vanilla GTA has no refuelling. So the list
+        /// is things that ARE a liquid or gas under pressure and happen to be needed elsewhere:
+        /// a car wash spray, a cutting torch, a meter filling. Ordered by how much each one
+        /// sounds like a hose running rather than by how close its name is.
+        ///
+        /// Every one is still probed. A name being real is not the same as its bank being
+        /// loaded, and being loaded is not the same as it looping.
         /// </summary>
         private static readonly string[][] Candidates =
         {
-            // A pump filling a tank. If any of these is right it is most likely one of the
-            // first two; the rest are liquid-adjacent loops that would at least read as flow.
-            new[] { "Fuel_Pump_Loop", "PETROL_PUMP_SOUNDS", null },
-            new[] { "Pouring_Loop", "WEAPONS_PLAYER_JERRYCAN", "WEAPONS_PLAYER_JERRYCAN" },
-            new[] { "Water_Loop", "CAR_WASH_SOUNDS", null },
-            new[] { "Liquid_Pour", "OIL_RIG_SOUNDS", null },
-            new[] { "Fire_Extinguisher_Loop", "WEAPONS_PLAYER_FIRE_EXTINGUISHER", null },
+            // A car wash spraying a car: pressurised liquid, loops for as long as the wash
+            // runs, and it is a base-game set with no DLC bank behind it.
+            new[] { "SPRAY", "CARWASH_SOUNDS", null },
+            new[] { "SPRAY_CAR", "CARWASH_SOUNDS", null },
+
+            // A cutting torch: a continuous gas hiss, which is most of what a pump running
+            // actually sounds like from arm's length.
+            new[] { "Blowtorch_Loop", "DLC_H4_Underwater_Blowtorch_Sounds",
+                    "DLC_H4_Underwater_Blowtorch_Sounds" },
+
+            // Named exactly right, though it is a UI meter rather than a tank.
+            new[] { "Meter_Fill_Loop", "DLC_IE_Tail_Vehicle_Sounds", "DLC_IE_Tail_Vehicle_Sounds" },
+
+            new[] { "collect_water", "dlc_sum20_yacht_missions_ah_sounds",
+                    "dlc_sum20_yacht_missions_ah_sounds" },
         };
 
         /// <summary>
