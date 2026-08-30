@@ -428,6 +428,16 @@ namespace Fumes.Core
         public Units Units = Units.Litres;
         public bool ShowNumbers = true;
 
+        /// <summary>
+        /// The amber tick at the reserve level.
+        ///
+        /// Off. It was there so "low" would be a PLACE on the gauge rather than a message that
+        /// has already gone -- but the bar is a continuous colour ramp now, and the ramp is
+        /// already red by the time the tick matters. It was marking a threshold the colour had
+        /// announced two hundred pixels earlier, and on a bar this narrow it read as damage.
+        /// </summary>
+        public bool ShowReserveMark = false;
+
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
         public bool ForecourtHazard = true;
@@ -557,6 +567,7 @@ namespace Fumes.Core
                 s.Vertical = ini.GetBool("HUD", "Vertical", s.Vertical);
                 s.Units = ParseEnum(ini.GetString("HUD", "Units", "Litres"), s.Units);
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);
+                s.ShowReserveMark = ini.GetBool("HUD", "ShowReserveMark", s.ShowReserveMark);
                 s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);
                 s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 

@@ -141,18 +141,24 @@ namespace Fumes.UI
                         }
                     }
 
-                    // The reserve mark, measured from the bottom for the same reason.
-                    var reserveY = y + h * (1f - Clamp01(_cfg.ReserveFraction));
-                    Draw.Bar(x - 0.0016f, reserveY, w + 0.0032f, 0.0011f,
-                             Color.FromArgb(225, 235, 180, 60));
+                    if (_cfg.ShowReserveMark)
+                    {
+                        // Measured from the bottom, for the same reason the fill is.
+                        var reserveY = y + h * (1f - Clamp01(_cfg.ReserveFraction));
+                        Draw.Bar(x - 0.0016f, reserveY, w + 0.0032f, 0.0011f,
+                                 Color.FromArgb(225, 235, 180, 60));
+                    }
                 }
                 else
                 {
                     if (fraction > 0.001f) Draw.Bar(x, y, w * fraction, h, colour);
 
-                    var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
-                    Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f,
-                             Color.FromArgb(225, 235, 180, 60));
+                    if (_cfg.ShowReserveMark)
+                    {
+                        var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
+                        Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f,
+                                 Color.FromArgb(225, 235, 180, 60));
+                    }
                 }
 
                 if (!_cfg.ShowNumbers) return;
