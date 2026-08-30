@@ -303,7 +303,8 @@ namespace Fumes.Station
             // HangUpReach, not PumpReach, and they are different numbers for a reason that only
             // turns up in play: you park right next to the pump, so the filler is nearly always
             // inside PumpReach as well.
-            var atPump = me.Position.DistanceTo(_pump.Position) <= _cfg.HangUpReach;
+            var toPump = me.Position.DistanceTo(_pump.Position);
+            var atPump = toPump <= _cfg.HangUpReach;
 
             var vehicle = NearestFillable(me, out var filler, out var inReach);
             var tank = vehicle == null ? null : _tanks.For(vehicle);
@@ -320,12 +321,28 @@ namespace Fumes.Station
                                  false, false, false, null, null, false);
             }
 
-            // FILLING WINS OVER HANGING UP, and this order is the whole fix for a station being
-            // unusable. Both prompts want the same button, and at a real pump you are standing
-            // inside both radii at once -- so whichever is tested first is the only one you can
-            // ever get. Hanging up used to be first, which meant the fill prompt was unreachable
-            // at exactly the moment it was the thing you wanted.
-            if (vehicle != null && inReach && hasRoom)
+            // WHICHEVER YOU ARE ACTUALLY STANDING AT WINS. Not a fixed order, because a fixed
+            // order in either direction makes one of the two prompts unreachable.
+            //
+            // Both want the same button, and at a pump you are inside both radii at once: the
+            // car is parked at the pump, so the filler is within CapReach at the same moment the
+            // pump is within HangUpReach. Hanging up was tested first once, and the fill prompt
+            // could not be got at all. Filling was put first to fix that, and now hanging up
+            // cannot be got. Ordering was never the answer -- it just chooses which half of the
+            // interaction to break.
+            //
+            // Distance decides it, and it decides it correctly without any new numbers: standing
+            // at the pump the pump is under a metre away and the filler is three, and standing
+            // at the filler it is the other way round. That is exactly the intent that the
+            // radii were being asked, and failing, to express.
+            var toFiller = vehicle == null ? float.MaxValue : me.Position.DistanceTo(filler);
+
+            RangeOnce(toPump, toFiller);
+
+            var canFill = vehicle != null && inReach && hasRoom;
+            var hangUpIsNearer = atPump && toPump < toFiller;
+
+            if (canFill && !hangUpIsNearer)
             {
                 Prompt(Control.Context, "Fill the " + vehicle.LocalizedName +
                                         "   $" + _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L");
@@ -659,6 +676,27 @@ namespace Fumes.Station
         // ==================================================================
         // Putting it back
         // ==================================================================
+
+        /// <summary>
+        /// Says, once, how far the pump and the filler actually are when both are in range.
+        ///
+        /// The two prompts are chosen between by distance now, and the whole question is which
+        /// of two numbers nobody can see is smaller. One line saying what they were the first
+        /// time both were live turns "it still picks the wrong one" into something checkable.
+        /// </summary>
+        private void RangeOnce(float toPump, float toFiller)
+        {
+            if (_rangeLogged || toFiller > 500f) return;
+            _rangeLogged = true;
+
+            Log.Info("Standing " + toPump.ToString("0.00", CultureInfo.InvariantCulture) +
+                     "m from the pump and " + toFiller.ToString("0.00", CultureInfo.InvariantCulture) +
+                     "m from the filler (hang up within " +
+                     _cfg.HangUpReach.ToString("0.0", CultureInfo.InvariantCulture) + "m, fill within " +
+                     _cfg.CapReach.ToString("0.0", CultureInfo.InvariantCulture) + "m).");
+        }
+
+        private bool _rangeLogged;
 
         private void HangUp()
         {
