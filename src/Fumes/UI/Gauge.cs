@@ -162,10 +162,10 @@ namespace Fumes.UI
                 var edge = w * 0.22f;
                 if (edge < 0.0005f) edge = 0.0005f;
 
-                Draw.Bar(x - edge, y - edge, w + edge * 2f, h + edge * 2f, Color.FromArgb(205, 0, 0, 0));
-                Draw.Bar(x, y, w, h, Color.FromArgb(165, 28, 28, 32));
+                Draw.Bar(x - edge, y - edge, w + edge * 2f, h + edge * 2f, Fade(Color.FromArgb(205, 0, 0, 0)));
+                Draw.Bar(x, y, w, h, Fade(Color.FromArgb(165, 28, 28, 32)));
 
-                var colour = Level(fraction);
+                var colour = Fade(Level(fraction));
 
                 if (_cfg.Vertical)
                 {
@@ -195,7 +195,7 @@ namespace Fumes.UI
 
                             if (hi > lo)
                             {
-                                Draw.Bar(x, lo, w, hi - lo, Color.FromArgb(60, 255, 250, 225));
+                                Draw.Bar(x, lo, w, hi - lo, Fade(Color.FromArgb(60, 255, 250, 225)));
                             }
                         }
                     }
@@ -205,7 +205,7 @@ namespace Fumes.UI
                         // Measured from the bottom, for the same reason the fill is.
                         var reserveY = y + h * (1f - Clamp01(_cfg.ReserveFraction));
                         Draw.Bar(x - 0.0016f, reserveY, w + 0.0032f, 0.0011f,
-                                 Color.FromArgb(225, 235, 180, 60));
+                                 Fade(Color.FromArgb(225, 235, 180, 60)));
                     }
                 }
                 else
@@ -216,7 +216,7 @@ namespace Fumes.UI
                     {
                         var reserveX = x + w * Clamp01(_cfg.ReserveFraction);
                         Draw.Bar(reserveX, y - 0.0016f, 0.0012f, h + 0.0032f,
-                                 Color.FromArgb(225, 235, 180, 60));
+                                 Fade(Color.FromArgb(225, 235, 180, 60)));
                     }
                 }
 
@@ -263,9 +263,9 @@ namespace Fumes.UI
                     // one reading you cannot afford to lose is the one just before you stop.
                     var lit = h * fraction >= textH + inset;
 
-                    var ink = stalled ? Color.FromArgb(245, 255, 120, 110)
-                            : lit     ? Color.FromArgb(240, 10, 10, 12)
-                                      : Color.FromArgb(235, 240, 240, 240);
+                    var ink = Fade(stalled ? Color.FromArgb(245, 255, 120, 110)
+                                 : lit     ? Color.FromArgb(240, 10, 10, 12)
+                                           : Color.FromArgb(235, 240, 240, 240));
 
                     // NOTHING IS DRAWN AT A FULL TANK. A full bar already says full, and 100
                     // is the one reading that does not fit -- the digits are sized so that TWO
@@ -299,8 +299,8 @@ namespace Fumes.UI
                         var iconLit = h * fraction >= used + iconH;
 
                         _pump.DrawSized(x + w / 2f, y + h - used - iconH / 2f, iconW, iconH,
-                                        iconLit ? Color.FromArgb(240, 10, 10, 12)
-                                                : Color.FromArgb(215, 235, 235, 238));
+                                        Fade(iconLit ? Color.FromArgb(240, 10, 10, 12)
+                                                     : Color.FromArgb(215, 235, 235, 238)));
                     }
 
                     // FUEL, when it is asked for. It takes the same ink rule as the number
@@ -315,8 +315,8 @@ namespace Fumes.UI
                         var labelLit = h * fraction >= labelH + 0.006f;
 
                         _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph, labelH,
-                                      labelLit ? Color.FromArgb(215, 18, 18, 20)
-                                               : Color.FromArgb(160, 225, 225, 228));
+                                      Fade(labelLit ? Color.FromArgb(215, 18, 18, 20)
+                                                    : Color.FromArgb(160, 225, 225, 228)));
                     }
 
                     return;
@@ -326,14 +326,31 @@ namespace Fumes.UI
                 var reading = label + "   " + Volume(tank.Litres) + " / " + Volume(tank.Capacity);
 
                 Draw.Text(reading, x + w / 2f, y - 0.0008f, 0.215f,
-                          stalled ? Color.FromArgb(240, 255, 120, 110)
-                                  : Color.FromArgb(230, 245, 245, 245),
+                          Fade(stalled ? Color.FromArgb(240, 255, 120, 110)
+                                       : Color.FromArgb(230, 245, 245, 245)),
                           4, true);
             }
             catch (Exception ex)
             {
                 Log.Once("gauge", "The gauge could not be drawn: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// The same colour, at the gauge's opacity.
+        ///
+        /// Every colour the gauge draws goes through here, which is the point: the alphas in
+        /// the drawing code stay as the RATIOS between the parts -- border darker than channel,
+        /// shimmer barely there -- and one setting moves the lot without disturbing any of them.
+        /// </summary>
+        private Color Fade(Color c)
+        {
+            var a = (int)(c.A * _cfg.GaugeOpacity + 0.5f);
+
+            if (a < 0) a = 0;
+            if (a > 255) a = 255;
+
+            return Color.FromArgb(a, c.R, c.G, c.B);
         }
 
         private static bool InThisVehicle(Vehicle v)

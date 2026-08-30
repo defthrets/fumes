@@ -516,6 +516,19 @@ namespace Fumes.Core
         /// </summary>
         public bool HideFullReading = true;
 
+        /// <summary>
+        /// How solid the whole gauge is, 1 being exactly as drawn and 0 invisible.
+        ///
+        /// ONE NUMBER FOR THE WHOLE THING, applied to every colour it draws. The alternative is
+        /// eight alpha literals scattered through the drawing code that have to be kept in step
+        /// by hand, and "make it slightly more see-through" then means editing all eight and
+        /// getting the ratios right -- which is how a border ends up more solid than the bar it
+        /// surrounds.
+        ///
+        /// 0.85 sits it about where the game's own health and armour bars are.
+        /// </summary>
+        public float GaugeOpacity = 0.85f;
+
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
         public bool ForecourtHazard = true;
@@ -655,6 +668,7 @@ namespace Fumes.Core
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
                 s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);
+                s.GaugeOpacity = ini.GetFloat("HUD", "Opacity", s.GaugeOpacity, 0.15f, 1f);
                 s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);
                 s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 
