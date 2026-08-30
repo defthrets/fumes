@@ -24,15 +24,10 @@ namespace Fumes.UI
         /// <summary>The pump that sits above the reading. A white PNG; the colour is the tint.</summary>
         private readonly Icon _pump = new Icon("fuel_bar.png");
 
-        /// <summary>
-        /// fuel_bar.png's own shape, 192 wide by 256 tall.
-        ///
-        /// It is not square and is not meant to be. Only the WIDTH is constrained here -- the
-        /// bar is sixteen pixels across and two hundred tall -- so a pump squared up to fit the
-        /// width is a washing machine, and the same ink at three to four is a pump and a third
-        /// larger. The height on screen follows the file rather than being guessed.
-        /// </summary>
-        private const float PumpTall = 256f / 192f;
+        // The pump's height on screen comes from the file's own shape -- see Icon.Aspect.
+        // It was a constant here, copied by hand from the crop in make_icons.py, which is a
+        // pairing nobody would remember to keep in step and whose failure is a silently
+        // squashed icon rather than anything that complains.
 
         /// <summary>
         /// Screen width over height, for keeping the pump square.
@@ -303,7 +298,7 @@ namespace Fumes.UI
                         // Square ON SCREEN, which is not the same as square in the sprite canvas
                         // -- see _aspect. Width is the bar's width, so it fits exactly.
                         var iconW = w;
-                        var iconH = w * _aspect * PumpTall;
+                        var iconH = w * _aspect * _pump.Aspect;
 
                         var iconLit = h * fraction >= used + iconH;
 

@@ -147,6 +147,60 @@ namespace Fumes.UI
             }
         }
 
+        /// <summary>
+        /// The file's own height over its width.
+        ///
+        /// READ OFF THE FILE, not written down somewhere. The gauge needs it to draw the pump
+        /// at the shape it was drawn at, and the alternative is a constant here that has to be
+        /// kept in step by hand with a crop in a Python script -- which is a thing nobody will
+        /// remember, and the failure is a silently squashed icon rather than an error.
+        ///
+        /// Straight out of the PNG header: eight bytes of signature, a length, "IHDR", then
+        /// width and height as big-endian ints. Sixteen bytes read, no decoder, no bitmap.
+        /// </summary>
+        public float Aspect
+        {
+            get
+            {
+                if (_aspect > 0f) return _aspect;
+
+                _aspect = 1f;
+
+                try
+                {
+                    var head = new byte[24];
+
+                    using (var f = File.OpenRead(_path))
+                    {
+                        if (f.Read(head, 0, head.Length) < head.Length) return _aspect;
+                    }
+
+                    // Not a PNG if the signature is wrong; leave it square rather than reading
+                    // four arbitrary bytes as a size.
+                    if (head[1] != 'P' || head[2] != 'N' || head[3] != 'G') return _aspect;
+
+                    var width = BigEndian(head, 16);
+                    var height = BigEndian(head, 20);
+
+                    if (width > 0 && height > 0) _aspect = height / (float)width;
+                }
+                catch (Exception ex)
+                {
+                    Log.Once("icon-aspect-" + _path, "Could not read the size of " + _path + ": " +
+                                                     ex.Message + " - treating it as square.");
+                }
+
+                return _aspect;
+            }
+        }
+
+        private float _aspect;
+
+        private static int BigEndian(byte[] b, int at)
+        {
+            return (b[at] << 24) | (b[at + 1] << 16) | (b[at + 2] << 8) | b[at + 3];
+        }
+
         private bool Ready()
         {
             if (_sprite != null) return true;

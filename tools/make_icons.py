@@ -81,43 +81,48 @@ def fuel_pump():
 
 def fuel_pump_bar():
     """
-    The pump again, for INSIDE the gauge bar, where it is drawn about sixteen pixels wide.
+    THE SAME PUMP AS fuel_pump, hose arm and all, cropped to its own ink.
 
-    Three things are different and all three are forced by that size.
+    The body-only version read as a washing machine; this is the drawing that reads as a pump,
+    which is the whole point of having a picture there. Every shape below is copied from
+    fuel_pump unchanged -- only the canvas is different.
 
-    NO HOSE ARM, as asked. On the full icon the arm reaches out to x=214 while the body spans
-    only 58 to 150 -- so the body, the part that carries the shape, gets barely a third of the
-    width and the rest goes to an arm that at sixteen pixels is two grey specks. Dropping it
-    is not losing detail, it is refusing to spend most of the readable area on detail nobody
-    can read.
+    And that is the part worth doing. The square icon spans x 44 to 214 and y 40 to 240 of a
+    256 canvas, so a third of its width and a fifth of its height are empty -- and a sprite is
+    sized by its CANVAS, not by the ink in it, so at sixteen pixels wide that margin was eating
+    a third of the pump. Trimmed to the drawing, the same art comes out about half again
+    larger with nothing removed and nothing redrawn.
 
-    THE BODY FILLS THE CANVAS. Removing the arm alone would not have helped much: the art
-    would still sit in the middle of a mostly empty square, and a sprite is sized by its
-    canvas, not by the ink in it. Out to the edges, the same sixteen pixels carry about twice
-    the pump.
-
-    AND IT IS TALLER THAN IT IS WIDE, three to four, saved at that shape rather than squared
-    up. Only the WIDTH is constrained -- the bar is sixteen pixels across and the gauge is two
-    hundred tall, so height is free. A pump squashed into a square is a washing machine; the
-    same ink at 3:4 is a pump, and it is a third bigger into the bargain.
+    Saved at its own shape rather than squared up: only the WIDTH is constrained in the gauge,
+    since the bar is sixteen pixels across and two hundred tall. The Gauge reads the height
+    back off the file, so this can be recropped without a number needing changing there.
     """
-    w, h = 192, 256
+    # The ink's bounding box in fuel_pump's design space, plus two either side to keep the
+    # anti-aliased edge off the boundary.
+    ox, oy = 42, 38
+    cw, ch = 174, 204
 
-    img = Image.new("RGBA", (w * SS, h * SS), CLEAR)
+    img = Image.new("RGBA", (cw * SS, ch * SS), CLEAR)
     d = ImageDraw.Draw(img)
 
-    # Plinth, wider than the body, as the full icon has it.
-    rrect(d, (2, 220, 190, 252), 10, WHITE)
+    def r(box, radius, fill):
+        rrect(d, (box[0] - ox, box[1] - oy, box[2] - ox, box[3] - oy), radius, fill)
 
-    # Body, out to the edges.
-    rrect(d, (16, 4, 176, 222), 22, WHITE)
+    # Body and its plinth.
+    r((58, 40, 150, 224), 14, WHITE)
+    r((44, 216, 164, 240), 8, WHITE)
 
-    # Display window and keypad, punched out. Without them it is a rounded rectangle, and a
-    # rounded rectangle is not a pump -- they are what little shape survives at this size.
-    rrect(d, (42, 32, 150, 116), 14, CLEAR)
-    rrect(d, (42, 142, 150, 176), 9, CLEAR)
+    # Display window and keypad, punched out.
+    r((76, 62, 132, 112), 8, CLEAR)
+    r((76, 128, 132, 142), 5, CLEAR)
 
-    _save_exact(img.resize((w, h), Image.LANCZOS), "fuel_bar.png")
+    # The hose arm: up the right-hand side, over, and down into a nozzle. This is the bit that
+    # makes it a pump rather than a box, which is why it is back.
+    r((150, 96, 178, 112), 8, WHITE)
+    r((178, 64, 196, 112), 9, WHITE)
+    r((186, 44, 214, 74), 12, WHITE)
+
+    _save_exact(img.resize((cw, ch), Image.LANCZOS), "fuel_bar.png")
 
 
 def droplet():
