@@ -393,7 +393,7 @@ namespace Fumes.Core
         /// Frozen at the reach it is a pose, and a pose is what refuelling needs. Negative
         /// lets the clip play through normally.
         /// </summary>
-        public float FillAnimPhase = 0.35f;
+        public float FillAnimPhase = 0.18f;
 
         /// <summary>
         /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
