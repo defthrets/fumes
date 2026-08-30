@@ -36,7 +36,7 @@ ASPECT = SCREEN_W / SCREEN_H
 X, TOP, W, H = 0.5, 0.700, 0.300, 0.160
 TANK_X, TANK_Y, TANK_W, TANK_H = 0.020, 0.036, 0.042, 0.088
 COL_LEFT, COL_RIGHT = 0.078, 0.238
-COLUMNS, BUBBLES = 22, 5
+COLUMNS, BUBBLES = 48, 9
 BORDER_SEGMENTS = 120
 
 
@@ -211,41 +211,57 @@ def liquid(img, x, y, fraction, full, t):
     body = (120, 225, 135, 238) if full else (235, 160, 45, 238)
     crest = (175, 245, 185, 250) if full else (255, 210, 120, 250)
 
-    column_w = TANK_W / COLUMNS
     level = TANK_H * fraction
     surface_y = y + TANK_H - level
 
     settle = 0.0 if full else min(fraction * 6.0, 1.0) * (1.0 - fraction * 0.55)
     a1, a2 = 0.0017 * settle, 0.0010 * settle
+    amplitude = a1 + a2
 
-    for i in range(COLUMNS):
-        u = i / (COLUMNS - 1)
-        wave = math.sin(t * 3.3 + u * 7.1) * a1 + math.sin(t * 5.1 - u * 11.7) * a2
+    # The body, once, the full width of the glass. Mirrors Meter.Liquid: strips that ran the
+    # whole depth of the tank and overlapped by 0.0002 made every seam a bright line, because
+    # two translucent rectangles over one pixel come out at 1-(1-a)^2 rather than a.
+    body_top = max(surface_y + amplitude, y)
+    if body_top < y + TANK_H:
+        bar(img, x, body_top, TANK_W, y + TANK_H - body_top, body)
 
-        top = max(surface_y + wave, y)
-        height = y + TANK_H - top
-        if height <= 0.0002:
-            continue
+    if amplitude < 0.00004:
+        bar(img, x, surface_y, TANK_W, 0.0016, crest)
+    else:
+        for i in range(COLUMNS):
+            left = x + TANK_W * i / COLUMNS
+            right = x + TANK_W * (i + 1) / COLUMNS
 
-        bar(img, x + i * column_w, top, column_w + 0.0002, height, body)
-        bar(img, x + i * column_w, top, column_w + 0.0002, 0.0016, crest)
+            u = i / (COLUMNS - 1)
+            wave = math.sin(t * 3.3 + u * 7.1) * a1 + math.sin(t * 5.1 - u * 11.7) * a2
+
+            top = max(surface_y + wave, y)
+
+            if top < body_top:
+                bar(img, left, top, right - left, body_top - top, body)
+
+            bar(img, left, top, right - left, 0.0016, crest)
 
     if full or level < 0.012:
         return
 
+    aspect = SCREEN_W / SCREEN_H
     floor = y + TANK_H
+
     for i in range(BUBBLES):
-        lane = 0.16 + (i * 0.68 / (BUBBLES - 1))
-        speed = 0.42 + (i % 3) * 0.11
+        lane = 0.12 + (i * 0.76 / (BUBBLES - 1))
+        speed = 0.38 + (i % 3) * 0.13
         phase = (t * speed + i * 0.37) % 1.0
 
         by = floor - level * phase
-        size = 0.0016 + (i % 2) * 0.0007
+
+        tall = 0.0016 + (i % 3) * 0.0005
+        wide = tall / aspect
 
         edge = min(phase * 4.0, min((1.0 - phase) * 3.0, 1.0))
         alpha = int(150 * max(edge, 0.0))
         if alpha > 4:
-            bar(img, x + TANK_W * lane, by, size, size, (255, 240, 200, alpha))
+            bar(img, x + TANK_W * lane - wide / 2, by, wide, tall, (255, 240, 200, alpha))
 
 
 # ---- one frame --------------------------------------------------------------

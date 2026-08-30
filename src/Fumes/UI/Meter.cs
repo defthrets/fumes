@@ -64,8 +64,23 @@ namespace Fumes.UI
         /// <summary>Chalet Comprime Cologne. The block font everything else uses.</summary>
         private const int Plain = 4;
 
-        private const int Columns = 22;
-        private const int Bubbles = 5;
+        /// <summary>
+        /// Strips the surface is sliced into.
+        ///
+        /// Forty-eight, up from twenty-two. The glass is about a hundred and forty pixels
+        /// across, so twenty-two strips were six and a half pixels each and the wave was a
+        /// visible staircase. At forty-eight they are three, which is fine now that a strip
+        /// only ever paints the few pixels of surface rather than the whole depth of the tank.
+        /// </summary>
+        private const int Columns = 48;
+        /// <summary>
+        /// Bubbles rising through the fuel. Nine, up from five.
+        ///
+        /// Five lanes across a hundred and forty pixels is a bubble every twenty-eight, which
+        /// reads as a row of dots keeping formation rather than as anything rising through
+        /// liquid. Nine with mismatched speeds breaks the formation up.
+        /// </summary>
+        private const int Bubbles = 9;
 
         /// <summary>How many pieces the chase light is sampled in. See Border().</summary>
         private const int BorderSegments = 120;
@@ -367,10 +382,23 @@ namespace Fumes.UI
         /// The fuel itself: a rising level with a surface that will not sit still.
         ///
         /// DRAWN AS COLUMNS, which is the whole technique. There is no way to draw a wavy shape
-        /// in this HUD -- DRAW_RECT is the only primitive there is -- so the liquid is sliced
-        /// into upright strips and each is given its own surface height from a pair of sine
-        /// waves. Two waves rather than one, at frequencies that do not divide into each other,
-        /// because a single sine reads as a machine and two read as a liquid.
+        /// in this HUD -- DRAW_RECT is the only primitive there is -- so the surface is sliced
+        /// into upright strips and each is given its own height from a pair of sine waves. Two
+        /// waves rather than one, at frequencies that do not divide into each other, because a
+        /// single sine reads as a machine and two read as a liquid.
+        ///
+        /// THE BODY IS ONE RECTANGLE AND ONLY THE SURFACE IS STRIPS. Every strip used to be
+        /// drawn from its own wavy top all the way down to the floor of the tank, each
+        /// overlapping its neighbour by a hair so no gap could open between them -- and the
+        /// fuel is translucent, so two strips over one pixel came out brighter than one:
+        /// 1-(1-a)^2, not a. Every seam was a bright line the full depth of the glass, and the
+        /// overlap that was there to hide the seams was what drew them. The same bug, found
+        /// first in the gauge on the minimap, where a two hundred pixel bar made it obvious.
+        ///
+        /// So the body is filled once, up to the LOWEST the surface can swing, and the strips
+        /// paint only the wave above that line. They tile exactly rather than overlapping --
+        /// one strip's right edge is the next one's left edge, from the same expression -- so
+        /// no pixel is covered twice.
         ///
         /// The waves die away as the tank approaches full, so it settles rather than sloshing
         /// forever under a finished pump.
@@ -389,8 +417,6 @@ namespace Fumes.UI
                 ? Color.FromArgb(250, 175, 245, 185)
                 : Color.FromArgb(250, 255, 210, 120);
 
-            var columnW = TankW / Columns;
-
             var level = TankH * fraction;
             var surfaceY = y + TankH - level;
 
@@ -398,24 +424,43 @@ namespace Fumes.UI
             var a1 = 0.0017f * settle;
             var a2 = 0.0010f * settle;
 
-            for (var i = 0; i < Columns; i++)
+            var amplitude = a1 + a2;
+
+            // The body, once, the full width of the glass. Nothing to seam.
+            var bodyTop = surfaceY + amplitude;
+            if (bodyTop < y) bodyTop = y;
+
+            if (bodyTop < y + TankH) Hud.Bar(x, bodyTop, TankW, y + TankH - bodyTop, body);
+
+            if (amplitude < 0.00004f)
             {
-                var u = (float)i / (Columns - 1);
+                // A settled tank: one flat surface line rather than forty-eight identical ones.
+                Hud.Bar(x, surfaceY, TankW, 0.0016f, crest);
+            }
+            else
+            {
+                for (var i = 0; i < Columns; i++)
+                {
+                    // Exact tiling: this strip's right edge is the next one's left edge, from
+                    // the same expression, so no pixel is covered twice and nothing brightens.
+                    var left = x + TankW * i / Columns;
+                    var right = x + TankW * (i + 1) / Columns;
 
-                var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
-                                   Math.Sin(t * 5.1f - u * 11.7f) * a2);
+                    var u = (float)i / (Columns - 1);
 
-                var top = surfaceY + wave;
-                if (top < y) top = y;
+                    var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
+                                       Math.Sin(t * 5.1f - u * 11.7f) * a2);
 
-                var height = y + TankH - top;
-                if (height <= 0.0002f) continue;
+                    var top = surfaceY + wave;
+                    if (top < y) top = y;
 
-                Hud.Bar(x + i * columnW, top, columnW + 0.0002f, height, body);
+                    // Only the sliver above the body line, never the depth of the tank.
+                    if (top < bodyTop) Hud.Bar(left, top, right - left, bodyTop - top, body);
 
-                // A brighter line riding the surface, so the top edge is a surface and not
-                // just where the colour stops.
-                Hud.Bar(x + i * columnW, top, columnW + 0.0002f, 0.0016f, crest);
+                    // A brighter line riding the surface, so the top edge is a surface and not
+                    // just where the colour stops.
+                    Hud.Bar(left, top, right - left, 0.0016f, crest);
+                }
             }
 
             BubbleTrail(x, y, level, full, t);
@@ -434,20 +479,32 @@ namespace Fumes.UI
 
             var floor = y + TankH;
 
+            // ROUND-ISH, WHICH MEANS NOT SQUARE IN THESE UNITS. Width is a fraction of the
+            // screen's width and height a fraction of its height, so equal numbers give a
+            // bubble as much wider than it is tall as the screen is -- half again on this one,
+            // which at three pixels is a dash. The width is divided by the aspect instead.
+            var aspect = Aspect();
+
             for (var i = 0; i < Bubbles; i++)
             {
-                var lane = 0.16f + (i * 0.68f / (Bubbles - 1));
-                var speed = 0.42f + (i % 3) * 0.11f;
+                var lane = 0.12f + (i * 0.76f / (Bubbles - 1));
+
+                // Three speeds and a prime-ish phase offset, so nine bubbles do not fall into
+                // step with each other and start reading as a pattern.
+                var speed = 0.38f + (i % 3) * 0.13f;
                 var phase = (t * speed + i * 0.37f) % 1f;
 
                 var by = floor - level * phase;
-                var size = 0.0016f + (i % 2) * 0.0007f;
+
+                var tall = 0.0016f + (i % 3) * 0.0005f;
+                var wide = tall / aspect;
 
                 var edge = Math.Min(phase * 4f, Math.Min((1f - phase) * 3f, 1f));
                 var alpha = (int)(150 * Math.Max(edge, 0f));
                 if (alpha <= 4) continue;
 
-                Hud.Bar(x + TankW * lane, by, size, size, Color.FromArgb(alpha, 255, 240, 200));
+                Hud.Bar(x + TankW * lane - wide / 2f, by, wide, tall,
+                        Color.FromArgb(alpha, 255, 240, 200));
             }
         }
 
