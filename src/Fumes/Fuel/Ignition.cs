@@ -165,6 +165,28 @@ namespace Fumes.Fuel
 
         private void ExitKey(Ped me, Vehicle car)
         {
+            // ABOVE WALKING PACE THE KEY GOES BACK TO THE GAME, whole and untouched.
+            //
+            // A tap that ejects you at sixty is not what a tap should do, and it was only doing
+            // it because tapping had been given a new meaning. But simply refusing the tap
+            // would have left NO way out of a moving car -- hold means "stop the engine" here,
+            // and vanilla's hold-to-bail would have been quietly deleted along with it.
+            //
+            // So the control is not disabled at all above the limit. Vanilla is not
+            // approximated, it is handed back: hold to bail out, exactly as the game does it,
+            // because at speed that is the only one of the two meanings worth having. Below the
+            // limit, where you are parking rather than driving, it is ours again.
+            float speed;
+            try { speed = car.Speed; }
+            catch { speed = 0f; }
+
+            if (speed > _cfg.ManualIgnitionMaxSpeed)
+            {
+                _downAt = 0;
+                _stopped = false;
+                return;
+            }
+
             Game.DisableControlThisFrame(Control.VehicleExit);
 
             // READ THROUGH THE DISABLE, with a way out if that turns out to be wrong.
