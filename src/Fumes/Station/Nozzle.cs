@@ -141,10 +141,24 @@ namespace Fumes.Station
                     var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ);
                     if (_cfg.HoseEndAuto) local += BackOfNozzle();
 
-                    // The lift goes on AFTER the frame change, which is the whole point of
-                    // it -- see HoseEndLift. Added to the local offset it would be up in the
-                    // nozzle's own opinion, which is sideways.
-                    return _prop.GetOffsetPosition(local) + new Vector3(0f, 0f, _cfg.HoseEndLift);
+                    // The lift and the side offset go on AFTER the frame change, which is
+                    // the whole point of them -- see HoseEndLift. Added to the local offset
+                    // they would be up and sideways in the NOZZLE'S opinion, and the nozzle is
+                    // attached turned through a right angle twice.
+                    var world = _prop.GetOffsetPosition(local);
+
+                    world += new Vector3(0f, 0f, _cfg.HoseEndLift);
+
+                    if (Math.Abs(_cfg.HoseEndSide) > 0.0005f)
+                    {
+                        // His right, not the world's: the world's stops being sideways the
+                        // moment he turns round, and the camera is behind him whenever anyone
+                        // is looking at this.
+                        var me = Game.Player.Character;
+                        if (me != null && me.Exists()) world += me.RightVector * _cfg.HoseEndSide;
+                    }
+
+                    return world;
                 }
             }
             catch

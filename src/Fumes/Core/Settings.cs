@@ -305,6 +305,18 @@ namespace Fumes.Core
         public float HoseEndLift = 0.08f;
 
         /// <summary>
+        /// How far to HIS RIGHT the hose joins, in metres. Negative is his left.
+        ///
+        /// Along the ped's own right vector rather than a world axis or one of the nozzle's.
+        /// A world axis would mean "east", which stops being sideways the moment he turns
+        /// round; the nozzle's own axes are the frame that made "up" so hard to hit, since it
+        /// is attached turned through a right angle twice. His right is the one direction that
+        /// still means the same thing on screen from any angle, because the camera is behind
+        /// him whenever anyone is looking at this.
+        /// </summary>
+        public float HoseEndSide = 0f;
+
+        /// <summary>
         /// Work the hose attachment out from the nozzle's own SHAPE rather than from numbers.
         ///
         /// Three hand-typed offsets in a prop's local space is a guessing game, and I lost it
@@ -601,6 +613,7 @@ namespace Fumes.Core
                 s.HoseEndY = ini.GetFloat("Nozzle", "HoseEndY", s.HoseEndY, -1f, 1f);
                 s.HoseEndZ = ini.GetFloat("Nozzle", "HoseEndZ", s.HoseEndZ, -1f, 1f);
                 s.HoseEndLift = ini.GetFloat("Nozzle", "HoseEndLift", s.HoseEndLift, -0.5f, 0.5f);
+                s.HoseEndSide = ini.GetFloat("Nozzle", "HoseEndSide", s.HoseEndSide, -0.5f, 0.5f);
                 s.HoseEndAuto = ini.GetBool("Nozzle", "HoseEndAuto", s.HoseEndAuto);
                 s.HoseEndSign = ini.GetInt("Nozzle", "HoseEndSign", s.HoseEndSign, -1, 1);
                 s.HoseEndReach = ini.GetFloat("Nozzle", "HoseEndReach", s.HoseEndReach, 0f, 1.5f);

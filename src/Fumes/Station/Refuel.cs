@@ -353,6 +353,20 @@ namespace Fumes.Station
                 _targetTank = tank;
                 _stage = Stage.Filling;
 
+                // TURNED ON THE SPOT, once, as filling begins.
+                //
+                // FaceThe has been called every frame of the fill all along and he stayed put,
+                // because SET_PED_DESIRED_HEADING is a nudge for the LOCOMOTION system to
+                // resolve -- and he is standing still with the movement controls disabled and an
+                // animation on him, so there is no locomotion left to resolve it. A desired
+                // heading with nothing to walk it round is just a number nobody reads.
+                //
+                // Setting the heading itself does not go through any of that. It is abrupt by
+                // nature, which is the trade: he is already roughly facing the car by the time
+                // he can reach the filler, so the correction is small, and a small snap on a
+                // button press reads as him squaring up to the job.
+                Turn(me, filler);
+
                 Log.Info("Filling " + vehicle.LocalizedName + " (" +
                          tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + "/" +
                          tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L).");
@@ -824,6 +838,33 @@ namespace Fumes.Station
         /// whatever else is running on him and would have to be cleared afterwards. A desired
         /// heading is a nudge the locomotion system resolves on its own.
         /// </summary>
+        /// <summary>
+        /// Puts him square to something now, rather than asking him to get there.
+        ///
+        /// The blunt instrument behind FaceThe: same arithmetic, but it writes the heading
+        /// instead of desiring it. Used once when filling starts, because a desired heading
+        /// needs a locomotion system to act on it and he has none while held still.
+        /// </summary>
+        private static void Turn(Ped me, Vector3 point)
+        {
+            try
+            {
+                var to = point - me.Position;
+                if (to.Length() < 0.05f) return;
+
+                var heading = (float)(Math.Atan2(-to.X, to.Y) * 180d / Math.PI);
+
+                me.Heading = heading;
+                Function.Call(Hash.SET_PED_DESIRED_HEADING, me.Handle, heading);
+
+                Log.Debug("Turned him to " + heading.ToString("0") + " degrees to face the filler.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("turn", "Could not turn him to the car: " + ex.Message);
+            }
+        }
+
         private static void FaceThe(Ped me, Vector3 point)
         {
             try
@@ -1170,7 +1211,7 @@ namespace Fumes.Station
         }
 
         private bool _ropeKeyDown, _endKeyDown, _ropeSaveKey, _liftUpKey, _liftDownKey;
-        private bool _backKey, _forwardKey;
+        private bool _backKey, _forwardKey, _leftKey, _rightKey;
 
         /// <summary>
         /// Cycles the rope texture while you look at it, when TuneNozzle is on.
@@ -1243,6 +1284,30 @@ namespace Fumes.Station
                 Log.Info("Hose end lift is now " + _cfg.HoseEndLift.ToString("0.000") + "m.");
             }
 
+            // SIDE TO SIDE, the third axis, so the join can be put anywhere rather than
+            // anywhere on a plane. Comma and full stop, next to the other two on the keyboard.
+            var sided = false;
+            if (Edge(System.Windows.Forms.Keys.OemPeriod, ref _rightKey))
+            {
+                _cfg.HoseEndSide += 0.01f;
+                sided = true;
+            }
+            else if (Edge(System.Windows.Forms.Keys.Oemcomma, ref _leftKey))
+            {
+                _cfg.HoseEndSide -= 0.01f;
+                sided = true;
+            }
+
+            if (sided)
+            {
+                if (_cfg.HoseEndSide > 0.5f) _cfg.HoseEndSide = 0.5f;
+                if (_cfg.HoseEndSide < -0.5f) _cfg.HoseEndSide = -0.5f;
+
+                var cm = (_cfg.HoseEndSide * 100f).ToString("0", CultureInfo.InvariantCulture);
+                Notify("Hose joins ~b~" + cm + " cm~s~ to his right.   NumPad 0 to keep it.");
+                Log.Info("Hose end side is now " + _cfg.HoseEndSide.ToString("0.000") + "m.");
+            }
+
             // BACK AND FORWARD ALONG THE NOZZLE, the other half of the same request.
             //
             // "Up" and "back" have been asked for together three times now and they are two
@@ -1300,6 +1365,8 @@ namespace Fumes.Station
                                           _cfg.HoseEndSign.ToString(CultureInfo.InvariantCulture))
                        & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndLift",
                                           _cfg.HoseEndLift.ToString("0.000", CultureInfo.InvariantCulture))
+                       & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndSide",
+                                          _cfg.HoseEndSide.ToString("0.000", CultureInfo.InvariantCulture))
                        & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndReach",
                                           _cfg.HoseEndReach.ToString("0.00", CultureInfo.InvariantCulture))
                        & IniFile.SetValue(Paths.Ini, "Nozzle", "FillAnimPhase",
