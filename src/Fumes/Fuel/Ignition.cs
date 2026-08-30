@@ -258,7 +258,14 @@ namespace Fumes.Fuel
             {
                 _leaving = car;
                 _leavingRunning = Running(car);
-                _leavingUntil = Game.GameTime + 4000;
+                // SIX SECONDS, NOT FOUR, and the radio extends it again when it lands.
+                //
+                // Everything here happens after the ped is CLEAR OF THE SEAT, and climbing out
+                // of a car takes one to two seconds -- longer from a low car, longer again if
+                // the animation is interrupted by a kerb or a passing car. A window that only
+                // just covers a clean exit is one that silently does nothing on a slow one, and
+                // the failure looks exactly like the feature not existing.
+                _leavingUntil = Game.GameTime + 6000;
                 _radioSet = false;
 
                 // THE STATION HAS TO BE READ NOW, from inside. This native answers "what is the
@@ -305,6 +312,7 @@ namespace Fumes.Fuel
 
             Engine(_leaving, _leavingRunning);
             Radio(me);
+            HoldRadio();
         }
 
         /// <summary>
@@ -340,6 +348,11 @@ namespace Fumes.Fuel
 
             _radioSet = true;
 
+            // Held for a few seconds past the moment it is set. The game does its own tidying
+            // up as a driver leaves and it does not all happen on one frame -- a single call
+            // that lands before the last of it is simply undone, with nothing to say so.
+            _leavingUntil = Game.GameTime + 5000;
+
             if (!_leavingRunning || string.IsNullOrEmpty(_station) || _station == "OFF")
             {
                 // Engine off, or nothing was playing. A dead car with a radio on is a flat
@@ -359,6 +372,13 @@ namespace Fumes.Fuel
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _leaving.Handle, true);
                 Function.Call(Hash.SET_VEH_RADIO_STATION, _leaving.Handle, _station);
                 Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _leaving.Handle, true);
+
+                // Says what actually happened, because the alternative is me telling you it
+                // works and neither of us being able to check. If this line names a station and
+                // you hear nothing, the natives are the problem; if it never appears, the exit
+                // path is.
+                Log.Info("Left " + Name(_leaving) + " running with the radio on " + _station +
+                         ", loud enough to hear from outside.");
             }
             catch (Exception ex)
             {
@@ -397,6 +417,35 @@ namespace Fumes.Fuel
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Keeps the radio switched on and loud for the rest of the window.
+        ///
+        /// ONLY THE TWO BOOLEANS, never the station. Enabled and loud are states -- setting
+        /// them to what they already are costs nothing and changes nothing, so they can be
+        /// re-asserted every frame against whatever the game does on its way out. The station
+        /// is a CHANGE, and re-asserting a change sixty times a second is a track that restarts
+        /// sixty times a second.
+        /// </summary>
+        private void HoldRadio()
+        {
+            if (!_radioSet || !_cfg.RadioKeepsPlaying) return;
+
+            var on = _leavingRunning && !string.IsNullOrEmpty(_station) && _station != "OFF";
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _leaving.Handle, on);
+                Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _leaving.Handle, on);
+            }
+            catch { /* the next frame will try again */ }
+        }
+
+        private static string Name(Vehicle v)
+        {
+            try { return v.LocalizedName; }
+            catch { return "the car"; }
         }
 
         private static bool Running(Vehicle v)
