@@ -330,70 +330,34 @@ namespace Fumes.UI
         }
 
         /// <summary>
-        /// The fuel in the bar: a level with a surface that will not sit still, and bubbles.
+        /// The fuel in the bar: a flat level, a surface, and bubbles rising through it.
         ///
-        /// The same technique as the glass on the pump display, and for the same reason -- the
-        /// two things show the same number, so they should look like the same instrument.
+        /// THE SURFACE IS FLAT. It was sliced into six columns each riding its own pair of sine
+        /// waves -- the pump display's technique, which works there because that glass is four
+        /// times as wide. At sixteen pixels a column is two and a half, so a wave of a couple of
+        /// pixels across six of them is not read as a moving liquid; it is read as the top edge
+        /// being ragged. The effect needed width the bar does not have.
         ///
-        /// DRAWN AS COLUMNS, which is the whole trick. DRAW_RECT is the only primitive this HUD
-        /// has, so there is no way to draw a wavy shape: the liquid is sliced into upright
-        /// strips and each is given its own surface height from a pair of sine waves. Two waves
-        /// rather than one, at frequencies that do not divide into each other, because a single
-        /// sine reads as a machine and two read as a liquid.
-        ///
-        /// SIX COLUMNS, not the pump's twenty-two. The bar is about sixteen pixels across, so
-        /// twenty-two strips would be under a pixel each and the game would round them into one
-        /// another -- the wave would cost twenty-two rectangles a frame and not be visible at
-        /// all. Six is about two and a half pixels a strip, which is the finest a wave can be
-        /// drawn here and still be a wave.
+        /// What survives is what worked: a brighter line riding the surface, so the top is a
+        /// surface and not just where the colour stops, and the bubbles. Those do not need
+        /// width -- they need height, and the bar is two hundred pixels of it.
         /// </summary>
         private void Liquid(float x, float y, float w, float h, float fraction, Color body,
                             bool filling)
         {
-            const int columns = 6;
-
-            var t = Environment.TickCount / 1000f;
-
             var level = h * fraction;
-            var surfaceY = y + h - level;
+            var top = y + h - level;
 
-            // The waves die away as it fills, so a finished tank settles rather than sloshing
-            // forever -- and they lift while fuel is actually going in, which is the one moment
-            // the surface has a reason to be disturbed. refuelling has been passed to this
-            // method since it was written and had never been used for anything.
-            var settle = Math.Min(fraction * 6f, 1f) * (1f - fraction * 0.55f);
-            if (filling) settle = Math.Min(settle * 2.2f + 0.35f, 1.5f);
+            Draw.Bar(x, top, w, level, body);
 
-            var a1 = 0.0013f * settle;
-            var a2 = 0.0008f * settle;
-
-            // A brighter line riding the surface, so the top edge is a surface and not just
-            // where the colour stops. Mixed off the body rather than fixed, because the body
-            // runs the whole ramp from yellow to red and a fixed crest would come loose from it.
-            var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 195), 0.55f);
-
-            var columnW = w / columns;
-
-            for (var i = 0; i < columns; i++)
+            // Mixed off the body rather than fixed, because the body runs the whole ramp from
+            // yellow to red and a fixed crest would come loose from it near empty.
+            if (level > 0.004f)
             {
-                var u = (float)i / (columns - 1);
-
-                var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
-                                   Math.Sin(t * 5.1f - u * 11.7f) * a2);
-
-                var top = surfaceY + wave;
-                if (top < y) top = y;
-
-                var height = y + h - top;
-                if (height <= 0.0002f) continue;
-
-                // The overlap keeps a hairline of empty channel from showing between strips
-                // when the game rounds each rectangle to whole pixels.
-                Draw.Bar(x + i * columnW, top, columnW + 0.0002f, height, body);
-                Draw.Bar(x + i * columnW, top, columnW + 0.0002f, 0.0011f, crest);
+                Draw.Bar(x, top, w, 0.0011f, Mix(body, Color.FromArgb(body.A, 255, 240, 195), 0.55f));
             }
 
-            Bubbles(x, y, w, h, level, t);
+            Bubbles(x, y, w, h, level, Environment.TickCount / 1000f, filling);
         }
 
         /// <summary>
@@ -407,7 +371,8 @@ namespace Fumes.UI
         /// Three, not the pump's five. Across sixteen pixels, five lanes put them close enough
         /// to read as a row rather than as separate bubbles.
         /// </summary>
-        private void Bubbles(float x, float y, float w, float h, float level, float t)
+        private void Bubbles(float x, float y, float w, float h, float level, float t,
+                             bool filling)
         {
             const int count = 3;
 
@@ -424,7 +389,10 @@ namespace Fumes.UI
             for (var i = 0; i < count; i++)
             {
                 var lane = 0.22f + i * (0.56f / (count - 1));
-                var speed = 0.30f + (i % 3) * 0.08f;
+                // Quicker while fuel is actually going in. refuelling reached this code and
+                // went unused for its whole life; with the waves gone the bubbles are the only
+                // thing left that can show the difference between filling and standing still.
+                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f);
                 var phase = (t * speed + i * 0.41f) % 1f;
 
                 var by = floor - level * phase;
