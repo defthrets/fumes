@@ -196,6 +196,13 @@ namespace Fumes.Core
         public bool ManualIgnitionAircraft = false;
 
         /// <summary>
+        /// A car left running keeps its radio on, loud enough to hear from outside.
+        ///
+        /// Off leaves the radio to the game, which stops it the moment you are not in the seat.
+        /// </summary>
+        public bool RadioKeepsPlaying = true;
+
+        /// <summary>
         /// Indicators worked by the steering wheel, self-cancelling like a real one.
         /// </summary>
         public bool Blinkers = true;
@@ -729,6 +736,7 @@ namespace Fumes.Core
                 s.ExitHoldSeconds = ini.GetFloat("Engine", "ExitHoldSeconds", s.ExitHoldSeconds, 0.1f, 3f);
                 s.ManualIgnitionMaxSpeed = ini.GetFloat("Engine", "ManualIgnitionMaxSpeed", s.ManualIgnitionMaxSpeed, 0f, 60f);
                 s.ManualIgnitionAircraft = ini.GetBool("Engine", "ManualIgnitionAircraft", s.ManualIgnitionAircraft);
+                s.RadioKeepsPlaying = ini.GetBool("Engine", "RadioKeepsPlaying", s.RadioKeepsPlaying);
                 s.Blinkers = ini.GetBool("Engine", "Blinkers", s.Blinkers);
                 s.BlinkerArmSeconds = ini.GetFloat("Engine", "BlinkerArmSeconds", s.BlinkerArmSeconds, 0.1f, 5f);
                 s.BlinkerCancelSeconds = ini.GetFloat("Engine", "BlinkerCancelSeconds", s.BlinkerCancelSeconds, 0.1f, 10f);

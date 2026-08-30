@@ -61,6 +61,10 @@ namespace Fumes.Fuel
         /// <summary>Set once the exit control has been seen through the disable. See ExitKey.</summary>
         private bool _controlReadable;
 
+        /// <summary>The station that was playing as he got out, and whether it has been put back on.</summary>
+        private string _station;
+        private bool _radioSet;
+
         public Ignition(Settings cfg, Tanks tanks)
         {
             _cfg = cfg;
@@ -82,7 +86,7 @@ namespace Fumes.Fuel
                 // hard the throttle was pressed, and nothing on screen to say why.
                 if (_leaving != null && Same(car, _leaving)) _leaving = null;
 
-                Settle();
+                Settle(me);
 
                 var driving = car != null && car.Exists() && !car.IsDead &&
                               Driving(car, me) && Covered(car);
@@ -255,6 +259,29 @@ namespace Fumes.Fuel
                 _leaving = car;
                 _leavingRunning = Running(car);
                 _leavingUntil = Game.GameTime + 4000;
+                _radioSet = false;
+
+                // THE STATION HAS TO BE READ NOW, from inside. This native answers "what is the
+                // PLAYER listening to", and the player stops listening to a car radio the moment
+                // they are not in the car -- ask afterwards and the answer is nothing, and the
+                // car would be left running in silence.
+                _station = null;
+
+                if (_leavingRunning && _cfg.RadioKeepsPlaying)
+                {
+                    try { _station = Function.Call<string>(Hash.GET_PLAYER_RADIO_STATION_NAME); }
+                    catch { _station = null; }
+                }
+
+                // The game's OWN way of keeping an abandoned engine running, which is a better
+                // instrument than holding the engine on by force every frame -- that only lasts
+                // as long as the window, and this lasts as long as the car.
+                try
+                {
+                    Function.Call(Hash.SET_VEHICLE_KEEP_ENGINE_ON_WHEN_ABANDONED,
+                                  car.Handle, _leavingRunning);
+                }
+                catch { /* the enforcement window still covers it */ }
 
                 Function.Call(Hash.TASK_LEAVE_VEHICLE, me.Handle, car.Handle, 0);
             }
@@ -266,7 +293,7 @@ namespace Fumes.Fuel
         }
 
         /// <summary>Keeps a car just left in the state it was left in, while the game argues.</summary>
-        private void Settle()
+        private void Settle(Ped me)
         {
             if (_leaving == null) return;
 
@@ -277,6 +304,66 @@ namespace Fumes.Fuel
             }
 
             Engine(_leaving, _leavingRunning);
+            Radio(me);
+        }
+
+        /// <summary>
+        /// The radio, still playing, and audible from outside.
+        ///
+        /// ONCE, AND ONLY ONCE HE IS ACTUALLY OUT. Not every frame, because SET_VEH_RADIO_STATION
+        /// is a station CHANGE -- called sixty times a second it restarts the track sixty times
+        /// a second, and a car left running would sit there stuttering the first half-second of
+        /// a song forever. And not at the moment the exit task starts either: he is still in the
+        /// seat then, the game still owns the radio, and it turns it off behind us on the way
+        /// out.
+        ///
+        /// SET_VEHICLE_RADIO_LOUD is the one that carries it past the windows. Without it the
+        /// radio does play, at the volume it has for somebody sitting inside, which from the
+        /// forecourt is silence.
+        /// </summary>
+        private void Radio(Ped me)
+        {
+            if (_radioSet || !_cfg.RadioKeepsPlaying) return;
+
+            // Still climbing out. The radio is the game's until he is clear of the seat.
+            try
+            {
+                if (me == null) return;
+
+                var still = me.CurrentVehicle;
+                if (still != null && still.Handle == _leaving.Handle) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            _radioSet = true;
+
+            if (!_leavingRunning || string.IsNullOrEmpty(_station) || _station == "OFF")
+            {
+                // Engine off, or nothing was playing. A dead car with a radio on is a flat
+                // battery, not a feature.
+                try
+                {
+                    Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _leaving.Handle, false);
+                    Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _leaving.Handle, false);
+                }
+                catch { /* nothing worth reporting */ }
+
+                return;
+            }
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _leaving.Handle, true);
+                Function.Call(Hash.SET_VEH_RADIO_STATION, _leaving.Handle, _station);
+                Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _leaving.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("radio", "Could not leave the radio playing: " + ex.Message);
+            }
         }
 
         /// <summary>
