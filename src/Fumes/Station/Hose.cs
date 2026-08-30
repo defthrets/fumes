@@ -38,6 +38,12 @@ namespace Fumes.Station
         private Rope _rope;
         private bool _texturesAsked;
         private int _gaveUpOnRopeAt;
+
+        /// <summary>Painted mode giving in and loading the textures after all. See Spawn.</summary>
+        private bool _texturesForced;
+
+        /// <summary>Textureless spawns that came to nothing, before we stop trying it that way.</summary>
+        private int _blindTries;
         private int _spawnedAt;
 
         /// <summary>Which way this instance settled, once it has had to decide.</summary>
@@ -156,7 +162,25 @@ namespace Fumes.Station
 
         private bool Spawn(Vector3 from, Vector3 to)
         {
-            if (!Ready())
+            // PAINTED MODE DELIBERATELY DOES NOT LOAD THE ROPE TEXTURES.
+            //
+            // Ready() calls the missing textures the one mandatory step, and for a rope you
+            // intend to LOOK at, they are. Painted mode does not look at the rope: it reads the
+            // rope's vertices and draws its own hose along them. The texture is not just
+            // unnecessary there, it is the entire problem -- there is no native to tint a rope,
+            // so a textured rope is beige mooring line whatever we draw over it, and it shows
+            // at the rim wherever our ribbon is narrower than the rope.
+            //
+            // An untextured rope simulates exactly the same and draws NOTHING, which is the
+            // failure mode the comment above spent a paragraph warning about. Wanted, here: the
+            // physics is the whole reason the rope exists, and the appearance is ours.
+            //
+            // If that turns out not to hold -- if ADD_ROPE will not give a handle without them
+            // -- it gives up after a few tries and loads them like everyone else, so the worst
+            // case is the beige rim rather than no hose.
+            var blind = _mode == HoseMode.Painted && !_texturesForced;
+
+            if (!blind && !Ready())
             {
                 if (_gaveUpOnRopeAt == 0) _gaveUpOnRopeAt = Game.GameTime;
                 return false;
@@ -195,6 +219,14 @@ namespace Fumes.Station
 
                 if (handle == 0)
                 {
+                    if (blind && ++_blindTries >= 3)
+                    {
+                        _texturesForced = true;
+                        Log.Warn("A rope will not spawn without its textures after all - loading " +
+                                 "them. The hose is still painted; the game's own rope may show " +
+                                 "at the edges of it.");
+                    }
+
                     if (_gaveUpOnRopeAt == 0) _gaveUpOnRopeAt = Game.GameTime;
                     return false;
                 }
@@ -203,6 +235,12 @@ namespace Fumes.Station
                 _rope.ActivatePhysics();
                 _gaveUpOnRopeAt = 0;
                 _spawnedAt = Game.GameTime;
+
+                Log.Once("hose-mode", "Hose: rope type " + _cfg.HoseRopeType + ", " +
+                                      (blind ? "untextured so only our own black shows"
+                                             : "textured") + ", drawn at " +
+                                      _cfg.HoseRed + "," + _cfg.HoseGreen + "," + _cfg.HoseBlue +
+                                      " with sheen " + _cfg.HoseSheen + ".");
 
                 Log.Debug("Hose out: rope " + handle + ", " + _rope.VertexCount + " vertices.");
                 return true;
@@ -230,7 +268,15 @@ namespace Fumes.Station
                 var count = _rope.VertexCount;
                 if (count < 2)
                 {
-                    // A rope with no vertices is a rope that did not really spawn.
+                    // A rope with no vertices is a rope that did not really spawn. If that keeps
+                    // happening to a textureless one, the textures were load-bearing after all.
+                    if (_mode == HoseMode.Painted && !_texturesForced && ++_blindTries >= 3)
+                    {
+                        _texturesForced = true;
+                        Log.Warn("A textureless rope never gets any vertices - loading the rope " +
+                                 "textures. The hose stays painted.");
+                    }
+
                     Retract();
                     return;
                 }
@@ -396,15 +442,25 @@ namespace Fumes.Station
             var tone = 0.40f + 0.60f * round;
             var sheen = (float)Math.Pow(round, 9) * 0.85f;
 
+            var lift = Clamp255(_cfg.HoseSheen);
+
             return Color.FromArgb(255,
-                                  Shade(_cfg.HoseRed, tone, sheen),
-                                  Shade(_cfg.HoseGreen, tone, sheen),
-                                  Shade(_cfg.HoseBlue, tone, sheen));
+                                  Shade(_cfg.HoseRed, tone, sheen, lift),
+                                  Shade(_cfg.HoseGreen, tone, sheen, lift),
+                                  Shade(_cfg.HoseBlue, tone, sheen, lift));
         }
 
-        private static int Shade(int channel, float tone, float sheen)
+        /// <summary>
+        /// One channel, shaded for roundness and then lifted along the centre line.
+        ///
+        /// THE LIFT IS THE THING THAT WAS KEEPING THE HOSE GREY. It used to be a hardcoded 58,
+        /// which is most of a mid-grey added on top of whatever colour was asked for -- so a
+        /// hose set to 20,20,23 drew at nearly 70 up its middle and no amount of turning the
+        /// colour down would make it black. It is HoseSheen now.
+        /// </summary>
+        private static int Shade(int channel, float tone, float sheen, int lift)
         {
-            return Clamp255((int)(Clamp255(channel) * tone + 58f * sheen));
+            return Clamp255((int)(Clamp255(channel) * tone + lift * sheen));
         }
 
         /// <summary>

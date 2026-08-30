@@ -141,7 +141,10 @@ namespace Fumes.Station
                     var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ);
                     if (_cfg.HoseEndAuto) local += BackOfNozzle();
 
-                    return _prop.GetOffsetPosition(local);
+                    // The lift goes on AFTER the frame change, which is the whole point of
+                    // it -- see HoseEndLift. Added to the local offset it would be up in the
+                    // nozzle's own opinion, which is sideways.
+                    return _prop.GetOffsetPosition(local) + new Vector3(0f, 0f, _cfg.HoseEndLift);
                 }
             }
             catch

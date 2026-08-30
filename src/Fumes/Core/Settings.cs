@@ -188,7 +188,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Auto;
+        public HoseMode Hose = HoseMode.Painted;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -204,7 +204,7 @@ namespace Fumes.Core
         /// little of it that shows through the drawn hose reads as shadow rather than as beige
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 3;
+        public int HoseRopeType = 4;
 
         /// <summary>
         /// Rope types that have crashed this install, comma separated.
@@ -217,9 +217,23 @@ namespace Fumes.Core
         public string BadRopeTypes = "8";
 
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
-        public int HoseRed = 20;
-        public int HoseGreen = 20;
-        public int HoseBlue = 23;
+        public int HoseRed = 8;
+        public int HoseGreen = 8;
+        public int HoseBlue = 10;
+
+        /// <summary>
+        /// The highlight down the middle of the hose, added on top of the colour above.
+        ///
+        /// Its own setting because it, and not the colour, is what stops a black hose being
+        /// black: the shading that makes a flat ribbon read as a round tube works by ADDING
+        /// light along its centre line, so a hose set to 20,20,23 was still being drawn at
+        /// nearly 70 up the middle. Turning the colour down without turning this down as well
+        /// just moves the grey around.
+        ///
+        /// 0 is a flat silhouette -- honest black, and it stops looking like an object. This is
+        /// the lowest figure that still reads as round.
+        /// </summary>
+        public int HoseSheen = 24;
 
         /// <summary>
         /// How thick the hose is, in metres across.
@@ -275,6 +289,20 @@ namespace Fumes.Core
         public float HoseEndX = 0f;
         public float HoseEndY = 0f;
         public float HoseEndZ = 0.035f;
+
+        /// <summary>
+        /// How far STRAIGHT UP IN THE WORLD the hose joins, in metres.
+        ///
+        /// The three above are offsets in the NOZZLE'S OWN SPACE, and the nozzle is attached at
+        /// a rotation of 0, 270, -90 -- turned through a right angle twice. So none of its axes
+        /// points anywhere near up, and "move the hose end up a bit" has meant picking whichever
+        /// of X, Y and Z happened to lean that way and guessing at the sign. That is why this
+        /// has taken three passes and still was not connecting.
+        ///
+        /// This one is applied AFTER the offset is turned into a world position, so it is up.
+        /// Not up-ish, not up in the prop's opinion: up.
+        /// </summary>
+        public float HoseEndLift = 0.06f;
 
         /// <summary>
         /// Work the hose attachment out from the nozzle's own SHAPE rather than from numbers.
@@ -348,7 +376,7 @@ namespace Fumes.Core
         /// Frozen at the reach it is a pose, and a pose is what refuelling needs. Negative
         /// lets the clip play through normally.
         /// </summary>
-        public float FillAnimPhase = 0.45f;
+        public float FillAnimPhase = 0.35f;
 
         /// <summary>
         /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
@@ -418,9 +446,9 @@ namespace Fumes.Core
         /// </summary>
         public bool Vertical = true;
 
-        public float GaugeX = 0.1310f;
+        public float GaugeX = 0.1330f;
         public float GaugeY = 0.8045f;
-        public float GaugeWidth = 0.0052f;
+        public float GaugeWidth = 0.0046f;
         public float GaugeHeight = 0.1635f;
 
         /// <summary>
@@ -541,6 +569,7 @@ namespace Fumes.Core
                 s.HoseRed = ini.GetInt("Nozzle", "HoseRed", s.HoseRed, 0, 255);
                 s.HoseGreen = ini.GetInt("Nozzle", "HoseGreen", s.HoseGreen, 0, 255);
                 s.HoseBlue = ini.GetInt("Nozzle", "HoseBlue", s.HoseBlue, 0, 255);
+                s.HoseSheen = ini.GetInt("Nozzle", "HoseSheen", s.HoseSheen, 0, 255);
                 s.HoseThickness = ini.GetFloat("Nozzle", "HoseThickness", s.HoseThickness, 0.005f, 0.3f);
                 s.HoseSag = ini.GetFloat("Nozzle", "HoseSag", s.HoseSag, 1.0f, 2.5f);
                 s.HoseSnaps = ini.GetBool("Nozzle", "HoseSnaps", s.HoseSnaps);
@@ -561,6 +590,7 @@ namespace Fumes.Core
                 s.HoseEndX = ini.GetFloat("Nozzle", "HoseEndX", s.HoseEndX, -1f, 1f);
                 s.HoseEndY = ini.GetFloat("Nozzle", "HoseEndY", s.HoseEndY, -1f, 1f);
                 s.HoseEndZ = ini.GetFloat("Nozzle", "HoseEndZ", s.HoseEndZ, -1f, 1f);
+                s.HoseEndLift = ini.GetFloat("Nozzle", "HoseEndLift", s.HoseEndLift, -0.5f, 0.5f);
                 s.HoseEndAuto = ini.GetBool("Nozzle", "HoseEndAuto", s.HoseEndAuto);
                 s.HoseEndSign = ini.GetInt("Nozzle", "HoseEndSign", s.HoseEndSign, -1, 1);
                 s.HoseEndReach = ini.GetFloat("Nozzle", "HoseEndReach", s.HoseEndReach, 0f, 1.5f);

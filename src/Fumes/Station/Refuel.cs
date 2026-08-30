@@ -970,15 +970,52 @@ namespace Fumes.Station
         /// </summary>
         private void TunePose()
         {
-            if (!_cfg.TuneNozzle) return;
-
             try
             {
-                if (Edge(System.Windows.Forms.Keys.NumPad7, ref _phaseDownKey)) _cfg.FillAnimPhase -= 0.02f;
-                if (Edge(System.Windows.Forms.Keys.NumPad9, ref _phaseUpKey)) _cfg.FillAnimPhase += 0.02f;
+                // THE PHASE IS NOT BEHIND THE TUNER, for the same reason the rope cycler is not.
+                //
+                // Where the animation is frozen IS the pose -- it is the difference between an
+                // arm held out at the filler and one held up at the window, and there is no way
+                // to know which number gives which except by looking. Gating that behind a
+                // setting that defaults to off meant every "a bit lower" cost a rebuild.
+                //
+                // The clip list and the banner stay behind TuneNozzle: choosing between eight
+                // candidate animations is genuine debugging, and a permanent caption across the
+                // screen during every refuel is not something to leave switched on.
+                var moved = false;
+
+                if (Edge(System.Windows.Forms.Keys.NumPad7, ref _phaseDownKey))
+                {
+                    _cfg.FillAnimPhase -= 0.02f;
+                    moved = true;
+                }
+
+                if (Edge(System.Windows.Forms.Keys.NumPad9, ref _phaseUpKey))
+                {
+                    _cfg.FillAnimPhase += 0.02f;
+                    moved = true;
+                }
 
                 if (_cfg.FillAnimPhase < 0f) _cfg.FillAnimPhase = 0f;
                 if (_cfg.FillAnimPhase > 1f) _cfg.FillAnimPhase = 1f;
+
+                if (moved)
+                {
+                    // Nothing to re-apply: FillPose runs immediately before this every frame and
+                    // re-sets SET_ENTITY_ANIM_CURRENT_TIME from the setting each time, so the
+                    // new phase is on screen on the next frame by itself.
+                    Log.Info("Fill pose phase is now " +
+                             _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture) + ".");
+
+                    if (!_cfg.TuneNozzle)
+                    {
+                        Notify("Arm at ~b~" +
+                               _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture) +
+                               "~s~ of the animation.   NumPad 0 to keep it.");
+                    }
+                }
+
+                if (!_cfg.TuneNozzle) return;
 
                 if (Edge(System.Windows.Forms.Keys.NumPad8, ref _clipNextKey)) CycleClip(1);
                 if (Edge(System.Windows.Forms.Keys.NumPad2, ref _clipPrevKey)) CycleClip(-1);
@@ -1094,7 +1131,7 @@ namespace Fumes.Station
             return control == Control.ContextSecondary ? SecondaryName() : KeyName();
         }
 
-        private bool _ropeKeyDown, _endKeyDown, _ropeSaveKey;
+        private bool _ropeKeyDown, _endKeyDown, _ropeSaveKey, _liftUpKey, _liftDownKey;
 
         /// <summary>
         /// Cycles the rope texture while you look at it, when TuneNozzle is on.
@@ -1135,6 +1172,38 @@ namespace Fumes.Station
                        ".   NumPad 0 to keep it.");
             }
 
+            // RAISING AND LOWERING THE JOIN, live, on keys that are free on both installs.
+            //
+            // Square brackets rather than the numpad: NumPad + belongs to Native Trainer and
+            // most of the rest of the pad is spoken for by the police mods on the Legacy side.
+            // These only do anything while the nozzle is actually in hand.
+            //
+            // It is here because "move the hose end up" has now been asked four times and
+            // answered four times with a number I could not see the effect of. A centimetre a
+            // press, in the one direction the request is ever phrased in, settles it in about
+            // five seconds and never comes back.
+            var lifted = false;
+            if (Edge(System.Windows.Forms.Keys.OemCloseBrackets, ref _liftUpKey))
+            {
+                _cfg.HoseEndLift += 0.01f;
+                lifted = true;
+            }
+            else if (Edge(System.Windows.Forms.Keys.OemOpenBrackets, ref _liftDownKey))
+            {
+                _cfg.HoseEndLift -= 0.01f;
+                lifted = true;
+            }
+
+            if (lifted)
+            {
+                if (_cfg.HoseEndLift > 0.5f) _cfg.HoseEndLift = 0.5f;
+                if (_cfg.HoseEndLift < -0.5f) _cfg.HoseEndLift = -0.5f;
+
+                var cm = (_cfg.HoseEndLift * 100f).ToString("0", CultureInfo.InvariantCulture);
+                Notify("Hose joins ~b~" + cm + " cm~s~ up.   NumPad 0 to keep it.");
+                Log.Info("Hose end lift is now " + _cfg.HoseEndLift.ToString("0.000") + "m.");
+            }
+
             // Which end of the nozzle the hose leaves from -- the one thing the model's
             // bounding box cannot tell us, because both ends of a box look alike.
             if (Edge(System.Windows.Forms.Keys.Subtract, ref _endKeyDown))
@@ -1155,13 +1224,19 @@ namespace Fumes.Station
                 var ok = IniFile.SetValue(Paths.Ini, "Nozzle", "HoseRopeType",
                                           _cfg.HoseRopeType.ToString(CultureInfo.InvariantCulture))
                        & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndSign",
-                                          _cfg.HoseEndSign.ToString(CultureInfo.InvariantCulture));
+                                          _cfg.HoseEndSign.ToString(CultureInfo.InvariantCulture))
+                       & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndLift",
+                                          _cfg.HoseEndLift.ToString("0.000", CultureInfo.InvariantCulture))
+                       & IniFile.SetValue(Paths.Ini, "Nozzle", "FillAnimPhase",
+                                          _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture));
 
                 Notify(ok ? "~g~Hose saved~s~ to Fumes.ini."
                           : "~y~Could not write Fumes.ini~s~ - it is in Fumes.log.");
 
-                Log.Info("Hose saved: rope type " + _cfg.HoseRopeType +
-                         ", end sign " + _cfg.HoseEndSign + ".");
+                Log.Info("Saved: rope type " + _cfg.HoseRopeType +
+                         ", end sign " + _cfg.HoseEndSign +
+                         ", lift " + _cfg.HoseEndLift.ToString("0.000") + "m" +
+                         ", fill phase " + _cfg.FillAnimPhase.ToString("0.00") + ".");
             }
 
             if (_cfg.TuneNozzle) MarkHoseEnd();
