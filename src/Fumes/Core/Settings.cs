@@ -164,6 +164,27 @@ namespace Fumes.Core
         public float SputterLitres = 0.6f;
         public bool StallWhenEmpty = true;
 
+        /// <summary>
+        /// The ignition is the player's, not the game's.
+        ///
+        /// Hold the exit key to stop the engine without getting out; tap it to get out and
+        /// leave the car exactly as it stands; get in and nothing starts until the throttle is
+        /// touched. Silent -- no prompt, no notification. A car that keeps running when you
+        /// walk away from it is not an event.
+        /// </summary>
+        public bool ManualIgnition = true;
+
+        /// <summary>How long the exit key counts as held rather than tapped.</summary>
+        public float ExitHoldSeconds = 0.30f;
+
+        /// <summary>
+        /// Whether aircraft get it too. They do not, by default.
+        ///
+        /// The gesture that parks a car is the one that kills you in a helicopter, and it is
+        /// the same key you use to climb out on the ground.
+        /// </summary>
+        public bool ManualIgnitionAircraft = false;
+
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
         public float DryRestartSeconds = 1.6f;
 
@@ -664,6 +685,9 @@ namespace Fumes.Core
 
                 s.SputterLitres = ini.GetFloat("Engine", "SputterLitres", s.SputterLitres, 0f, 20f);
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
+                s.ManualIgnition = ini.GetBool("Engine", "ManualIgnition", s.ManualIgnition);
+                s.ExitHoldSeconds = ini.GetFloat("Engine", "ExitHoldSeconds", s.ExitHoldSeconds, 0.1f, 3f);
+                s.ManualIgnitionAircraft = ini.GetBool("Engine", "ManualIgnitionAircraft", s.ManualIgnitionAircraft);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);
