@@ -42,6 +42,7 @@ namespace Fumes.Station
         private readonly Meter _meter;
         private readonly Nozzle _nozzle;
         private readonly Hose _hose;
+        private readonly FillSound _sound;
         private readonly Hazard _hazard;
         private readonly Buttons _buttons;
 
@@ -108,6 +109,7 @@ namespace Fumes.Station
             _nozzle = new Nozzle(cfg);
             _hose = new Hose(cfg);
             _hazard = new Hazard(cfg);
+            _sound = new FillSound(cfg);
         }
 
         /// <summary>Whether the player is holding the nozzle or filling something.</summary>
@@ -154,6 +156,11 @@ namespace Fumes.Station
                 case Stage.Carrying: Carrying(me); break;
                 case Stage.Filling: Filling(me, dt); break;
             }
+
+            // AFTER the switch and driven by the stage rather than by calls inside it.
+            // Filling ends in six different places and a Stop missing from any one of them is
+            // a sound that plays until the game is closed.
+            _sound.Update(_stage == Stage.Filling, me);
 
             // One help box for however many buttons were asked for, and only when the bar
             // itself could not be drawn. Calling Draw.Help per prompt would have each one
@@ -777,6 +784,7 @@ namespace Fumes.Station
         {
             _nozzle.PutBack();
             _hose.Release();
+            _sound.Silence();
             TidyDropped(true);
             Clear();
         }

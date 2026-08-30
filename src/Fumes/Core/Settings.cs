@@ -388,6 +388,25 @@ namespace Fumes.Core
         /// </summary>
         public float FillAnimPhase = 0.18f;
 
+        /// <summary>Whether refuelling makes a noise at all.</summary>
+        public bool FillSound = true;
+
+        /// <summary>
+        /// The sound to play while fuel is flowing, and the set it lives in.
+        ///
+        /// BLANK ON PURPOSE. PLAY_SOUND_FROM_ENTITY looks these up as strings in the game's
+        /// audio metadata, a name that does not exist plays silently and reports nothing, and
+        /// there is no native that lists the valid ones. Left blank, Fumes tries a list of
+        /// candidates and uses HAS_SOUND_FINISHED to tell which one actually started -- a loop
+        /// that is really playing does not finish half a second in. It names the winner in the
+        /// log; put it here and the search is skipped.
+        ///
+        /// Filled in by hand, it is taken on trust and never probed: anyone who types a name
+        /// in here knows something this code does not.
+        /// </summary>
+        public string FillSoundName = "";
+        public string FillSoundSet = "";
+
         /// <summary>
         /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
         /// what blends the clip over his legs and leaves the player in charge instead of
@@ -659,6 +678,9 @@ namespace Fumes.Core
                 s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
                 s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);
                 s.FillAnimPhase = ini.GetFloat("Nozzle", "FillAnimPhase", s.FillAnimPhase, -1f, 1f);
+                s.FillSound = ini.GetBool("Nozzle", "FillSound", s.FillSound);
+                s.FillSoundName = ini.GetString("Nozzle", "FillSoundName", s.FillSoundName);
+                s.FillSoundSet = ini.GetString("Nozzle", "FillSoundSet", s.FillSoundSet);
                 s.FillAnimFlag = ini.GetInt("Nozzle", "FillAnimFlag", s.FillAnimFlag, 0, 255);
 
                 s.Prompts = ParseEnum(ini.GetString("HUD", "Prompts", "HelpText"), s.Prompts);
