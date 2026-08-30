@@ -114,6 +114,21 @@ if ($exit -ne 0) { throw "Compilation failed (csc exit $exit)." }
 Write-Host ("OK  {0:N0} bytes in {1:N1}s" -f (Get-Item $outDll).Length, $sw.Elapsed.TotalSeconds) -ForegroundColor Green
 
 # --- deploy -----------------------------------------------------------------
+function Get-ReloadKey([string]$gameDir) {
+    <#
+        Whatever SHVDN is actually set to reload on, per install. Not assumed: the two
+        installs on this machine disagree, and a wrong key in a reminder is worse than none.
+    #>
+    $ini = Join-Path $gameDir 'ScriptHookVDotNet.ini'
+    if (-not (Test-Path $ini)) { return $null }
+
+    $hit = Select-String -Path $ini -Pattern '^\s*ReloadKeyBinding\s*=\s*(\S+)' |
+           Select-Object -First 1
+
+    if ($hit) { return $hit.Matches[0].Groups[1].Value }
+    return $null
+}
+
 function Deploy-To([string]$gameDir, [string]$label) {
     if (-not (Test-Path $gameDir)) {
         Write-Host "skip $label - not installed at $gameDir" -ForegroundColor DarkGray
@@ -128,9 +143,37 @@ function Deploy-To([string]$gameDir, [string]$label) {
 
     Write-Host "$label -> $scripts" -ForegroundColor Cyan
 
-    Copy-Item $outDll $scripts -Force
+    # THE COPY IS ATTEMPTED, NOT PRE-REFUSED.
+    #
+    # This used to check whether the game was running and give up if it was, which was a
+    # guess dressed up as a rule: SHVDN SHADOW-COPIES script assemblies into the .NET
+    # download cache and runs them from there, so the dll sitting in scripts\ is very often
+    # not locked at all. Refusing on the strength of a process name meant closing the game
+    # for every change for no reason.
+    #
+    # So it tries. A genuine lock throws, and that is reported for what it is.
+    $locked = $false
+    try {
+        Copy-Item $outDll $scripts -Force -ErrorAction Stop
+    } catch {
+        $locked = $true
+        Write-Host "  LOCKED Fumes.dll is in use - the data files below still went." -ForegroundColor Yellow
+        Write-Host "         Close the game and re-run to update the dll." -ForegroundColor DarkGray
+    }
+
     $pdb = Join-Path $outDir 'Fumes.pdb'
-    if (Test-Path $pdb) { Copy-Item $pdb $scripts -Force }
+    if (-not $locked -and (Test-Path $pdb)) {
+        try { Copy-Item $pdb $scripts -Force -ErrorAction Stop } catch { }
+    }
+
+    if (-not $locked -and (Get-Process GTA5, GTA5_Enhanced -ErrorAction SilentlyContinue)) {
+        # The reload key is read from SHVDN's own ini rather than assumed. The two installs
+        # on this machine do not agree on it -- Legacy is Pause, Enhanced is Insert -- so a
+        # hardcoded reminder would be wrong half the time.
+        $key = Get-ReloadKey $gameDir
+        $named = if ($key) { $key } else { "the SHVDN reload key" }
+        Write-Host "  LIVE   dll replaced while the game runs - press $named in game to reload." -ForegroundColor Green
+    }
 
     $dataSrc = Join-Path $root 'data'
     $dataDst = Join-Path $scripts 'Fumes'
@@ -222,37 +265,11 @@ function Read-IniKeys {
 }
 
 if ($Deploy) {
-    # A running game holds ITS OWN copy of the dll open, and only its own. Checking for both
-    # executables meant a live Enhanced session blocked a Legacy deploy that would have worked
-    # perfectly well -- so each edition is checked against the process that would actually be
-    # holding its file.
-    $wantLegacy   = $Target -in 'Legacy', 'Both'
-    $wantEnhanced = $Target -in 'Enhanced', 'Both'
-
-    if ($wantLegacy -and (Get-Process GTA5 -ErrorAction SilentlyContinue)) {
-        if ($Target -eq 'Both') {
-            Write-Host "skip Legacy - GTA5.exe is running and has the dll locked." -ForegroundColor Yellow
-            $wantLegacy = $false
-        } else {
-            throw "GTA V (Legacy) is running - close it before deploying (the dll is locked)."
-        }
-    }
-
-    if ($wantEnhanced -and (Get-Process GTA5_Enhanced -ErrorAction SilentlyContinue)) {
-        if ($Target -eq 'Both') {
-            Write-Host "skip Enhanced - GTA5_Enhanced.exe is running and has the dll locked." -ForegroundColor Yellow
-            $wantEnhanced = $false
-        } else {
-            throw "GTA V Enhanced is running - close it before deploying (the dll is locked)."
-        }
-    }
-
-    if (-not $wantLegacy -and -not $wantEnhanced) {
-        throw "Nothing deployed - every requested edition is running. Close the game and retry."
-    }
-
-    if ($wantLegacy)   { Deploy-To $GtaDir      'Legacy' }
-    if ($wantEnhanced) { Deploy-To $EnhancedDir 'Enhanced' }
+    # No process check at all any more. Deploy-To attempts the copy and reports a real lock
+    # if it hits one; a running game is usually not a reason to stop, because SHVDN runs
+    # scripts out of a shadow copy rather than out of scripts\.
+    if ($Target -in 'Legacy', 'Both')   { Deploy-To $GtaDir      'Legacy' }
+    if ($Target -in 'Enhanced', 'Both') { Deploy-To $EnhancedDir 'Enhanced' }
 
     Write-Host "Deploy complete." -ForegroundColor Green
 }

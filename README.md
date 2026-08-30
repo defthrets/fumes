@@ -130,9 +130,23 @@ was written on is broken. It drives a self-contained Roslyn `csc.exe` from
 .\build.ps1 -Package        # ...or make a release zip
 ```
 
-`-Deploy` refuses to run while GTA V is open, because the dll is locked. Add
-`-FreshData` when `data\` has changed; without it the deploy prints `KEEP` and
-leaves your edited `stations.json` alone.
+**You can deploy while the game is running.** SHVDN shadow-copies script
+assemblies into the .NET download cache and runs them from there, so the dll in
+`scripts\` is not locked — `-Deploy` overwrites it and tells you which key to
+press to reload:
+
+| Install | SHVDN reload key |
+|---|---|
+| Legacy | `Pause` |
+| Enhanced | `Insert` |
+
+Those come from each install's own `ScriptHookVDotNet.ini` (`ReloadKeyBinding`),
+read at deploy time rather than assumed — the two do not agree, and a wrong key
+in a reminder is worse than no reminder. If the dll ever genuinely is locked the
+deploy says `LOCKED` and still updates the data files.
+
+Add `-FreshData` when `data\` has changed; without it the deploy prints `KEEP`
+and leaves your edited `stations.json` alone.
 
 ---
 
