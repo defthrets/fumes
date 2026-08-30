@@ -47,7 +47,11 @@ namespace Fumes.UI
         // ---- the glass ---------------------------------------------------
         private const float TankX = 0.020f;     // from the panel's left edge
         private const float TankY = 0.036f;     // from the panel's top
-        private const float TankW = 0.042f;
+        // Narrower than it is tall, which is what a sight glass on a pump actually looks
+        // like -- the square it was reads as a fish tank. Everything else about the tank is
+        // derived from this, the fill and the bubbles and the percentage centred underneath,
+        // so it is the only number that moves.
+        private const float TankW = 0.034f;
         private const float TankH = 0.088f;
 
         // ---- the numbers column ------------------------------------------

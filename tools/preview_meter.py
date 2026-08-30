@@ -34,7 +34,7 @@ ASPECT = SCREEN_W / SCREEN_H
 
 # ---- mirrored from Meter.cs -------------------------------------------------
 X, TOP, W, H = 0.5, 0.700, 0.300, 0.160
-TANK_X, TANK_Y, TANK_W, TANK_H = 0.020, 0.036, 0.042, 0.088
+TANK_X, TANK_Y, TANK_W, TANK_H = 0.020, 0.036, 0.034, 0.088
 COL_LEFT, COL_RIGHT = 0.078, 0.238
 COLUMNS, BUBBLES = 48, 9
 BORDER_SEGMENTS = 120

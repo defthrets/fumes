@@ -212,6 +212,11 @@ namespace Fumes.Core
         public int HoseRopeType = 4;
 
         /// <summary>
+        /// The in-game rope picker: NumPad * to cycle, NumPad 0 to keep.
+        /// </summary>
+        public bool RopePicker = true;
+
+        /// <summary>
         /// Rope types that have crashed this install, comma separated.
         ///
         /// ADD_ROPE does not validate its type -- it indexes a table, and an index past the end
@@ -656,6 +661,7 @@ namespace Fumes.Core
                 // 0-7, not 0-8. Type 8 is off the end of the game's rope table and killed the
                 // process the first time it was ever asked for.
                 s.HoseRopeType = ini.GetInt("Nozzle", "HoseRopeType", s.HoseRopeType, 0, RopeProbe.MaxType);
+                s.RopePicker = ini.GetBool("Nozzle", "RopePicker", s.RopePicker);
                 s.BadRopeTypes = ini.GetString("Nozzle", "BadRopeTypes", s.BadRopeTypes);
                 s.HoseRed = ini.GetInt("Nozzle", "HoseRed", s.HoseRed, 0, 255);
                 s.HoseGreen = ini.GetInt("Nozzle", "HoseGreen", s.HoseGreen, 0, 255);

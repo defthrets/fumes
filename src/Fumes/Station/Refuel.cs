@@ -168,6 +168,68 @@ namespace Fumes.Station
             if (!string.IsNullOrEmpty(_fallback)) Draw.Help(_fallback);
         }
 
+        /// <summary>
+        /// Cycles the rope the hose is made of, while it is in your hand.
+        ///
+        /// EIGHT ROPES IS THE WHOLE OF IT. ADD_ROPE's type is a zero-based index into
+        /// ropedata.xml and that file holds eight entries, 0 to 7 -- confirmed against the
+        /// native's own documentation, not only against the crash that taught us the hard way.
+        /// There is no ninth to look for and no second rope system to look in: ADD_ROPE is the
+        /// only general rope creator the game exposes. The other rope natives all belong to
+        /// something specific -- the cargobob's pickup rope, the tow truck's arm -- and cannot
+        /// be pointed at a fuel hose.
+        ///
+        /// So this is a choice between eight, not a search, and it is one key because there is
+        /// nothing else to try.
+        ///
+        /// Unconditional while the nozzle is out, as before. Gating a picker behind a setting
+        /// that defaults to false is what made it look broken the first time: the answer to
+        /// "which rope?" was locked inside a switch nobody had been told to turn on. Set
+        /// [Nozzle] RopePicker = false to bind the key back once you have settled on one.
+        /// </summary>
+        private void RopePicker()
+        {
+            if (!_cfg.RopePicker) return;
+
+            if (Edge(System.Windows.Forms.Keys.Multiply, ref _ropeKeyDown))
+            {
+                _cfg.HoseRopeType = RopeProbe.Next(_cfg.HoseRopeType);
+
+                // The type is baked in at ADD_ROPE, so the rope has to be thrown away and made
+                // again. It respawns on the next frame from Carrying.
+                _hose.Retract();
+
+                Log.Info("Hose rope type is now " + _cfg.HoseRopeType + ".");
+                Notify("Hose rope ~b~" + _cfg.HoseRopeType + "~s~ of 0-" + RopeProbe.MaxType +
+                       ".   NumPad 0 to keep it.");
+            }
+
+            if (Edge(System.Windows.Forms.Keys.NumPad0, ref _ropeSaveKey))
+            {
+                var ok = IniFile.SetValue(Paths.Ini, "Nozzle", "HoseRopeType",
+                                          _cfg.HoseRopeType.ToString(CultureInfo.InvariantCulture));
+
+                Notify(ok ? "~g~Rope " + _cfg.HoseRopeType + " saved~s~ to Fumes.ini."
+                          : "~y~Could not write Fumes.ini~s~ - it is in Fumes.log.");
+
+                Log.Info("Rope type " + _cfg.HoseRopeType + " written to the ini.");
+            }
+        }
+
+        private bool _ropeKeyDown, _ropeSaveKey;
+
+        /// <summary>Rising edge for a key, since the input API only reports held.</summary>
+        private static bool Edge(System.Windows.Forms.Keys key, ref bool wasDown)
+        {
+            bool down;
+            try { down = Game.IsKeyPressed(key); }
+            catch { down = false; }
+
+            var edge = down && !wasDown;
+            wasDown = down;
+            return edge;
+        }
+
         private static Ped Player()
         {
             try
@@ -296,6 +358,7 @@ namespace Fumes.Station
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
             _nozzle.Take();     // keeps asking until the model streams; no-op once it is out
+            RopePicker();
             LockHands();
 
             var anchor = Anchor();
