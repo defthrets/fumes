@@ -1170,6 +1170,7 @@ namespace Fumes.Station
         }
 
         private bool _ropeKeyDown, _endKeyDown, _ropeSaveKey, _liftUpKey, _liftDownKey;
+        private bool _backKey, _forwardKey;
 
         /// <summary>
         /// Cycles the rope texture while you look at it, when TuneNozzle is on.
@@ -1242,6 +1243,40 @@ namespace Fumes.Station
                 Log.Info("Hose end lift is now " + _cfg.HoseEndLift.ToString("0.000") + "m.");
             }
 
+            // BACK AND FORWARD ALONG THE NOZZLE, the other half of the same request.
+            //
+            // "Up" and "back" have been asked for together three times now and they are two
+            // different settings -- lift is world-vertical, reach runs along the nozzle's own
+            // long axis -- so one key for each. Semicolon and slash, both free on either install
+            // per the hotkey map, and both dead unless the nozzle is in hand.
+            var reached = false;
+            if (Edge(System.Windows.Forms.Keys.OemSemicolon, ref _backKey))
+            {
+                _cfg.HoseEndReach += 0.05f;
+                reached = true;
+            }
+            else if (Edge(System.Windows.Forms.Keys.OemQuestion, ref _forwardKey))
+            {
+                _cfg.HoseEndReach -= 0.05f;
+                reached = true;
+            }
+
+            if (reached)
+            {
+                if (_cfg.HoseEndReach > 1.5f) _cfg.HoseEndReach = 1.5f;
+                if (_cfg.HoseEndReach < 0f) _cfg.HoseEndReach = 0f;
+
+                // The join is worked out once from the bounding box and cached, so it has to be
+                // thrown away or the new reach does nothing at all.
+                _nozzle.ForgetBounds();
+
+                Notify("Hose joins ~b~" +
+                       _cfg.HoseEndReach.ToString("0.00", CultureInfo.InvariantCulture) +
+                       "~s~ along the nozzle.   NumPad 0 to keep it.");
+                Log.Info("Hose end reach is now " +
+                         _cfg.HoseEndReach.ToString("0.00", CultureInfo.InvariantCulture) + ".");
+            }
+
             // Which end of the nozzle the hose leaves from -- the one thing the model's
             // bounding box cannot tell us, because both ends of a box look alike.
             if (Edge(System.Windows.Forms.Keys.Subtract, ref _endKeyDown))
@@ -1265,6 +1300,8 @@ namespace Fumes.Station
                                           _cfg.HoseEndSign.ToString(CultureInfo.InvariantCulture))
                        & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndLift",
                                           _cfg.HoseEndLift.ToString("0.000", CultureInfo.InvariantCulture))
+                       & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndReach",
+                                          _cfg.HoseEndReach.ToString("0.00", CultureInfo.InvariantCulture))
                        & IniFile.SetValue(Paths.Ini, "Nozzle", "FillAnimPhase",
                                           _cfg.FillAnimPhase.ToString("0.00", CultureInfo.InvariantCulture));
 

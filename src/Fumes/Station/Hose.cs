@@ -39,11 +39,6 @@ namespace Fumes.Station
         private bool _texturesAsked;
         private int _gaveUpOnRopeAt;
 
-        /// <summary>Painted mode giving in and loading the textures after all. See Spawn.</summary>
-        private bool _texturesForced;
-
-        /// <summary>Textureless spawns that came to nothing, before we stop trying it that way.</summary>
-        private int _blindTries;
         private int _spawnedAt;
 
         /// <summary>Which way this instance settled, once it has had to decide.</summary>
@@ -162,25 +157,23 @@ namespace Fumes.Station
 
         private bool Spawn(Vector3 from, Vector3 to)
         {
-            // PAINTED MODE DELIBERATELY DOES NOT LOAD THE ROPE TEXTURES.
+            // PAINTED MODE LOADS THE TEXTURES TOO, AND HAS TO.
             //
-            // Ready() calls the missing textures the one mandatory step, and for a rope you
-            // intend to LOOK at, they are. Painted mode does not look at the rope: it reads the
-            // rope's vertices and draws its own hose along them. The texture is not just
-            // unnecessary there, it is the entire problem -- there is no native to tint a rope,
-            // so a textured rope is beige mooring line whatever we draw over it, and it shows
-            // at the rim wherever our ribbon is narrower than the rope.
+            // It tried not to. The reasoning looked sound: Painted does not LOOK at the rope, it
+            // reads the rope's vertices and draws its own hose along them, and Ready()'s own
+            // comment says a rope created before its textures are loaded simulates fine and
+            // draws nothing -- which would be a free invisible rope with real physics.
             //
-            // An untextured rope simulates exactly the same and draws NOTHING, which is the
-            // failure mode the comment above spent a paragraph warning about. Wanted, here: the
-            // physics is the whole reason the rope exists, and the appearance is ours.
+            // It came out as a rigid straight line from the pump to the hand. That comment is
+            // about a rope whose textures have not arrived YET, and the solver picks up when
+            // they do; a rope that never gets them never simulates at all, so every vertex stays
+            // on the straight line between the two pinned ends and the hose reads as a pole. The
+            // texture is load-bearing for the physics, not only for the picture.
             //
-            // If that turns out not to hold -- if ADD_ROPE will not give a handle without them
-            // -- it gives up after a few tries and loads them like everyone else, so the worst
-            // case is the beige rim rather than no hose.
-            var blind = _mode == HoseMode.Painted && !_texturesForced;
-
-            if (!blind && !Ready())
+            // So the beige rope is drawn underneath and the black ribbon is drawn over it. That
+            // is what Painted was always for, and covering a rope is a smaller problem than not
+            // having one.
+            if (!Ready())
             {
                 if (_gaveUpOnRopeAt == 0) _gaveUpOnRopeAt = Game.GameTime;
                 return false;
@@ -219,14 +212,6 @@ namespace Fumes.Station
 
                 if (handle == 0)
                 {
-                    if (blind && ++_blindTries >= 3)
-                    {
-                        _texturesForced = true;
-                        Log.Warn("A rope will not spawn without its textures after all - loading " +
-                                 "them. The hose is still painted; the game's own rope may show " +
-                                 "at the edges of it.");
-                    }
-
                     if (_gaveUpOnRopeAt == 0) _gaveUpOnRopeAt = Game.GameTime;
                     return false;
                 }
@@ -236,11 +221,10 @@ namespace Fumes.Station
                 _gaveUpOnRopeAt = 0;
                 _spawnedAt = Game.GameTime;
 
-                Log.Once("hose-mode", "Hose: rope type " + _cfg.HoseRopeType + ", " +
-                                      (blind ? "untextured so only our own black shows"
-                                             : "textured") + ", drawn at " +
-                                      _cfg.HoseRed + "," + _cfg.HoseGreen + "," + _cfg.HoseBlue +
-                                      " with sheen " + _cfg.HoseSheen + ".");
+                Log.Once("hose-mode", "Hose: rope type " + _cfg.HoseRopeType + ", " + _mode +
+                                      ", drawn at " + _cfg.HoseRed + "," + _cfg.HoseGreen + "," +
+                                      _cfg.HoseBlue + " with sheen " + _cfg.HoseSheen +
+                                      ", ribbon " + _cfg.HoseThickness.ToString("0.000") + "m.");
 
                 Log.Debug("Hose out: rope " + handle + ", " + _rope.VertexCount + " vertices.");
                 return true;
@@ -268,15 +252,7 @@ namespace Fumes.Station
                 var count = _rope.VertexCount;
                 if (count < 2)
                 {
-                    // A rope with no vertices is a rope that did not really spawn. If that keeps
-                    // happening to a textureless one, the textures were load-bearing after all.
-                    if (_mode == HoseMode.Painted && !_texturesForced && ++_blindTries >= 3)
-                    {
-                        _texturesForced = true;
-                        Log.Warn("A textureless rope never gets any vertices - loading the rope " +
-                                 "textures. The hose stays painted.");
-                    }
-
+                    // A rope with no vertices is a rope that did not really spawn.
                     Retract();
                     return;
                 }
