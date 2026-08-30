@@ -79,6 +79,47 @@ def fuel_pump():
     save(img, "fuel.png")
 
 
+def fuel_pump_bar():
+    """
+    The pump again, for INSIDE the gauge bar, where it is drawn about sixteen pixels wide.
+
+    Three things are different and all three are forced by that size.
+
+    NO HOSE ARM, as asked. On the full icon the arm reaches out to x=214 while the body spans
+    only 58 to 150 -- so the body, the part that carries the shape, gets barely a third of the
+    width and the rest goes to an arm that at sixteen pixels is two grey specks. Dropping it
+    is not losing detail, it is refusing to spend most of the readable area on detail nobody
+    can read.
+
+    THE BODY FILLS THE CANVAS. Removing the arm alone would not have helped much: the art
+    would still sit in the middle of a mostly empty square, and a sprite is sized by its
+    canvas, not by the ink in it. Out to the edges, the same sixteen pixels carry about twice
+    the pump.
+
+    AND IT IS TALLER THAN IT IS WIDE, three to four, saved at that shape rather than squared
+    up. Only the WIDTH is constrained -- the bar is sixteen pixels across and the gauge is two
+    hundred tall, so height is free. A pump squashed into a square is a washing machine; the
+    same ink at 3:4 is a pump, and it is a third bigger into the bargain.
+    """
+    w, h = 192, 256
+
+    img = Image.new("RGBA", (w * SS, h * SS), CLEAR)
+    d = ImageDraw.Draw(img)
+
+    # Plinth, wider than the body, as the full icon has it.
+    rrect(d, (2, 220, 190, 252), 10, WHITE)
+
+    # Body, out to the edges.
+    rrect(d, (16, 4, 176, 222), 22, WHITE)
+
+    # Display window and keypad, punched out. Without them it is a rounded rectangle, and a
+    # rounded rectangle is not a pump -- they are what little shape survives at this size.
+    rrect(d, (42, 32, 150, 116), 14, CLEAR)
+    rrect(d, (42, 142, 150, 176), 9, CLEAR)
+
+    _save_exact(img.resize((w, h), Image.LANCZOS), "fuel_bar.png")
+
+
 def droplet():
     """A fuel drop, for anywhere the pump is too busy a shape to read."""
     img, d = canvas()
@@ -154,6 +195,7 @@ def glyphs():
 def main():
     print("Writing icons to " + OUT)
     fuel_pump()
+    fuel_pump_bar()
     droplet()
     glyphs()
     print("Done. Deploy with:  .\\build.ps1 -Deploy -FreshData")

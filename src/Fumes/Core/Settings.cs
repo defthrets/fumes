@@ -18,7 +18,12 @@ namespace Fumes.Core
         /// <summary>
         /// A real physics rope, but painted by us instead of wearing its own texture.
         ///
-        /// The best of both, and the default. GTA has no way to TINT a rope -- the colour comes
+        /// NOT THE DEFAULT ANY MORE, because the painting is the problem. The ribbon is one
+        /// flat strip turned to face the camera, and a strip has no thickness -- so wherever the
+        /// hose runs across the view rather than away from it, it stops being a tube and becomes
+        /// a black pane a hand's width across. Shading it like a cylinder does not help; it is
+        /// still flat, and the eye reads the silhouette before the shading. Rope 4 is dark
+        /// enough on its own, and a real rope is round from every angle for free. GTA has no way to TINT a rope -- the colour comes
         /// from whichever of nine authored textures the rope type picks, and the nearest thing
         /// to a fuel line among them is still a beige mooring rope. So the rope is created as
         /// the darkest, thinnest type there is, and then a thick black line is drawn ALONG ITS
@@ -188,7 +193,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Painted;
+        public HoseMode Hose = HoseMode.Auto;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
