@@ -164,6 +164,67 @@ namespace Fumes.Core
         public float SputterLitres = 0.6f;
         public bool StallWhenEmpty = true;
 
+        /// <summary>
+        /// The ignition is the player's, not the game's.
+        ///
+        /// Hold the exit key to stop the engine without getting out; tap it to get out and
+        /// leave the car exactly as it stands; get in and nothing starts until the throttle is
+        /// touched. Silent -- no prompt, no notification. A car that keeps running when you
+        /// walk away from it is not an event.
+        /// </summary>
+        public bool ManualIgnition = true;
+
+        /// <summary>How long the exit key counts as held rather than tapped.</summary>
+        public float ExitHoldSeconds = 0.30f;
+
+        /// <summary>
+        /// How fast the car can be moving, in metres a second, before the exit key goes back to
+        /// the game untouched.
+        ///
+        /// 2.5 is a brisk walk. Above it the game handles the key exactly as it always did --
+        /// hold to bail out -- because a tap that ejects you at sixty is not what a tap should
+        /// do, and refusing the tap on its own would have left no way out of a moving car.
+        /// </summary>
+        public float ManualIgnitionMaxSpeed = 2.5f;
+
+        /// <summary>
+        /// Whether aircraft get it too. They do not, by default.
+        ///
+        /// The gesture that parks a car is the one that kills you in a helicopter, and it is
+        /// the same key you use to climb out on the ground.
+        /// </summary>
+        public bool ManualIgnitionAircraft = false;
+
+        /// <summary>
+        /// Indicators worked by the steering wheel, self-cancelling like a real one.
+        /// </summary>
+        public bool Blinkers = true;
+
+        /// <summary>How long the wheel is held over before that side comes on.</summary>
+        public float BlinkerArmSeconds = 1.0f;
+
+        /// <summary>How long a moving car goes without steering that way before it cancels.</summary>
+        public float BlinkerCancelSeconds = 1.0f;
+
+        /// <summary>How far the wheel counts as turned at all, 0 to 1.</summary>
+        public float BlinkerDeadzone = 0.35f;
+
+        /// <summary>
+        /// How fast the car must be moving, in metres a second, for a centred wheel to cancel.
+        ///
+        /// Below it a centred wheel means nothing, which is what lets you signal at a red light
+        /// and let go of the wheel.
+        /// </summary>
+        public float BlinkerMinSpeed = 1.5f;
+
+        /// <summary>
+        /// Swap which way the SIGNED steering axis reads.
+        ///
+        /// Only used on setups where the one-sided steering controls report nothing; the normal
+        /// path reads each side's own control and has no convention to get backwards.
+        /// </summary>
+        public bool BlinkerInvert = false;
+
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
         public float DryRestartSeconds = 1.6f;
 
@@ -664,6 +725,16 @@ namespace Fumes.Core
 
                 s.SputterLitres = ini.GetFloat("Engine", "SputterLitres", s.SputterLitres, 0f, 20f);
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
+                s.ManualIgnition = ini.GetBool("Engine", "ManualIgnition", s.ManualIgnition);
+                s.ExitHoldSeconds = ini.GetFloat("Engine", "ExitHoldSeconds", s.ExitHoldSeconds, 0.1f, 3f);
+                s.ManualIgnitionMaxSpeed = ini.GetFloat("Engine", "ManualIgnitionMaxSpeed", s.ManualIgnitionMaxSpeed, 0f, 60f);
+                s.ManualIgnitionAircraft = ini.GetBool("Engine", "ManualIgnitionAircraft", s.ManualIgnitionAircraft);
+                s.Blinkers = ini.GetBool("Engine", "Blinkers", s.Blinkers);
+                s.BlinkerArmSeconds = ini.GetFloat("Engine", "BlinkerArmSeconds", s.BlinkerArmSeconds, 0.1f, 5f);
+                s.BlinkerCancelSeconds = ini.GetFloat("Engine", "BlinkerCancelSeconds", s.BlinkerCancelSeconds, 0.1f, 10f);
+                s.BlinkerDeadzone = ini.GetFloat("Engine", "BlinkerDeadzone", s.BlinkerDeadzone, 0.05f, 0.95f);
+                s.BlinkerMinSpeed = ini.GetFloat("Engine", "BlinkerMinSpeed", s.BlinkerMinSpeed, 0f, 20f);
+                s.BlinkerInvert = ini.GetBool("Engine", "BlinkerInvert", s.BlinkerInvert);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);
