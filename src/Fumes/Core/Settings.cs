@@ -419,7 +419,7 @@ namespace Fumes.Core
         public bool Vertical = true;
 
         public float GaugeX = 0.1310f;
-        public float GaugeY = 0.8225f;
+        public float GaugeY = 0.8045f;
         public float GaugeWidth = 0.0052f;
         public float GaugeHeight = 0.1635f;
 
