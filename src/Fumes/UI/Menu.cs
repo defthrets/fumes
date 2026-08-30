@@ -520,7 +520,14 @@ namespace Fumes.UI
             _cfg.GaugeWidth = Clamp(_cfg.GaugeWidth, 0.0015f, 0.8f);
             _cfg.GaugeHeight = Clamp(_cfg.GaugeHeight, 0.004f, 0.6f);
 
-            if (Edge(Keys.Return, ref _enter) || Edge(Keys.Back, ref _back))
+            // BOTH EDGES ARE READ, every frame, and that is not style. || short-circuits, so
+            // whenever Return produced an edge the Back edge was never evaluated -- and Edge is
+            // what UPDATES the remembered key state. Backspace held through that frame would
+            // stay recorded as up, and register a fresh press the next time it was looked at.
+            var accept = Edge(Keys.Return, ref _enter);
+            var cancel = Edge(Keys.Back, ref _back);
+
+            if (accept || cancel)
             {
                 Placing = false;
                 Remember();
@@ -611,8 +618,11 @@ namespace Fumes.UI
 
             Draw.Text("Fumes", PanelX + 0.012f, PanelTop + 0.004f, 0.62f, Amber, Script);
 
-            Draw.Text(page.Title + "   " + (_page + 1) + "/" + _pages.Count,
-                      PanelX + PanelW - 0.012f, PanelTop + 0.019f, 0.30f, Dim, Plain, false, true);
+            // THE PAGES, NAMED. This was "HUD 1/4" -- the page's name and its number out of
+            // four -- and it read as a value belonging to the row under it. A number that has
+            // to be explained is not a label. All four names, the current one lit, says the
+            // same thing and needs no explaining.
+            Tabs();
 
             for (var i = 0; i < shown; i++)
             {
@@ -672,6 +682,49 @@ namespace Fumes.UI
             Draw.Text("TAB page   BACKSPACE save & close",
                       PanelX + 0.012f, foot + 0.024f, 0.24f,
                       Color.FromArgb(120, 150, 150, 156), Plain);
+        }
+
+        /// <summary>
+        /// The page names across the head of the panel, current one lit.
+        ///
+        /// LAID OUT BY MEASUREMENT rather than by fixed columns: the names are different
+        /// lengths and there are four of them across a fifth of the screen, so evenly spaced
+        /// columns would either crowd STATION or strand HUD. Each is measured, and they are
+        /// spread across whatever room is left.
+        /// </summary>
+        private void Tabs()
+        {
+            const float scale = 0.26f;
+
+            var left = PanelX + 0.012f;
+            var right = PanelX + PanelW - 0.012f;
+            var y = PanelTop + 0.030f;
+
+            var widths = new float[_pages.Count];
+            var total = 0f;
+
+            for (var i = 0; i < _pages.Count; i++)
+            {
+                widths[i] = Draw.Width(_pages[i].Title, scale, Plain);
+                total += widths[i];
+            }
+
+            var gap = _pages.Count > 1 ? (right - left - total) / (_pages.Count - 1) : 0f;
+            if (gap < 0.004f) gap = 0.004f;
+
+            var x = left;
+
+            for (var i = 0; i < _pages.Count; i++)
+            {
+                var on = i == _page;
+
+                Draw.Text(_pages[i].Title, x, y, scale,
+                          on ? Amber : Color.FromArgb(120, 150, 150, 156), Plain);
+
+                if (on) Draw.Bar(x, y + 0.0165f, widths[i], 0.0016f, Amber);
+
+                x += widths[i] + gap;
+            }
         }
 
         // ==================================================================
