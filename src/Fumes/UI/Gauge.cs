@@ -230,70 +230,69 @@ namespace Fumes.UI
                     }
                 }
 
-                if (!_cfg.ShowNumbers) return;
-
                 if (_cfg.Vertical)
                 {
-                    // 100 IS SAYABLE NOW. It used to be capped at 99 because "99%" was already
-                    // three characters against a bar this narrow and "100%" would have been
-                    // four. Without the sign there is room, and a full tank reading 99 was a
-                    // small lie the gauge had no reason left to tell.
+                    // ShowNumbers USED TO RETURN OUT OF THIS WHOLE BLOCK, which was right when
+                    // the reading was the only thing in it. The pump is in here now, and "no
+                    // number" is not "nothing" -- an early return would have taken the pump with
+                    // it and left a bar with nothing in it at all.
                     var pct = (int)Math.Round(fraction * 100f);
                     if (pct < 0) pct = 0;
                     if (pct > 100) pct = 100;
 
-                    var text = pct.ToString(CultureInfo.InvariantCulture);
+                    // Off at a full tank as well as off by setting. A full bar already says
+                    // full, and 100 is the one reading that does not fit: the digits are sized
+                    // so that TWO of them span the bar, so a third only gets in by shrinking all
+                    // three, and it was the only number in the set drawn at a different size.
+                    var showReading = _cfg.ShowNumbers && !(_cfg.HideFullReading && pct >= 100);
 
-                    // SIZED OFF "88", NOT OFF THE READING. Fitting each number to the bar in
-                    // turn makes the digits change size as the tank drains -- "9" would be
-                    // drawn nearly twice the size of "45", because one character has the whole
-                    // width to itself. Two digits' worth is the size; the actual string can
-                    // only pull it DOWN, which is exactly what makes room for 100.
-                    const float probe = 0.30f;
-
-                    var scale = Fit(probe, "88", w);
-                    var actual = Fit(probe, text, w);
-                    if (actual < scale) scale = actual;
-
-                    scale *= _cfg.GaugeTextScale;
-                    if (scale < 0.10f) scale = 0.10f;
-                    if (scale > 0.60f) scale = 0.60f;
-
-                    // INSIDE THE BAR, AT ITS FOOT. The line is drawn from its top edge, so the
-                    // bottom only lands where it should once its own height comes off -- and
-                    // that height is measured, not assumed. See Draw.Height.
-                    var textH = Draw.Height(scale, 4);
                     var inset = edge;
 
-                    // BLACK ONLY WHILE THERE IS FUEL UNDERNEATH IT.
-                    //
-                    // The number sits in the bottom few pixels, which are filled at any level
-                    // worth reading -- but below about three per cent the fill drops past the
-                    // digits and black ink lands on the empty channel, which is near-black. The
-                    // one reading you cannot afford to lose is the one just before you stop.
-                    var lit = h * fraction >= textH + inset;
-
-                    var ink = Fade(stalled ? Color.FromArgb(245, 255, 120, 110)
-                                 : lit     ? Color.FromArgb(240, 10, 10, 12)
-                                           : Color.FromArgb(235, 240, 240, 240));
-
-                    // NOTHING IS DRAWN AT A FULL TANK. A full bar already says full, and 100
-                    // is the one reading that does not fit -- the digits are sized so that TWO
-                    // of them span the bar, so a third only gets in by shrinking all three. It
-                    // was the only number in the set drawn at a different size from the rest,
-                    // and it looked it.
-                    var showReading = !(_cfg.HideFullReading && pct >= 100);
-
                     // Stacked up from the foot of the bar, each thing taking its own height off
-                    // the space left. Written this way so the pump lands correctly whether or
-                    // not there is a number under it -- at a full tank it simply moves down into
-                    // the slot the reading would have had, rather than leaving a gap where a
-                    // number used to be.
+                    // what is left. Written this way so the pump lands correctly whether or not
+                    // there is a number under it -- with the reading off it simply sits in the
+                    // slot the reading would have had, rather than floating above a gap.
                     var used = inset;
 
                     if (showReading)
                     {
-                        Draw.Text(text, x + w / 2f, y + h - used - textH, scale, ink, 4, true, false, !lit);
+                        var text = pct.ToString(CultureInfo.InvariantCulture);
+
+                        // SIZED OFF "88", NOT OFF THE READING. Fitting each number to the bar in
+                        // turn makes the digits change size as the tank drains -- "9" would be
+                        // drawn nearly twice the size of "45", because one character has the
+                        // whole width to itself. Two digits' worth is the size; the actual
+                        // string can only pull it DOWN, which is what makes room for 100.
+                        const float probe = 0.30f;
+
+                        var scale = Fit(probe, "88", w);
+                        var actual = Fit(probe, text, w);
+                        if (actual < scale) scale = actual;
+
+                        scale *= _cfg.GaugeTextScale;
+                        if (scale < 0.10f) scale = 0.10f;
+                        if (scale > 0.60f) scale = 0.60f;
+
+                        // INSIDE THE BAR, AT ITS FOOT. The line is drawn from its top edge, so
+                        // the bottom only lands where it should once its own height comes off --
+                        // and that height is measured, not assumed. See Draw.Height.
+                        var textH = Draw.Height(scale, 4);
+
+                        // BLACK ONLY WHILE THERE IS FUEL UNDERNEATH IT.
+                        //
+                        // The number sits in the bottom few pixels, which are filled at any
+                        // level worth reading -- but below about three per cent the fill drops
+                        // past the digits and black ink lands on the empty channel, which is
+                        // near-black. The one reading you cannot afford to lose is the last one.
+                        var lit = h * fraction >= textH + inset;
+
+                        var ink = Fade(stalled ? Color.FromArgb(245, 255, 120, 110)
+                                     : lit     ? Color.FromArgb(240, 10, 10, 12)
+                                               : Color.FromArgb(235, 240, 240, 240));
+
+                        Draw.Text(text, x + w / 2f, y + h - used - textH, scale, ink,
+                                  4, true, false, !lit);
+
                         MeasureNumber(text, scale, textH);
 
                         used += textH + inset;
@@ -331,6 +330,8 @@ namespace Fumes.UI
 
                     return;
                 }
+
+                if (!_cfg.ShowNumbers) return;
 
                 var label = stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun;
                 var reading = label + "   " + Volume(tank.Litres) + " / " + Volume(tank.Capacity);

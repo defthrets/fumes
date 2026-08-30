@@ -481,7 +481,7 @@ namespace Fumes.Core
         /// </summary>
         public bool TuneGauge = false;
         public Units Units = Units.Litres;
-        public bool ShowNumbers = true;
+        public bool ShowNumbers = false;
 
         /// <summary>
         /// The amber tick at the reserve level.
