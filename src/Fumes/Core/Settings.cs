@@ -408,6 +408,17 @@ namespace Fumes.Core
         public string FillSoundSet = "";
 
         /// <summary>
+        /// The audio bank a configured sound needs, if it needs one.
+        ///
+        /// Most of the candidates are DLC sounds, and a DLC sound whose bank is not loaded
+        /// behaves EXACTLY like a name that does not exist -- silence, no error. So a name
+        /// pinned in the ini without its bank was a trap: the candidate list requests the bank
+        /// and the ini path did not, so the same name would work from one and not the other
+        /// with nothing anywhere to say why.
+        /// </summary>
+        public string FillSoundBank = "";
+
+        /// <summary>
         /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
         /// what blends the clip over his legs and leaves the player in charge instead of
         /// planting him in a cutscene. 50 is that band plus hold-last-frame and NOT loop --
@@ -681,6 +692,7 @@ namespace Fumes.Core
                 s.FillSound = ini.GetBool("Nozzle", "FillSound", s.FillSound);
                 s.FillSoundName = ini.GetString("Nozzle", "FillSoundName", s.FillSoundName);
                 s.FillSoundSet = ini.GetString("Nozzle", "FillSoundSet", s.FillSoundSet);
+                s.FillSoundBank = ini.GetString("Nozzle", "FillSoundBank", s.FillSoundBank);
                 s.FillAnimFlag = ini.GetInt("Nozzle", "FillAnimFlag", s.FillAnimFlag, 0, 255);
 
                 s.Prompts = ParseEnum(ini.GetString("HUD", "Prompts", "HelpText"), s.Prompts);

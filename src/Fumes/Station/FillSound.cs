@@ -73,6 +73,13 @@ namespace Fumes.Station
         /// </summary>
         private static readonly string[][] Candidates =
         {
+            // Water being collected: the closest thing in the game to liquid going INTO a
+            // container rather than out of a nozzle. First because it was asked for -- and it
+            // stays in the list rather than being pinned in the ini, so it is still probed and
+            // still reports what it did.
+            new[] { "collect_water", "dlc_sum20_yacht_missions_ah_sounds",
+                    "dlc_sum20_yacht_missions_ah_sounds" },
+
             // A car wash spraying a car: pressurised liquid, loops for as long as the wash
             // runs, and it is a base-game set with no DLC bank behind it.
             new[] { "SPRAY", "CARWASH_SOUNDS", null },
@@ -85,9 +92,6 @@ namespace Fumes.Station
 
             // Named exactly right, though it is a UI meter rather than a tank.
             new[] { "Meter_Fill_Loop", "DLC_IE_Tail_Vehicle_Sounds", "DLC_IE_Tail_Vehicle_Sounds" },
-
-            new[] { "collect_water", "dlc_sum20_yacht_missions_ah_sounds",
-                    "dlc_sum20_yacht_missions_ah_sounds" },
         };
 
         /// <summary>
@@ -133,21 +137,40 @@ namespace Fumes.Station
             try { finished = Function.Call<bool>(Hash.HAS_SOUND_FINISHED, _id); }
             catch { finished = true; }
 
+            var name = _candidate < 0 ? _cfg.FillSoundName : Candidates[_candidate][0];
+            var set = _candidate < 0 ? _cfg.FillSoundSet : Candidates[_candidate][1];
+
             if (!finished)
             {
                 _proven = true;
 
-                Log.Info("Fill sound: \"" + Candidates[_candidate][0] + "\" from \"" +
-                         Candidates[_candidate][1] + "\" is playing. Put those in [Nozzle] " +
-                         "FillSoundName and FillSoundSet to skip the search next time.");
+                Log.Info("Fill sound: \"" + name + "\" from \"" + set + "\" is playing." +
+                         (_candidate < 0
+                              ? ""
+                              : "  Put those in [Nozzle] FillSoundName and FillSoundSet to "
+                                + "skip the search next time."));
                 return;
             }
 
-            Log.Info("Fill sound: \"" + Candidates[_candidate][0] + "\" from \"" +
-                     Candidates[_candidate][1] + "\" finished immediately, so it is not a " +
-                     "sound this game has. Trying the next.");
-
             Release();
+
+            if (_candidate < 0)
+            {
+                // Asked for by name and it did not play. NOT falling through to the
+                // candidate list: quietly substituting a different sound would look like
+                // the chosen one working badly rather than not working at all.
+                _hopeless = true;
+
+                Log.Warn("Fill sound: \"" + name + "\" from \"" + set + "\" finished the "
+                         + "instant it started, so it is not playing. Check the spelling, and "
+                         + "whether it needs FillSoundBank set. Clear FillSoundName to go "
+                         + "back to the built-in list.");
+                return;
+            }
+
+            Log.Info("Fill sound: \"" + name + "\" from \"" + set + "\" finished "
+                     + "immediately, so it is not a sound this game has. Trying the next.");
+
             Play(at, _candidate + 1);
         }
 
@@ -155,11 +178,15 @@ namespace Fumes.Station
         {
             _proven = false;
 
-            // A name set by hand in the ini is taken on trust and never probed -- if somebody
-            // has written one in, they know something this code does not.
+            // A name set by hand in the ini is used exactly as given, and PROBED ALL THE SAME.
+            //
+            // It used to be taken on trust, on the grounds that anyone typing one in knows
+            // something this code does not. That was wrong in the one way that matters here:
+            // the failure mode is silence, and silence is also what a working sound looks like
+            // with the volume down. Trusting it meant a typo produced no sound and no
+            // explanation either. The name is not overridden -- it is checked and reported.
             if (!string.IsNullOrEmpty(_cfg.FillSoundName) && !string.IsNullOrEmpty(_cfg.FillSoundSet))
             {
-                _proven = true;
                 Play(at, -1);
                 return;
             }
@@ -178,7 +205,7 @@ namespace Fumes.Station
             {
                 name = _cfg.FillSoundName;
                 set = _cfg.FillSoundSet;
-                bank = null;
+                bank = _cfg.FillSoundBank;
             }
             else
             {
