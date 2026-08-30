@@ -263,8 +263,28 @@ namespace Fumes.Core
         /// Negative Y is behind it. Dial it in with the tuner like the rest of the placement.
         /// </summary>
         public float HoseEndX = 0f;
-        public float HoseEndY = -0.04f;
-        public float HoseEndZ = -0.06f;
+        public float HoseEndY = 0f;
+        public float HoseEndZ = 0f;
+
+        /// <summary>
+        /// Work the hose attachment out from the nozzle's own SHAPE rather than from numbers.
+        ///
+        /// Three hand-typed offsets in a prop's local space is a guessing game, and I lost it
+        /// four times running: the nozzle is rotated three ways, so which direction "the back
+        /// of it" happens to be is not something anybody can hold in their head.
+        ///
+        /// The model knows though. Its bounding box has a longest axis, and on a fuel nozzle
+        /// that axis IS the nozzle -- spout at one end, hose at the other. So the attachment is
+        /// taken from the box, and the only thing left to decide is which of the two ends, one
+        /// bit of information instead of three numbers.
+        /// </summary>
+        public bool HoseEndAuto = true;
+
+        /// <summary>Which end of that axis. Flip it if the hose comes out of the spout.</summary>
+        public int HoseEndSign = -1;
+
+        /// <summary>How far along toward that end, 1.0 being the very tip of the bounding box.</summary>
+        public float HoseEndReach = 0.9f;
 
         public bool TuneNozzle = false;
 
@@ -304,8 +324,8 @@ namespace Fumes.Core
         /// The first attempt was a hold-up pose, and it was wrong for a reason worth writing
         /// down: it aims a pistol, so the arm sits at chest height. Right idea, wrong altitude.
         /// </summary>
-        public string FillAnimDict = "anim@mp_player_intmenu@key_fob@";
-        public string FillAnimClip = "fob_click";
+        public string FillAnimDict = "mp_common";
+        public string FillAnimClip = "givetake1_a";
 
         /// <summary>
         /// Where in the clip to stop, 0 at the first frame and 1 at the last.
@@ -315,7 +335,7 @@ namespace Fumes.Core
         /// Frozen at the reach it is a pose, and a pose is what refuelling needs. Negative
         /// lets the clip play through normally.
         /// </summary>
-        public float FillAnimPhase = 0.55f;
+        public float FillAnimPhase = 0.45f;
 
         /// <summary>
         /// The anim flag. 48-63 is the native's own "upper body, controllable" band, which is
@@ -336,14 +356,27 @@ namespace Fumes.Core
         public float HoseAnchorY = 0.08f;
 
         /// <summary>
-        /// Height up the pump, and it wants to be near the TOP.
+        /// Height up the pump, in metres, when it is not being worked out automatically.
         ///
-        /// A real nozzle hangs in a holster at the top of the machine, roughly shoulder height,
-        /// not out of its middle -- and a hose leaving at waist height reads as coming out of
-        /// the payment panel. The base-game pumps are a little under two metres, so this sits
-        /// just below the light box on the lid.
+        /// Only used with HoseAnchorAuto off. Typing a height here means guessing at the size
+        /// of six different pump models, which is how this ended up needing raising three
+        /// times.
         /// </summary>
         public float HoseAnchorZ = 2.10f;
+
+        /// <summary>
+        /// Take the hose height from the PUMP'S OWN HEIGHT rather than a typed number.
+        ///
+        /// The game has six pump models and they are not the same size, so any single figure
+        /// is wrong for most of them -- and a figure that is wrong is either a hose leaving the
+        /// payment panel or one leaving thin air above the lid. The model's bounding box knows
+        /// exactly how tall it is; taking a fraction of that is right for all six without a
+        /// number being typed for any.
+        /// </summary>
+        public bool HoseAnchorAuto = true;
+
+        /// <summary>How far up the pump, 0 at its foot and 1 at the very top of its box.</summary>
+        public float HoseAnchorHeight = 0.92f;
 
         // ---- HUD --------------------------------------------------------------
         /// <summary>Top-left help box, or the bottom-right button bar.</summary>
@@ -488,6 +521,8 @@ namespace Fumes.Core
                 s.HoseAnchorX = ini.GetFloat("Nozzle", "HoseAnchorX", s.HoseAnchorX, -3f, 3f);
                 s.HoseAnchorY = ini.GetFloat("Nozzle", "HoseAnchorY", s.HoseAnchorY, -3f, 3f);
                 s.HoseAnchorZ = ini.GetFloat("Nozzle", "HoseAnchorZ", s.HoseAnchorZ, 0f, 4f);
+                s.HoseAnchorAuto = ini.GetBool("Nozzle", "HoseAnchorAuto", s.HoseAnchorAuto);
+                s.HoseAnchorHeight = ini.GetFloat("Nozzle", "HoseAnchorHeight", s.HoseAnchorHeight, 0f, 1.2f);
 
                 s.NozzleOffsetX = ini.GetFloat("Nozzle", "NozzleOffsetX", s.NozzleOffsetX, -1f, 1f);
                 s.NozzleOffsetY = ini.GetFloat("Nozzle", "NozzleOffsetY", s.NozzleOffsetY, -1f, 1f);
@@ -500,6 +535,9 @@ namespace Fumes.Core
                 s.HoseEndX = ini.GetFloat("Nozzle", "HoseEndX", s.HoseEndX, -1f, 1f);
                 s.HoseEndY = ini.GetFloat("Nozzle", "HoseEndY", s.HoseEndY, -1f, 1f);
                 s.HoseEndZ = ini.GetFloat("Nozzle", "HoseEndZ", s.HoseEndZ, -1f, 1f);
+                s.HoseEndAuto = ini.GetBool("Nozzle", "HoseEndAuto", s.HoseEndAuto);
+                s.HoseEndSign = ini.GetInt("Nozzle", "HoseEndSign", s.HoseEndSign, -1, 1);
+                s.HoseEndReach = ini.GetFloat("Nozzle", "HoseEndReach", s.HoseEndReach, 0f, 1.5f);
                 s.ShowFillerMarker = ini.GetBool("Nozzle", "ShowFillerMarker", s.ShowFillerMarker);
                 s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
                 s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);

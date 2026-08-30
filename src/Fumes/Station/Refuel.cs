@@ -222,11 +222,47 @@ namespace Fumes.Station
             {
                 var local = pump.GetPositionOffset(standingAt);
                 var side = local.X >= 0f ? 1f : -1f;
-                return new Vector3(_cfg.HoseAnchorX * side, _cfg.HoseAnchorY, _cfg.HoseAnchorZ);
+
+                return new Vector3(_cfg.HoseAnchorX * side, _cfg.HoseAnchorY, AnchorHeight(pump));
             }
             catch
             {
                 return new Vector3(0f, 0f, _cfg.HoseAnchorZ);
+            }
+        }
+
+        /// <summary>
+        /// How far up the pump the hose leaves, from the pump's own height.
+        ///
+        /// A typed height is a guess at the size of six different pump models, and it was
+        /// raised three times before this: 1.05, then 1.52, then 1.85, then 2.10, and it was
+        /// still too low on the machine in front of us. The model's bounding box knows how tall
+        /// it is. Ninety-two per cent of the way up puts the hose at the holster on the lid on
+        /// any of them, which is where a real one hangs.
+        /// </summary>
+        private float AnchorHeight(Prop pump)
+        {
+            if (!_cfg.HoseAnchorAuto) return _cfg.HoseAnchorZ;
+
+            try
+            {
+                pump.Model.GetDimensions(out var min, out var max);
+
+                var height = max.Z - min.Z;
+                if (height < 0.3f) return _cfg.HoseAnchorZ;   // not a pump-shaped thing
+
+                var z = min.Z + height * _cfg.HoseAnchorHeight;
+
+                Log.Once("pump-height-" + pump.Model.Hash,
+                         "Pump model is " + height.ToString("0.00") + "m tall; hose leaves it at " +
+                         z.ToString("0.00") + "m.");
+
+                return z;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("pump-bounds", "Could not measure the pump: " + ex.Message);
+                return _cfg.HoseAnchorZ;
             }
         }
 
@@ -909,10 +945,13 @@ namespace Fumes.Station
             // that are the ones authored for somebody operating a small object at waist
             // height: a key fob, a parking meter, a hand-over. A greeting or a hold-up moves
             // the whole torso because that is what those gestures are.
-            new[] { "anim@mp_player_intmenu@key_fob@", "fob_click" },
-            new[] { "amb@prop_human_parking_meter@male@idle_a", "idle_a" },
+            // givetake1_a first because it is KNOWN GOOD, not guessed: it is the clip
+            // Posted Up already plays for the player's half of a street hand-over, and it
+            // does exactly the one thing wanted here -- a single hand out in front of him.
             new[] { "mp_common", "givetake1_a" },
             new[] { "mp_common", "givetake2_a" },
+            new[] { "anim@mp_player_intmenu@key_fob@", "fob_click" },
+            new[] { "amb@prop_human_parking_meter@male@idle_a", "idle_a" },
             new[] { "weapons@misc@jerrycan@mp_male", "idle" },
             new[] { "anim@heists@humane_labs@finale@keycards", "ped_a_enter_loop" },
             new[] { "mp_ped_interaction", "handshake_guy_a" },
@@ -1055,7 +1094,7 @@ namespace Fumes.Station
             return control == Control.ContextSecondary ? SecondaryName() : KeyName();
         }
 
-        private bool _ropeKeyDown;
+        private bool _ropeKeyDown, _endKeyDown;
 
         /// <summary>
         /// Cycles the rope texture while you look at it, when TuneNozzle is on.
@@ -1080,6 +1119,16 @@ namespace Fumes.Station
 
             var edge = down && !_ropeKeyDown;
             _ropeKeyDown = down;
+
+            // Which end of the nozzle the hose leaves from -- the one thing the model's
+            // bounding box cannot tell us, because both ends of a box look alike.
+            if (Edge(System.Windows.Forms.Keys.Subtract, ref _endKeyDown))
+            {
+                _cfg.HoseEndSign = -_cfg.HoseEndSign;
+                _nozzle.ForgetBounds();
+                Log.Info("Hose now leaves the " + (_cfg.HoseEndSign < 0 ? "near" : "far") +
+                         " end of the nozzle.");
+            }
 
             if (edge)
             {

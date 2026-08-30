@@ -138,8 +138,10 @@ namespace Fumes.Station
             {
                 if (Out)
                 {
-                    return _prop.GetOffsetPosition(
-                        new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ));
+                    var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ);
+                    if (_cfg.HoseEndAuto) local += BackOfNozzle();
+
+                    return _prop.GetOffsetPosition(local);
                 }
             }
             catch
@@ -148,6 +150,70 @@ namespace Fumes.Station
             }
 
             return HandPosition();
+        }
+
+        /// <summary>The end of the nozzle, worked out once from the model's bounding box.</summary>
+        private Vector3 _back;
+        private bool _backKnown;
+
+        /// <summary>
+        /// Where the back of the nozzle is, in its own space, from the model's own dimensions.
+        ///
+        /// A fuel nozzle is a long thin thing, so the LONGEST AXIS OF ITS BOUNDING BOX is the
+        /// nozzle -- spout at one end, hose at the other. Taking the attachment point off that
+        /// means it is right for whichever of the four candidate models actually loaded, at
+        /// whatever size, without a number being typed for any of them.
+        ///
+        /// The one thing the box cannot say is which end is the spout, because both ends of a
+        /// box look the same to a box. That is HoseEndSign -- one bit, flipped in the tuner in
+        /// a second, instead of three continuous numbers nobody can reason about.
+        /// </summary>
+        private Vector3 BackOfNozzle()
+        {
+            if (_backKnown) return _back;
+
+            try
+            {
+                _prop.Model.GetDimensions(out var min, out var max);
+
+                var size = max - min;
+                var centre = (min + max) * 0.5f;
+                var reach = _cfg.HoseEndReach * _cfg.HoseEndSign;
+
+                if (size.Y >= size.X && size.Y >= size.Z)
+                {
+                    _back = new Vector3(centre.X, centre.Y + size.Y * 0.5f * reach, centre.Z);
+                }
+                else if (size.X >= size.Z)
+                {
+                    _back = new Vector3(centre.X + size.X * 0.5f * reach, centre.Y, centre.Z);
+                }
+                else
+                {
+                    _back = new Vector3(centre.X, centre.Y, centre.Z + size.Z * 0.5f * reach);
+                }
+
+                _backKnown = true;
+
+                Log.Info("Nozzle is " + size.X.ToString("0.00") + " x " + size.Y.ToString("0.00") +
+                         " x " + size.Z.ToString("0.00") + "m; hose joins at " +
+                         _back.X.ToString("0.000") + ", " + _back.Y.ToString("0.000") + ", " +
+                         _back.Z.ToString("0.000") + " in its own space.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("nozzle-bounds", "Could not measure the nozzle: " + ex.Message);
+                _backKnown = true;
+                _back = Vector3.Zero;
+            }
+
+            return _back;
+        }
+
+        /// <summary>Makes the next HoseEnd re-measure. For the tuner, after flipping the end.</summary>
+        public void ForgetBounds()
+        {
+            _backKnown = false;
         }
 
         /// <summary>
@@ -184,6 +250,7 @@ namespace Fumes.Station
                     // turns a refuel into a physics accident.
                     _prop.IsCollisionEnabled = false;
 
+                    _backKnown = false;
                     Seat();
 
                     Log.Info("Nozzle in hand: " + name + ".");
@@ -501,6 +568,8 @@ namespace Fumes.Station
                    & Write("HoseEndX", _cfg.HoseEndX, "0.000")
                    & Write("HoseEndY", _cfg.HoseEndY, "0.000")
                    & Write("HoseEndZ", _cfg.HoseEndZ, "0.000")
+                   & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndSign",
+                                      _cfg.HoseEndSign.ToString(CultureInfo.InvariantCulture))
                    & Write("HoseRopeType", _cfg.HoseRopeType, "0");
 
             Log.Info("Nozzle placement saved:" + Environment.NewLine + IniBlock());
