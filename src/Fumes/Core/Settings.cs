@@ -263,8 +263,8 @@ namespace Fumes.Core
         /// phone -- but prop_cs_fuel_nozle is not one of those. It is a scene prop whose origin
         /// is not its grip, so left at zero it hangs out of the fist like a dropped knife.
         /// These six numbers put it right, and they live in the ini rather than the code
-        /// because the only way to find them is to look at it: turn TuneNozzle on and dial
-        /// them in with the game running.
+        /// because the only way to find them was to look at it -- there is no working them
+        /// out on paper from a prop whose origin is not its grip.
         ///
         /// Offsets are metres in the bone's own space; rotations are degrees.
         /// </summary>
@@ -275,12 +275,6 @@ namespace Fumes.Core
         public float NozzleRotY = 270f;
         public float NozzleRotZ = -90f;
 
-        /// <summary>
-        /// In-game tuning for the six numbers above.
-        ///
-        /// NumPad5 cycles the axis, NumPad4 and NumPad6 move it, NumPad0 writes the whole set
-        /// to the log in ini form. Off by default: it is a workbench, not a feature.
-        /// </summary>
         /// <summary>
         /// Where the hose meets the nozzle, in the NOZZLE'S own space.
         ///
@@ -341,7 +335,6 @@ namespace Fumes.Core
         /// <summary>How far along toward that end, 1.0 being the very tip of the bounding box.</summary>
         public float HoseEndReach = 1.2f;
 
-        public bool TuneNozzle = false;
 
         /// <summary>
         /// Which hand the nozzle goes in.
@@ -468,18 +461,6 @@ namespace Fumes.Core
         public float GaugeWidth = 0.0046f;
         public float GaugeHeight = 0.1635f;
 
-        /// <summary>
-        /// Live placement for the gauge, the same workbench the nozzle has.
-        ///
-        /// The numbers above cannot be right for everybody and cannot be worked out from here:
-        /// where the minimap lands depends on the player's safe-zone slider and their aspect
-        /// ratio, and the game offers no honest way to ask. So rather than a formula nobody can
-        /// check, this lets it be dragged into place while looking at it.
-        ///
-        /// Only listens while you are NOT holding the nozzle, so it cannot fight the nozzle
-        /// tuner over the same keys.
-        /// </summary>
-        public bool TuneGauge = false;
         public Units Units = Units.Litres;
         public bool ShowNumbers = false;
 
@@ -665,7 +646,6 @@ namespace Fumes.Core
                 s.NozzleRotX = ini.GetFloat("Nozzle", "NozzleRotX", s.NozzleRotX, -360f, 360f);
                 s.NozzleRotY = ini.GetFloat("Nozzle", "NozzleRotY", s.NozzleRotY, -360f, 360f);
                 s.NozzleRotZ = ini.GetFloat("Nozzle", "NozzleRotZ", s.NozzleRotZ, -360f, 360f);
-                s.TuneNozzle = ini.GetBool("Nozzle", "TuneNozzle", s.TuneNozzle);
                 s.LeftHand = ini.GetBool("Nozzle", "LeftHand", s.LeftHand);
                 s.HoseEndX = ini.GetFloat("Nozzle", "HoseEndX", s.HoseEndX, -1f, 1f);
                 s.HoseEndY = ini.GetFloat("Nozzle", "HoseEndY", s.HoseEndY, -1f, 1f);
@@ -699,7 +679,6 @@ namespace Fumes.Core
                 s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);
                 s.GaugeOpacity = ini.GetFloat("HUD", "Opacity", s.GaugeOpacity, 0.15f, 1f);
                 s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);
-                s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 
                 s.ForecourtHazard = ini.GetBool("Hazard", "ForecourtHazard", s.ForecourtHazard);
 

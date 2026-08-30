@@ -105,11 +105,10 @@ knowing about:
 - `[Nozzle] HoseAnchorX/Y/Z` — where the hose leaves the pump. The game has six
   pump models and they are not the same shape.
 
-If the nozzle sits wrong in his hand, set `[Nozzle] TuneNozzle = true` and dial
-it in with the game running: **NumPad 5** cycles the axis, **NumPad 4/6** move
-it, **NumPad 0** writes the whole set to `Fumes.log` ready to paste back into
-the ini. `prop_cs_fuel_nozle` is a scene prop whose origin is not its grip, so
-there is no way to work the numbers out on paper — you have to look at it.
+If the nozzle sits wrong in his hand, `[Nozzle] NozzleOffsetX/Y/Z` and
+`NozzleRot*` are the six numbers that place it. `prop_cs_fuel_nozle` is a scene
+prop whose origin is not its grip, so they cannot be worked out on paper — the
+shipped values were found by looking.
 
 `scripts\Fumes\stations.json` is the station list, used **only** for map blips
 and pricing. Refuelling does not read it, so a wrong coordinate cannot break

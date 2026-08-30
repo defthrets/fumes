@@ -38,9 +38,5 @@ First release.
   * Both GTA V editions from one build. No asset mods, no OpenIV, no RPF edits,
     and no dependency beyond ScriptHookVDotNet itself.
 
-  * Live tuning for the two things a setting cannot be right about in advance --
-    where the hose meets the nozzle, and how far into the filling animation the
-    arm stops -- with NumPad 0 writing them back to the ini.
-
   * A rope type that crashes the game is remembered across the crash and never
     offered again.

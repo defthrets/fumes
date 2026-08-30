@@ -61,32 +61,6 @@ persistent per vehicle and survives a save and a reload.
 Your money is really taken. Prices differ by station.
 
 
-ADJUSTING THE HOSE AND THE POSE, IN GAME
-========================================
-
-The hose join and the filling pose are the two things no setting can be right
-about in advance -- they depend on the nozzle model that streamed in and on
-which animation you like. Both are adjustable while you play, and NumPad 0
-writes whatever you have to Fumes.ini so it survives.
-
-While the nozzle is in your hand:
-
-  ]  [              hose join up / down            (1 cm a press)
-  ;  /              hose join back / forward along the nozzle
-  .  ,              hose join right / left
-  NumPad *          next rope type (0-7)
-  NumPad -          flip which end of the nozzle the hose leaves from
-  NumPad 0          save all of the above to Fumes.ini
-
-While filling:
-
-  NumPad 7  9       arm lower / higher in the filling animation
-  NumPad 0          save
-
-These keys do nothing at any other time, and nothing at all if you never pick
-up a nozzle.
-
-
 SETTINGS
 ========
 
@@ -116,10 +90,6 @@ Two of them are worth knowing about up front:
                        shipped file, so an update cannot undo it.
 
   [HUD] Opacity        the whole gauge, one number.
-
-There are also full tuners behind [Nozzle] TuneNozzle and [HUD] TuneGauge, off
-by default, which put a caption on screen and give the numpad over to moving
-things a fraction at a time. You do not need them for normal play.
 
 
 NOTES

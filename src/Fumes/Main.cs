@@ -130,10 +130,6 @@ namespace Fumes
                     _gauge.Update(_watched, _tanks.For(_watched), false, _stalled);
                 }
 
-                // Only while his hands are empty, so it cannot fight the nozzle tuner
-                // over the same NumPad keys.
-                if (!_refuel.Busy) _gauge.Tune();
-
                 // LAST, and it has to be: the bar draws whatever was queued during this
                 // tick, so every Show call has to have happened already.
                 _buttons.Render();
