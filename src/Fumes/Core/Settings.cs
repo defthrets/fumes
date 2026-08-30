@@ -204,7 +204,7 @@ namespace Fumes.Core
         /// little of it that shows through the drawn hose reads as shadow rather than as beige
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 4;
+        public int HoseRopeType = 6;
 
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
         public int HoseRed = 20;
