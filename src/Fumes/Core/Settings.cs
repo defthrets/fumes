@@ -204,7 +204,7 @@ namespace Fumes.Core
         /// little of it that shows through the drawn hose reads as shadow rather than as beige
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 6;
+        public int HoseRopeType = 3;
 
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
         public int HoseRed = 20;
@@ -264,7 +264,7 @@ namespace Fumes.Core
         /// </summary>
         public float HoseEndX = 0f;
         public float HoseEndY = 0f;
-        public float HoseEndZ = 0f;
+        public float HoseEndZ = 0.035f;
 
         /// <summary>
         /// Work the hose attachment out from the nozzle's own SHAPE rather than from numbers.
@@ -299,7 +299,7 @@ namespace Fumes.Core
         /// Changing the fill animation to one that reaches with the right means changing this
         /// back. They are two halves of one decision.
         /// </summary>
-        public bool LeftHand = true;
+        public bool LeftHand = false;
 
         /// <summary>
         /// How big the gauge's lettering is, as a multiple of the size that exactly fits the

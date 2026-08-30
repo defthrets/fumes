@@ -1094,7 +1094,7 @@ namespace Fumes.Station
             return control == Control.ContextSecondary ? SecondaryName() : KeyName();
         }
 
-        private bool _ropeKeyDown, _endKeyDown;
+        private bool _ropeKeyDown, _endKeyDown, _ropeSaveKey;
 
         /// <summary>
         /// Cycles the rope texture while you look at it, when TuneNozzle is on.
@@ -1111,26 +1111,15 @@ namespace Fumes.Station
         /// </summary>
         private void TuneHose()
         {
-            if (!_cfg.TuneNozzle) return;
-
-            bool down;
-            try { down = Game.IsKeyPressed(System.Windows.Forms.Keys.Multiply); }
-            catch { down = false; }
-
-            var edge = down && !_ropeKeyDown;
-            _ropeKeyDown = down;
-
-            // Which end of the nozzle the hose leaves from -- the one thing the model's
-            // bounding box cannot tell us, because both ends of a box look alike.
-            if (Edge(System.Windows.Forms.Keys.Subtract, ref _endKeyDown))
-            {
-                _cfg.HoseEndSign = -_cfg.HoseEndSign;
-                _nozzle.ForgetBounds();
-                Log.Info("Hose now leaves the " + (_cfg.HoseEndSign < 0 ? "near" : "far") +
-                         " end of the nozzle.");
-            }
-
-            if (edge)
+            // NOT BEHIND TuneNozzle, and gating it there was a real mistake. Choosing between
+            // nine rope textures is not debugging -- it is the ONLY way to choose at all,
+            // because the types have no names, no previews and no documentation. Putting it
+            // behind a setting that defaults to false meant the answer to "which rope?" was
+            // locked inside a switch nobody had been told to turn on, and the key looked broken.
+            //
+            // NumPad * and NumPad - are free on this machine, they do nothing unless the nozzle
+            // is actually in your hand, and each says what it did rather than sitting on screen.
+            if (Edge(System.Windows.Forms.Keys.Multiply, ref _ropeKeyDown))
             {
                 _cfg.HoseRopeType = (_cfg.HoseRopeType + 1) % 9;
 
@@ -1139,13 +1128,39 @@ namespace Fumes.Station
                 _hose.Retract();
 
                 Log.Info("Hose rope type is now " + _cfg.HoseRopeType + ".");
+                Notify("Hose rope ~b~" + _cfg.HoseRopeType + "~s~ of 0-8.   NumPad 0 to keep it.");
             }
 
-            Draw.Text("HOSE  [NumPad *]  rope type " + _cfg.HoseRopeType + " of 0-8",
-                      0.5f, 0.145f, 0.32f,
-                      System.Drawing.Color.FromArgb(235, 245, 200, 90), 4, true);
+            // Which end of the nozzle the hose leaves from -- the one thing the model's
+            // bounding box cannot tell us, because both ends of a box look alike.
+            if (Edge(System.Windows.Forms.Keys.Subtract, ref _endKeyDown))
+            {
+                _cfg.HoseEndSign = -_cfg.HoseEndSign;
+                _nozzle.ForgetBounds();
 
-            MarkHoseEnd();
+                Log.Info("Hose now leaves the " + (_cfg.HoseEndSign < 0 ? "near" : "far") +
+                         " end of the nozzle.");
+                Notify("Hose leaves the ~b~" + (_cfg.HoseEndSign < 0 ? "near" : "far") +
+                       "~s~ end of the nozzle.");
+            }
+
+            // Keeping it. Only when the full tuner is off, or both this and Nozzle.Keep would
+            // write the same values and both would announce it.
+            if (!_cfg.TuneNozzle && Edge(System.Windows.Forms.Keys.NumPad0, ref _ropeSaveKey))
+            {
+                var ok = IniFile.SetValue(Paths.Ini, "Nozzle", "HoseRopeType",
+                                          _cfg.HoseRopeType.ToString(CultureInfo.InvariantCulture))
+                       & IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndSign",
+                                          _cfg.HoseEndSign.ToString(CultureInfo.InvariantCulture));
+
+                Notify(ok ? "~g~Hose saved~s~ to Fumes.ini."
+                          : "~y~Could not write Fumes.ini~s~ - it is in Fumes.log.");
+
+                Log.Info("Hose saved: rope type " + _cfg.HoseRopeType +
+                         ", end sign " + _cfg.HoseEndSign + ".");
+            }
+
+            if (_cfg.TuneNozzle) MarkHoseEnd();
         }
 
         /// <summary>
