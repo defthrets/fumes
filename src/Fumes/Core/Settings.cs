@@ -498,6 +498,24 @@ namespace Fumes.Core
         /// </summary>
         public bool ShowGaugeLabel = false;
 
+        /// <summary>
+        /// The little pump above the reading, inside the bar.
+        ///
+        /// It replaces the turned FUEL label and does the job better: it says what the bar is
+        /// at a glance without spending a third of the bar's length spelling it.
+        /// </summary>
+        public bool ShowGaugeIcon = true;
+
+        /// <summary>
+        /// Hide the reading at a full tank.
+        ///
+        /// A full bar already says full, and 100 is the one reading that does not fit: the
+        /// digits are sized so two of them span the bar, so a third can only be got in by
+        /// shrinking all three. It was the only number in the set drawn at a different size
+        /// from the rest, and it looked it.
+        /// </summary>
+        public bool HideFullReading = true;
+
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
         public bool ForecourtHazard = true;
@@ -635,6 +653,8 @@ namespace Fumes.Core
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);
                 s.ShowReserveMark = ini.GetBool("HUD", "ShowReserveMark", s.ShowReserveMark);
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
+                s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
+                s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);
                 s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);
                 s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 

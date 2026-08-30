@@ -21,6 +21,19 @@ namespace Fumes.UI
         private readonly Settings _cfg;
         private readonly Glyphs _glyphs = new Glyphs();
 
+        /// <summary>The pump that sits above the reading. A white PNG; the colour is the tint.</summary>
+        private readonly Icon _pump = new Icon("fuel.png");
+
+        /// <summary>
+        /// Screen width over height, for keeping the pump square.
+        ///
+        /// CustomSprite positions and sizes in a FIXED 1280x720 canvas, which is 16:9 -- so on
+        /// anything wider the canvas is stretched horizontally and a sprite given equal width
+        /// and height comes out visibly wider than it is tall. On this 3440x1440 screen that is
+        /// a third again too wide. The width is divided by this to undo it.
+        /// </summary>
+        private float _aspect = 16f / 9f;
+
         /// <summary>Flash phase for the empty warning. Wall clock, so it blinks at the same rate always.</summary>
         private int _blinkSince;
 
@@ -59,6 +72,8 @@ namespace Fumes.UI
             try
             {
                 var res = GTA.UI.Screen.Resolution;
+
+                if (res.Height > 0) _aspect = res.Width / (float)res.Height;
 
                 Log.Info("Gauge: " + (_cfg.GaugeWidth * res.Width).ToString("0.0") + " x " +
                          (_cfg.GaugeHeight * res.Height).ToString("0.0") + " px" +
@@ -239,7 +254,6 @@ namespace Fumes.UI
                     // that height is measured, not assumed. See Draw.Height.
                     var textH = Draw.Height(scale, 4);
                     var inset = edge;
-                    var textY = y + h - textH - inset;
 
                     // BLACK ONLY WHILE THERE IS FUEL UNDERNEATH IT.
                     //
@@ -253,9 +267,41 @@ namespace Fumes.UI
                             : lit     ? Color.FromArgb(240, 10, 10, 12)
                                       : Color.FromArgb(235, 240, 240, 240);
 
-                    Draw.Text(text, x + w / 2f, textY, scale, ink, 4, true, false, !lit);
+                    // NOTHING IS DRAWN AT A FULL TANK. A full bar already says full, and 100
+                    // is the one reading that does not fit -- the digits are sized so that TWO
+                    // of them span the bar, so a third only gets in by shrinking all three. It
+                    // was the only number in the set drawn at a different size from the rest,
+                    // and it looked it.
+                    var showReading = !(_cfg.HideFullReading && pct >= 100);
 
-                    MeasureNumber(text, scale, textH);
+                    // Stacked up from the foot of the bar, each thing taking its own height off
+                    // the space left. Written this way so the pump lands correctly whether or
+                    // not there is a number under it -- at a full tank it simply moves down into
+                    // the slot the reading would have had, rather than leaving a gap where a
+                    // number used to be.
+                    var used = inset;
+
+                    if (showReading)
+                    {
+                        Draw.Text(text, x + w / 2f, y + h - used - textH, scale, ink, 4, true, false, !lit);
+                        MeasureNumber(text, scale, textH);
+
+                        used += textH + inset;
+                    }
+
+                    if (_cfg.ShowGaugeIcon)
+                    {
+                        // Square ON SCREEN, which is not the same as square in the sprite canvas
+                        // -- see _aspect. Width is the bar's width, so it fits exactly.
+                        var iconW = w;
+                        var iconH = w * _aspect;
+
+                        var iconLit = h * fraction >= used + iconH;
+
+                        _pump.DrawSized(x + w / 2f, y + h - used - iconH / 2f, iconW, iconH,
+                                        iconLit ? Color.FromArgb(240, 10, 10, 12)
+                                                : Color.FromArgb(215, 235, 235, 238));
+                    }
 
                     // FUEL, when it is asked for. It takes the same ink rule as the number
                     // and needs it more: it sits at the TOP of the bar, so black on the fill is
