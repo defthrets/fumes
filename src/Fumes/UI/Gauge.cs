@@ -74,6 +74,50 @@ namespace Fumes.UI
             }
         }
 
+        /// <summary>
+        /// The scale at which a string comes out exactly as wide as the gauge.
+        ///
+        /// Measured at a reference scale and rescaled by the ratio, because text width is
+        /// linear in scale. A hand-picked number would only ever be right for one string at one
+        /// bar width, and both of those have changed repeatedly.
+        /// </summary>
+        private static float Fit(float probe, string text, float width)
+        {
+            var probeWidth = Draw.Width(text, probe, 4);
+            return probeWidth > 0.0001f ? probe * (width / probeWidth) : 0.20f;
+        }
+
+        private bool _numberMeasured;
+
+        /// <summary>
+        /// Says, once, how big the number in the bar actually came out.
+        ///
+        /// The same argument as Measure. The height comes from a native this codebase has not
+        /// used before, and if it returns something odd the digits sit wrong and the only
+        /// evidence is a screenshot somebody has to interpret. One line in the log says whether
+        /// they fit the bar or overhang it, in pixels, with nothing to interpret.
+        /// </summary>
+        private void MeasureNumber(string text, float scale, float height)
+        {
+            if (_numberMeasured) return;
+            _numberMeasured = true;
+
+            try
+            {
+                var res = GTA.UI.Screen.Resolution;
+
+                Log.Info("Gauge number " + text + ": " +
+                         (Draw.Width(text, scale, 4) * res.Width).ToString("0.0") + " x " +
+                         (height * res.Height).ToString("0.0") + " px at scale " +
+                         scale.ToString("0.000") + ", inside a bar " +
+                         (_cfg.GaugeWidth * res.Width).ToString("0.0") + " px wide.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("gauge-number-measure", "Could not measure the gauge number: " + ex.Message);
+            }
+        }
+
         public void Update(Vehicle vehicle, Tank tank, bool refuelling, bool stalled = false)
         {
             if (!_cfg.ShowGauge || tank == null) return;
@@ -165,54 +209,67 @@ namespace Fumes.UI
 
                 if (_cfg.Vertical)
                 {
+                    // 100 IS SAYABLE NOW. It used to be capped at 99 because "99%" was already
+                    // three characters against a bar this narrow and "100%" would have been
+                    // four. Without the sign there is room, and a full tank reading 99 was a
+                    // small lie the gauge had no reason left to tell.
                     var pct = (int)Math.Round(fraction * 100f);
-                    if (pct > 99) pct = 99;
+                    if (pct < 0) pct = 0;
+                    if (pct > 100) pct = 100;
 
-                    // ABOVE THE BAR AND THE RIGHT WAY UP, which means it can be ordinary text
-                    // again. The rotated-glyph machinery exists because nothing readable fits
-                    // ACROSS a bar this narrow -- but nothing is across it any more, and there
-                    // is no reason to draw pictures of digits in a place where DRAW_TEXT works.
-                    //
-                    // The size is MEASURED rather than picked: the string is measured once at a
-                    // reference scale and the scale adjusted by the ratio, so it comes out the
-                    // width of the gauge whatever the gauge's width is and whatever the number
-                    // says. A hand-picked scale would only be right for one of those.
-                    var text = pct.ToString(CultureInfo.InvariantCulture) + "%";
+                    var text = pct.ToString(CultureInfo.InvariantCulture);
 
+                    // SIZED OFF "88", NOT OFF THE READING. Fitting each number to the bar in
+                    // turn makes the digits change size as the tank drains -- "9" would be
+                    // drawn nearly twice the size of "45", because one character has the whole
+                    // width to itself. Two digits' worth is the size; the actual string can
+                    // only pull it DOWN, which is exactly what makes room for 100.
                     const float probe = 0.30f;
-                    var probeWidth = Draw.Width(text, probe, 4);
 
-                    var fitted = probeWidth > 0.0001f ? probe * (w / probeWidth) : 0.20f;
+                    var scale = Fit(probe, "88", w);
+                    var actual = Fit(probe, text, w);
+                    if (actual < scale) scale = actual;
 
-                    // A floor, because fitting a three-character string to a dozen pixels asks
-                    // for a scale nothing renders at. Slightly wider than the bar beats
-                    // invisible.
-                    if (fitted < 0.16f) fitted = 0.16f;
-
-                    // TextScale APPLIES AFTER THE FLOOR, which is the whole reason it is here.
-                    // Multiplied in before it, the floor swallowed it: the fitted size on a bar
-                    // this narrow is always under the floor, so every value of TextScale gave
-                    // exactly 0.16 and the setting did nothing at all.
-                    var scale = fitted * _cfg.GaugeTextScale;
-
+                    scale *= _cfg.GaugeTextScale;
                     if (scale < 0.10f) scale = 0.10f;
                     if (scale > 0.60f) scale = 0.60f;
 
-                    var above = scale * 0.032f;
+                    // INSIDE THE BAR, AT ITS FOOT. The line is drawn from its top edge, so the
+                    // bottom only lands where it should once its own height comes off -- and
+                    // that height is measured, not assumed. See Draw.Height.
+                    var textH = Draw.Height(scale, 4);
+                    var inset = edge;
+                    var textY = y + h - textH - inset;
 
-                    Draw.Text(text, x + w / 2f, y - above - 0.003f, scale,
-                              stalled ? Color.FromArgb(240, 255, 120, 110)
-                                      : Color.FromArgb(225, 240, 240, 240),
-                              4, true);
+                    // BLACK ONLY WHILE THERE IS FUEL UNDERNEATH IT.
+                    //
+                    // The number sits in the bottom few pixels, which are filled at any level
+                    // worth reading -- but below about three per cent the fill drops past the
+                    // digits and black ink lands on the empty channel, which is near-black. The
+                    // one reading you cannot afford to lose is the one just before you stop.
+                    var lit = h * fraction >= textH + inset;
 
-                    // FUEL stays inside and stays turned, because it is a fixed word that fits
-                    // the length of the bar and would only crowd the number if it came out too.
+                    var ink = stalled ? Color.FromArgb(245, 255, 120, 110)
+                            : lit     ? Color.FromArgb(240, 10, 10, 12)
+                                      : Color.FromArgb(235, 240, 240, 240);
+
+                    Draw.Text(text, x + w / 2f, textY, scale, ink, 4, true, false, !lit);
+
+                    MeasureNumber(text, scale, textH);
+
+                    // FUEL keeps the top of the bar and takes the SAME rule, because it is
+                    // black ink on the fill too and the top of the bar is empty channel at
+                    // anything under about half a tank. It has been invisible there all along;
+                    // it never came up because every screenshot of it was of a full tank.
                     var glyph = w * _cfg.GaugeTextScale;
                     var labelH = glyph * 5.6f;
                     if (labelH > h * 0.45f) labelH = h * 0.45f;
 
-                    _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph,
-                                  labelH, Color.FromArgb(215, 18, 18, 20));
+                    var labelLit = h * fraction >= labelH + 0.006f;
+
+                    _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph, labelH,
+                                  labelLit ? Color.FromArgb(215, 18, 18, 20)
+                                           : Color.FromArgb(160, 225, 225, 228));
                     return;
                 }
 

@@ -51,7 +51,8 @@ namespace Fumes.UI
         /// rather than silently drawing nothing at all.
         /// </summary>
         public static void Text(string text, float x, float y, float scale, Color colour,
-                                int font = 4, bool centre = false, bool rightAlign = false)
+                                int font = 4, bool centre = false, bool rightAlign = false,
+                                bool outline = true)
         {
             if (string.IsNullOrEmpty(text)) return;
             if (text.Length > 99) text = text.Substring(0, 99);
@@ -61,8 +62,15 @@ namespace Fumes.UI
                 Function.Call(Hash.SET_TEXT_FONT, font);
                 Function.Call(Hash.SET_TEXT_SCALE, 0f, scale);
                 Function.Call(Hash.SET_TEXT_COLOUR, colour.R, colour.G, colour.B, colour.A);
-                Function.Call(Hash.SET_TEXT_DROP_SHADOW);
-                Function.Call(Hash.SET_TEXT_OUTLINE);
+                // BOTH OF THESE DRAW IN BLACK, which is fine on light text over a dark HUD
+                // and actively harmful on dark text over a light one: a black outline round
+                // black digits nine pixels wide fills in the holes in 8, 9 and 0 until all
+                // three of them are the same blob.
+                if (outline)
+                {
+                    Function.Call(Hash.SET_TEXT_DROP_SHADOW);
+                    Function.Call(Hash.SET_TEXT_OUTLINE);
+                }
                 Function.Call(Hash.SET_TEXT_CENTRE, centre);
 
                 if (rightAlign)
@@ -82,6 +90,33 @@ namespace Fumes.UI
             catch (Exception ex)
             {
                 Log.Once("draw-text", "Text drawing failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// How TALL a line of text is at a given scale, as a fraction of the screen.
+        ///
+        /// Asked for rather than worked out. Placing text by its bottom edge means subtracting
+        /// its height from where the foot should sit, and END_TEXT_COMMAND_DISPLAY_TEXT takes
+        /// the TOP -- so a wrong height is a number drawn half out of the bar, which reads as a
+        /// positioning bug rather than as a bad constant. This gauge has already lost two
+        /// settings to numbers that were assumed instead of measured; the game knows this one,
+        /// so it gets asked.
+        ///
+        /// The fallback is only for the case where the native is missing entirely, and it says
+        /// so in the log rather than quietly standing in.
+        /// </summary>
+        public static float Height(float scale, int font = 4)
+        {
+            try
+            {
+                return Function.Call<float>(Hash.GET_RENDERED_CHARACTER_HEIGHT, scale, font);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("draw-height", "Could not measure text height: " + ex.Message +
+                                        " - estimating it instead.");
+                return scale * 0.035f;
             }
         }
 
