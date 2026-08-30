@@ -208,13 +208,28 @@ namespace Fumes.Fuel
         /// </summary>
         private float FoundFraction(Vehicle v)
         {
-            try
+            // A PERSISTENT VEHICLE IS NOT A FULL ONE, and treating it as one is why every DLC
+            // car came out at 100%.
+            //
+            // IsPersistent means the entity is script-owned -- a mission entity. It was read
+            // here as "the game gave this to the player deliberately, so fill it", and for a
+            // story mission that is defensible. But it is also true of everything a trainer
+            // spawns, which is how anybody actually gets at the online cars: spawn a Zentorno,
+            // it is persistent, it is full, and it is full again the next time. The mod looked
+            // like it had no data for DLC vehicles when it has always had their real tank sizes
+            // straight out of their handling.
+            //
+            // So the special case is a setting now, and it is off. Spawned cars are found cars.
+            if (_cfg.SpawnedTanksFull)
             {
-                if (v.IsPersistent) return 1f;
-            }
-            catch
-            {
-                // Unknown; treat as traffic.
+                try
+                {
+                    if (v.IsPersistent) return 1f;
+                }
+                catch
+                {
+                    // Unknown; treat as traffic.
+                }
             }
 
             var lo = _cfg.FoundFuelMin;

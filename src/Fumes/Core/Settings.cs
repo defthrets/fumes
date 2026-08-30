@@ -163,6 +163,19 @@ namespace Fumes.Core
         public float FoundFuelMin = 0.18f;
         public float FoundFuelMax = 0.85f;
 
+        /// <summary>
+        /// Whether a script-owned vehicle starts with a full tank.
+        ///
+        /// OFF, and it used to be the unconditional rule. "Script-owned" means a mission entity
+        /// -- which covers story vehicles, and equally covers everything a trainer spawns. Since
+        /// spawning is how anyone gets at the online and DLC cars, every one of them arrived
+        /// full, every time, and the mod appeared to have no data for them when it has always
+        /// read their real tank size out of their handling.
+        ///
+        /// On, story missions hand you a full tank. Off, a car is a car.
+        /// </summary>
+        public bool SpawnedTanksFull = false;
+
         /// <summary>Below this fraction of the tank, the low-fuel warning starts.</summary>
         public float ReserveFraction = 0.12f;
 
@@ -738,6 +751,7 @@ namespace Fumes.Core
                 s.AbandonedIdle = ini.GetBool("Fuel", "AbandonedIdle", s.AbandonedIdle);
                 s.FoundFuelMin = ini.GetFloat("Fuel", "FoundFuelMin", s.FoundFuelMin, 0f, 1f);
                 s.FoundFuelMax = ini.GetFloat("Fuel", "FoundFuelMax", s.FoundFuelMax, 0f, 1f);
+                s.SpawnedTanksFull = ini.GetBool("Fuel", "SpawnedTanksFull", s.SpawnedTanksFull);
                 s.ReserveFraction = ini.GetFloat("Fuel", "ReserveFraction", s.ReserveFraction, 0.01f, 0.6f);
                 s.TankLeaks = ini.GetBool("Fuel", "TankLeaks", s.TankLeaks);
 
