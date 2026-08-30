@@ -476,6 +476,16 @@ namespace Fumes.Core
         /// </summary>
         public bool ShowReserveMark = false;
 
+        /// <summary>
+        /// The turned FUEL label inside the upright gauge.
+        ///
+        /// Off. It was there when the bar had no number in it and needed to say what it was
+        /// measuring -- the reading lives inside the bar now, and a gauge with a number in it
+        /// beside a car's own dials does not need labelling. It was also the only thing in the
+        /// column drawn from a PNG.
+        /// </summary>
+        public bool ShowGaugeLabel = false;
+
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
         public bool ForecourtHazard = true;
@@ -611,6 +621,7 @@ namespace Fumes.Core
                 s.Units = ParseEnum(ini.GetString("HUD", "Units", "Litres"), s.Units);
                 s.ShowNumbers = ini.GetBool("HUD", "ShowNumbers", s.ShowNumbers);
                 s.ShowReserveMark = ini.GetBool("HUD", "ShowReserveMark", s.ShowReserveMark);
+                s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);
                 s.TuneGauge = ini.GetBool("HUD", "TuneGauge", s.TuneGauge);
 

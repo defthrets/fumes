@@ -257,19 +257,22 @@ namespace Fumes.UI
 
                     MeasureNumber(text, scale, textH);
 
-                    // FUEL keeps the top of the bar and takes the SAME rule, because it is
-                    // black ink on the fill too and the top of the bar is empty channel at
-                    // anything under about half a tank. It has been invisible there all along;
-                    // it never came up because every screenshot of it was of a full tank.
-                    var glyph = w * _cfg.GaugeTextScale;
-                    var labelH = glyph * 5.6f;
-                    if (labelH > h * 0.45f) labelH = h * 0.45f;
+                    // FUEL, when it is asked for. It takes the same ink rule as the number
+                    // and needs it more: it sits at the TOP of the bar, so black on the fill is
+                    // black on empty channel at anything under about half a tank.
+                    if (_cfg.ShowGaugeLabel)
+                    {
+                        var glyph = w * _cfg.GaugeTextScale;
+                        var labelH = glyph * 5.6f;
+                        if (labelH > h * 0.45f) labelH = h * 0.45f;
 
-                    var labelLit = h * fraction >= labelH + 0.006f;
+                        var labelLit = h * fraction >= labelH + 0.006f;
 
-                    _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph, labelH,
-                                  labelLit ? Color.FromArgb(215, 18, 18, 20)
-                                           : Color.FromArgb(160, 225, 225, 228));
+                        _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph, labelH,
+                                      labelLit ? Color.FromArgb(215, 18, 18, 20)
+                                               : Color.FromArgb(160, 225, 225, 228));
+                    }
+
                     return;
                 }
 
