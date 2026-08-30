@@ -512,6 +512,28 @@ namespace Fumes.Core
         public bool ShowGaugeIcon = true;
 
         /// <summary>
+        /// Draw the fuel as liquid rather than as a filled rectangle.
+        ///
+        /// A moving surface and bubbles, the same technique as the glass on the pump display,
+        /// so the two things that show the same number look like the same instrument. Off
+        /// gives a plain bar, which is cheaper by about a dozen rectangles a frame and looks
+        /// like every other bar on the screen.
+        /// </summary>
+        public bool GaugeLiquid = true;
+
+        /// <summary>
+        /// How wide the pump is drawn, as a fraction of the bar's width.
+        ///
+        /// 0.66 IS NOT A GUESS. The original square icon spent 170 of its 256 pixels on ink and
+        /// the rest on empty margin, and it was drawn at the full width of the bar -- so the
+        /// pump itself came out at 170/256, or 0.664, of the bar. The file is cropped to its ink
+        /// now, so drawing it at 0.66 puts the pump on exactly the same pixels it was on before
+        /// the crop, and the only difference left is that it is sharper: the same pump, off a
+        /// file with no margin to waste resolution on.
+        /// </summary>
+        public float GaugeIconScale = 0.66f;
+
+        /// <summary>
         /// Hide the reading at a full tank.
         ///
         /// A full bar already says full, and 100 is the one reading that does not fit: the
@@ -532,7 +554,7 @@ namespace Fumes.Core
         ///
         /// 0.85 sits it about where the game's own health and armour bars are.
         /// </summary>
-        public float GaugeOpacity = 0.85f;
+        public float GaugeOpacity = 0.72f;
 
         // ---- hazards ----------------------------------------------------------
         /// <summary>Shooting on a forecourt while the nozzle is out ends the way you would expect.</summary>
@@ -672,6 +694,8 @@ namespace Fumes.Core
                 s.ShowReserveMark = ini.GetBool("HUD", "ShowReserveMark", s.ShowReserveMark);
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
+                s.GaugeLiquid = ini.GetBool("HUD", "GaugeLiquid", s.GaugeLiquid);
+                s.GaugeIconScale = ini.GetFloat("HUD", "IconScale", s.GaugeIconScale, 0.2f, 2f);
                 s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);
                 s.GaugeOpacity = ini.GetFloat("HUD", "Opacity", s.GaugeOpacity, 0.15f, 1f);
                 s.GaugeTextScale = ini.GetFloat("HUD", "TextScale", s.GaugeTextScale, 0.1f, 4f);

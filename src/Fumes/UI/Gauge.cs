@@ -181,27 +181,14 @@ namespace Fumes.UI
                     // two things that show the same number look like the same instrument.
                     if (fraction > 0.001f)
                     {
-                        var fill = h * fraction;
-                        var top = y + h - fill;
-
-                        Draw.Bar(x, top, w, fill, colour);
-
-                        // A highlight sliding up the fuel. The bar moves about a pixel a
-                        // minute on its own, which is not movement anybody can see -- without
-                        // something travelling, a working gauge looks like a painted one.
-                        if (fill > 0.012f)
+                        if (_cfg.GaugeLiquid)
                         {
-                            var band = 0.010f;
-                            var phase = (Environment.TickCount % 2400) / 2400f;
-                            var bandY = y + h - (fill + band) * phase;
-
-                            var lo = bandY < top ? top : bandY;
-                            var hi = bandY + band > y + h ? y + h : bandY + band;
-
-                            if (hi > lo)
-                            {
-                                Draw.Bar(x, lo, w, hi - lo, Fade(Color.FromArgb(60, 255, 250, 225)));
-                            }
+                            Liquid(x, y, w, h, fraction, colour, refuelling);
+                        }
+                        else
+                        {
+                            var fill = h * fraction;
+                            Draw.Bar(x, y + h - fill, w, fill, colour);
                         }
                     }
 
@@ -297,8 +284,8 @@ namespace Fumes.UI
                     {
                         // Square ON SCREEN, which is not the same as square in the sprite canvas
                         // -- see _aspect. Width is the bar's width, so it fits exactly.
-                        var iconW = w;
-                        var iconH = w * _aspect * _pump.Aspect;
+                        var iconW = w * _cfg.GaugeIconScale;
+                        var iconH = iconW * _aspect * _pump.Aspect;
 
                         var iconLit = h * fraction >= used + iconH;
 
@@ -339,6 +326,115 @@ namespace Fumes.UI
             catch (Exception ex)
             {
                 Log.Once("gauge", "The gauge could not be drawn: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The fuel in the bar: a level with a surface that will not sit still, and bubbles.
+        ///
+        /// The same technique as the glass on the pump display, and for the same reason -- the
+        /// two things show the same number, so they should look like the same instrument.
+        ///
+        /// DRAWN AS COLUMNS, which is the whole trick. DRAW_RECT is the only primitive this HUD
+        /// has, so there is no way to draw a wavy shape: the liquid is sliced into upright
+        /// strips and each is given its own surface height from a pair of sine waves. Two waves
+        /// rather than one, at frequencies that do not divide into each other, because a single
+        /// sine reads as a machine and two read as a liquid.
+        ///
+        /// SIX COLUMNS, not the pump's twenty-two. The bar is about sixteen pixels across, so
+        /// twenty-two strips would be under a pixel each and the game would round them into one
+        /// another -- the wave would cost twenty-two rectangles a frame and not be visible at
+        /// all. Six is about two and a half pixels a strip, which is the finest a wave can be
+        /// drawn here and still be a wave.
+        /// </summary>
+        private void Liquid(float x, float y, float w, float h, float fraction, Color body,
+                            bool filling)
+        {
+            const int columns = 6;
+
+            var t = Environment.TickCount / 1000f;
+
+            var level = h * fraction;
+            var surfaceY = y + h - level;
+
+            // The waves die away as it fills, so a finished tank settles rather than sloshing
+            // forever -- and they lift while fuel is actually going in, which is the one moment
+            // the surface has a reason to be disturbed. refuelling has been passed to this
+            // method since it was written and had never been used for anything.
+            var settle = Math.Min(fraction * 6f, 1f) * (1f - fraction * 0.55f);
+            if (filling) settle = Math.Min(settle * 2.2f + 0.35f, 1.5f);
+
+            var a1 = 0.0013f * settle;
+            var a2 = 0.0008f * settle;
+
+            // A brighter line riding the surface, so the top edge is a surface and not just
+            // where the colour stops. Mixed off the body rather than fixed, because the body
+            // runs the whole ramp from yellow to red and a fixed crest would come loose from it.
+            var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 195), 0.55f);
+
+            var columnW = w / columns;
+
+            for (var i = 0; i < columns; i++)
+            {
+                var u = (float)i / (columns - 1);
+
+                var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
+                                   Math.Sin(t * 5.1f - u * 11.7f) * a2);
+
+                var top = surfaceY + wave;
+                if (top < y) top = y;
+
+                var height = y + h - top;
+                if (height <= 0.0002f) continue;
+
+                // The overlap keeps a hairline of empty channel from showing between strips
+                // when the game rounds each rectangle to whole pixels.
+                Draw.Bar(x + i * columnW, top, columnW + 0.0002f, height, body);
+                Draw.Bar(x + i * columnW, top, columnW + 0.0002f, 0.0011f, crest);
+            }
+
+            Bubbles(x, y, w, h, level, t);
+        }
+
+        /// <summary>
+        /// Bubbles rising through the fuel.
+        ///
+        /// Deterministic rather than random: each one's position comes from the clock and its
+        /// own index, so there is no state to keep and no Random being pumped sixty times a
+        /// second. They fade in off the floor and out at the surface instead of appearing and
+        /// popping.
+        ///
+        /// Three, not the pump's five. Across sixteen pixels, five lanes put them close enough
+        /// to read as a row rather than as separate bubbles.
+        /// </summary>
+        private void Bubbles(float x, float y, float w, float h, float level, float t)
+        {
+            const int count = 3;
+
+            if (level < 0.014f) return;
+
+            var floor = y + h;
+
+            // Square ON SCREEN. A rectangle given equal width and height fractions is as wide
+            // as the screen is wider than it is tall -- on this one that is a bubble half again
+            // wider than it is high, which at three pixels reads as a dash.
+            var size = w * 0.24f;
+            var tall = size * _aspect;
+
+            for (var i = 0; i < count; i++)
+            {
+                var lane = 0.22f + i * (0.56f / (count - 1));
+                var speed = 0.30f + (i % 3) * 0.08f;
+                var phase = (t * speed + i * 0.41f) % 1f;
+
+                var by = floor - level * phase;
+
+                var edge = Math.Min(phase * 4f, Math.Min((1f - phase) * 3f, 1f));
+                var alpha = (int)(135 * Math.Max(edge, 0f));
+                if (alpha <= 4) continue;
+
+                Draw.Bar(x + w * lane - size / 2f, by, size, tall,
+                         Fade(Color.FromArgb(alpha, 255, 245, 210)));
             }
         }
 
