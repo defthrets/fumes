@@ -311,7 +311,7 @@ namespace Fumes.Core
         /// "smaller text" turned out to be two different requests, and tying them together
         /// meant neither could be answered without moving the other.
         /// </summary>
-        public float GaugeTextScale = 1.0f;
+        public float GaugeTextScale = 1.35f;
 
         /// <summary>Whether a marker is drawn on the vehicle's filler while you carry the nozzle.</summary>
         public bool ShowFillerMarker = false;
@@ -408,10 +408,10 @@ namespace Fumes.Core
         /// </summary>
         public bool Vertical = true;
 
-        public float GaugeX = 0.1325f;
-        public float GaugeY = 0.8240f;
-        public float GaugeWidth = 0.0035f;
-        public float GaugeHeight = 0.1550f;
+        public float GaugeX = 0.1310f;
+        public float GaugeY = 0.8225f;
+        public float GaugeWidth = 0.0052f;
+        public float GaugeHeight = 0.1635f;
 
         /// <summary>
         /// Live placement for the gauge, the same workbench the nozzle has.

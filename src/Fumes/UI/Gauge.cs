@@ -176,13 +176,20 @@ namespace Fumes.UI
                     const float probe = 0.30f;
                     var probeWidth = Draw.Width(text, probe, 4);
 
-                    var scale = probeWidth > 0.0001f
-                        ? probe * (w / probeWidth) * _cfg.GaugeTextScale
-                        : 0.20f;
+                    var fitted = probeWidth > 0.0001f ? probe * (w / probeWidth) : 0.20f;
 
-                    // A floor, because fitting a three-character string to twelve pixels is a
-                    // scale nothing renders at. Slightly wider than the bar beats invisible.
-                    if (scale < 0.16f) scale = 0.16f;
+                    // A floor, because fitting a three-character string to a dozen pixels asks
+                    // for a scale nothing renders at. Slightly wider than the bar beats
+                    // invisible.
+                    if (fitted < 0.16f) fitted = 0.16f;
+
+                    // TextScale APPLIES AFTER THE FLOOR, which is the whole reason it is here.
+                    // Multiplied in before it, the floor swallowed it: the fitted size on a bar
+                    // this narrow is always under the floor, so every value of TextScale gave
+                    // exactly 0.16 and the setting did nothing at all.
+                    var scale = fitted * _cfg.GaugeTextScale;
+
+                    if (scale < 0.10f) scale = 0.10f;
                     if (scale > 0.60f) scale = 0.60f;
 
                     var above = scale * 0.032f;
