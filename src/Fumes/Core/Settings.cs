@@ -149,6 +149,16 @@ namespace Fumes.Core
         /// </summary>
         public bool AffectTraffic = false;
 
+        /// <summary>
+        /// Cars YOU have driven, left running, keep burning fuel while they are loaded.
+        ///
+        /// The mod already burns the one you are in or last got out of. This is for the ones
+        /// after that -- leave a car idling on the forecourt, drive off in another, and the
+        /// first one is still running and still drinking. Only cars the player has actually
+        /// been in, so a street full of traffic is not being simulated for free.
+        /// </summary>
+        public bool AbandonedIdle = true;
+
         /// <summary>Fuel a vehicle is found with, as a fraction of its tank. Player-owned cars start full.</summary>
         public float FoundFuelMin = 0.18f;
         public float FoundFuelMax = 0.85f;
@@ -725,6 +735,7 @@ namespace Fumes.Core
                 s.AffectBoats = ini.GetBool("Fuel", "AffectBoats", s.AffectBoats);
                 s.AffectAircraft = ini.GetBool("Fuel", "AffectAircraft", s.AffectAircraft);
                 s.AffectTraffic = ini.GetBool("Fuel", "AffectTraffic", s.AffectTraffic);
+                s.AbandonedIdle = ini.GetBool("Fuel", "AbandonedIdle", s.AbandonedIdle);
                 s.FoundFuelMin = ini.GetFloat("Fuel", "FoundFuelMin", s.FoundFuelMin, 0f, 1f);
                 s.FoundFuelMax = ini.GetFloat("Fuel", "FoundFuelMax", s.FoundFuelMax, 0f, 1f);
                 s.ReserveFraction = ini.GetFloat("Fuel", "ReserveFraction", s.ReserveFraction, 0.01f, 0.6f);

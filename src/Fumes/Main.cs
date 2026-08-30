@@ -140,6 +140,7 @@ namespace Fumes
                 Burn(dt);
 
                 if (_cfg.AffectTraffic) Traffic(dt);
+                else Idlers(dt);
 
                 _refuel.Update(dt);
 
@@ -309,6 +310,66 @@ namespace Fumes
         /// Once a second over a short radius, not every frame over the whole world. Off by
         /// default; see the note on Settings.AffectTraffic for why.
         /// </summary>
+        /// <summary>
+        /// Cars the player has driven, left running nearby, burning their idle.
+        ///
+        /// WHY THIS IS NOT ALREADY COVERED. Burn already runs on _watched, and _watched is the
+        /// car you are in OR the last one you were in -- so a car you step out of and stand
+        /// beside does keep drinking. It stops the moment you get into something else: the new
+        /// car becomes the watched one and the old one is forgotten while still running.
+        ///
+        /// ONLY CARS WITH A KNOWN TANK, which means only ones the player has actually sat in.
+        /// The alternative is idling every parked car in a hundred and twenty metres of city,
+        /// which is a traffic simulation nobody asked for -- and there is already a setting for
+        /// people who do want that, which is why this stands down when it is on rather than
+        /// burning everything twice.
+        ///
+        /// A car that runs itself dry out here has its engine stopped, same as in traffic. It
+        /// is the only honest end to being left running for hours.
+        /// </summary>
+        private void Idlers(float dt)
+        {
+            if (!_cfg.AbandonedIdle) return;
+
+            _sinceIdlers += dt;
+            if (_sinceIdlers < 1f) return;
+
+            var slice = _sinceIdlers;
+            _sinceIdlers = 0f;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                foreach (var v in World.GetNearbyVehicles(me.Position, 120f))
+                {
+                    if (v == null || !v.Exists() || v == _watched) continue;
+                    if (!v.IsEngineRunning) continue;
+
+                    var tank = _tanks.For(v);
+                    if (tank == null || !tank.Known) continue;
+
+                    var before = tank.Litres;
+                    tank.Burn(_burn.Burn(v, tank, slice));
+
+                    if (Math.Abs(before - tank.Litres) > 0.02f) _tanks.Touch(v, tank, false);
+
+                    if (!tank.Empty) continue;
+
+                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, v.Handle, false, true, true);
+
+                    Log.Info(v.LocalizedName + " idled itself dry and stopped.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("idlers", "Could not burn fuel in cars left running: " + ex.Message);
+            }
+        }
+
+        private float _sinceIdlers;
+
         private void Traffic(float dt)
         {
             _sinceTraffic += dt;

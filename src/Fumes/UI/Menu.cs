@@ -264,6 +264,9 @@ namespace Fumes.UI
                                   "Off by default: a helicopter running dry is a long fall."));
             fuel.Items.Add(Toggle("Traffic", () => _cfg.AffectTraffic, v => _cfg.AffectTraffic = v,
                                   "Fuel", "AffectTraffic", "Everyone else runs out too."));
+            fuel.Items.Add(Toggle("Cars left running", () => _cfg.AbandonedIdle,
+                                  v => _cfg.AbandonedIdle = v, "Fuel", "AbandonedIdle",
+                                  "One you drove off and left idling keeps drinking."));
             fuel.Items.Add(Toggle("Tanks leak when shot", () => _cfg.TankLeaks,
                                   v => _cfg.TankLeaks = v, "Fuel", "TankLeaks", null));
             fuel.Items.Add(Toggle("Stall when empty", () => _cfg.StallWhenEmpty,
