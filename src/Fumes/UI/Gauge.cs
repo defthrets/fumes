@@ -95,7 +95,15 @@ namespace Fumes.UI
 
                 // Border, well, fill. Three rectangles, because there is no rounded-rect
                 // primitive and nobody has ever noticed.
-                Draw.Bar(x - 0.0022f, y - 0.0022f, w + 0.0044f, h + 0.0044f, Color.FromArgb(200, 0, 0, 0));
+                //
+                // THE BORDER IS A FRACTION OF THE BAR, not a fixed size. It used to be a flat
+                // 0.0022 a side, which was a hairline around a wide strip and a frame thicker
+                // than the bar itself once the bar came down to three thousandths -- most of
+                // what read as "still too thick" at the end was black edge, not gauge.
+                var edge = w * 0.22f;
+                if (edge < 0.0005f) edge = 0.0005f;
+
+                Draw.Bar(x - edge, y - edge, w + edge * 2f, h + edge * 2f, Color.FromArgb(205, 0, 0, 0));
                 Draw.Bar(x, y, w, h, Color.FromArgb(165, 28, 28, 32));
 
                 var colour = Level(fraction);
@@ -151,28 +159,47 @@ namespace Fumes.UI
 
                 if (_cfg.Vertical)
                 {
-                    // TURNED ON ITS SIDE, because a bar this narrow cannot hold upright text
-                    // and GTA cannot rotate any. The letters are pictures -- see Glyphs -- and
-                    // they run up the bar, which is the only direction there is room in.
-                    var ink = Color.FromArgb(215, 18, 18, 20);
-
                     var pct = (int)Math.Round(fraction * 100f);
                     if (pct > 99) pct = 99;
 
-                    var glyph = w * _cfg.GaugeTextScale;
-                    var pitch = glyph * 1.35f;
+                    // ABOVE THE BAR AND THE RIGHT WAY UP, which means it can be ordinary text
+                    // again. The rotated-glyph machinery exists because nothing readable fits
+                    // ACROSS a bar this narrow -- but nothing is across it any more, and there
+                    // is no reason to draw pictures of digits in a place where DRAW_TEXT works.
+                    //
+                    // The size is MEASURED rather than picked: the string is measured once at a
+                    // reference scale and the scale adjusted by the ratio, so it comes out the
+                    // width of the gauge whatever the gauge's width is and whatever the number
+                    // says. A hand-picked scale would only be right for one of those.
                     var text = pct.ToString(CultureInfo.InvariantCulture) + "%";
 
-                    _glyphs.Number(text, x + w / 2f, y + h - 0.003f, glyph, pitch, ink);
-                    // ANCHORED BY ITS OWN HEIGHT, not by a fixed offset from the top.
-                    // The label is sized off the bar's width, so on a wide bar it grew past
-                    // the fixed 0.020 it was being centred at and hung out of the top of the
-                    // gauge. Half its own height plus a margin can never do that, whatever
-                    // width the bar ends up.
+                    const float probe = 0.30f;
+                    var probeWidth = Draw.Width(text, probe, 4);
+
+                    var scale = probeWidth > 0.0001f
+                        ? probe * (w / probeWidth) * _cfg.GaugeTextScale
+                        : 0.20f;
+
+                    // A floor, because fitting a three-character string to twelve pixels is a
+                    // scale nothing renders at. Slightly wider than the bar beats invisible.
+                    if (scale < 0.16f) scale = 0.16f;
+                    if (scale > 0.60f) scale = 0.60f;
+
+                    var above = scale * 0.032f;
+
+                    Draw.Text(text, x + w / 2f, y - above - 0.003f, scale,
+                              stalled ? Color.FromArgb(240, 255, 120, 110)
+                                      : Color.FromArgb(225, 240, 240, 240),
+                              4, true);
+
+                    // FUEL stays inside and stays turned, because it is a fixed word that fits
+                    // the length of the bar and would only crowd the number if it came out too.
+                    var glyph = w * _cfg.GaugeTextScale;
                     var labelH = glyph * 5.6f;
                     if (labelH > h * 0.45f) labelH = h * 0.45f;
 
-                    _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph, labelH, ink);
+                    _glyphs.Label(x + w / 2f, y + labelH / 2f + 0.006f, glyph,
+                                  labelH, Color.FromArgb(215, 18, 18, 20));
                     return;
                 }
 

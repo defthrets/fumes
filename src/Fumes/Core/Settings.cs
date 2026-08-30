@@ -302,13 +302,16 @@ namespace Fumes.Core
         public bool LeftHand = true;
 
         /// <summary>
-        /// How big the lettering in the upright gauge is, as a multiple of the bar's width.
+        /// How big the gauge's lettering is, as a multiple of the size that exactly fits the
+        /// bar's width.
         ///
-        /// Its own number rather than a fixed fraction of the bar, because "make the bar
-        /// thinner" and "make the text smaller" turned out to be two different requests and
-        /// tying them together meant neither could be answered without moving the other.
+        /// 1.0 means the percentage comes out the same width as the gauge -- the size is
+        /// measured at runtime rather than picked, so it stays fitted whatever the bar's width
+        /// is and whatever the number happens to say. Its own setting because "thinner bar" and
+        /// "smaller text" turned out to be two different requests, and tying them together
+        /// meant neither could be answered without moving the other.
         /// </summary>
-        public float GaugeTextScale = 0.78f;
+        public float GaugeTextScale = 1.0f;
 
         /// <summary>Whether a marker is drawn on the vehicle's filler while you carry the nozzle.</summary>
         public bool ShowFillerMarker = false;
