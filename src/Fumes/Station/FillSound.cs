@@ -73,12 +73,11 @@ namespace Fumes.Station
         /// </summary>
         private static readonly string[][] Candidates =
         {
-            // Water being collected: the closest thing in the game to liquid going INTO a
-            // container rather than out of a nozzle. First because it was asked for -- and it
-            // stays in the list rather than being pinned in the ini, so it is still probed and
-            // still reports what it did.
-            new[] { "collect_water", "dlc_sum20_yacht_missions_ah_sounds",
-                    "dlc_sum20_yacht_missions_ah_sounds" },
+            // A meter filling. Tried first because collect_water, which played perfectly
+            // well, sounded like water being collected -- which is the trouble with borrowing
+            // sounds: the probe can tell you a sound is REAL and playing, and cannot tell you
+            // it suits. That part only you can hear.
+            new[] { "Meter_Fill_Loop", "DLC_IE_Tail_Vehicle_Sounds", "DLC_IE_Tail_Vehicle_Sounds" },
 
             // A car wash spraying a car: pressurised liquid, loops for as long as the wash
             // runs, and it is a base-game set with no DLC bank behind it.
@@ -90,8 +89,10 @@ namespace Fumes.Station
             new[] { "Blowtorch_Loop", "DLC_H4_Underwater_Blowtorch_Sounds",
                     "DLC_H4_Underwater_Blowtorch_Sounds" },
 
-            // Named exactly right, though it is a UI meter rather than a tank.
-            new[] { "Meter_Fill_Loop", "DLC_IE_Tail_Vehicle_Sounds", "DLC_IE_Tail_Vehicle_Sounds" },
+            // Real and it works; it just sounds like water.
+            new[] { "collect_water", "dlc_sum20_yacht_missions_ah_sounds",
+                    "dlc_sum20_yacht_missions_ah_sounds" },
+
         };
 
         /// <summary>
