@@ -80,12 +80,12 @@ namespace Fumes.Fuel
                 // it goes on holding its engine off while you sit in it -- so getting out and
                 // straight back in gave a car that would not start for four seconds however
                 // hard the throttle was pressed, and nothing on screen to say why.
-                if (_leaving != null && ReferenceEquals(car, _leaving)) _leaving = null;
+                if (_leaving != null && Same(car, _leaving)) _leaving = null;
 
                 Settle();
 
                 var driving = car != null && car.Exists() && !car.IsDead &&
-                              ReferenceEquals(car.Driver, me) && Covered(car);
+                              Driving(car, me) && Covered(car);
 
                 if (!driving)
                 {
@@ -95,7 +95,7 @@ namespace Fumes.Fuel
                     return;
                 }
 
-                if (!ReferenceEquals(car, _car))
+                if (!Same(car, _car))
                 {
                     _car = car;
                     _downAt = 0;
@@ -277,6 +277,39 @@ namespace Fumes.Fuel
             }
 
             Engine(_leaving, _leavingRunning);
+        }
+
+        /// <summary>
+        /// Two wrappers for the same thing.
+        ///
+        /// NOT ReferenceEquals, which is what this was and why none of it worked. Every one of
+        /// these properties BUILDS A NEW WRAPPER on each call -- Vehicle.Driver has a getter and
+        /// no backing field, and so does Ped.CurrentVehicle -- so two reads a frame apart are
+        /// two different objects around the same handle. ReferenceEquals was false every single
+        /// frame: the driver never matched the player, so the feature never ran at all, and the
+        /// car never matched the last car, so the hold timer was reset before it could count.
+        ///
+        /// The handle is the identity. SHVDN's own == does exactly this.
+        /// </summary>
+        private static bool Same(Entity a, Entity b)
+        {
+            if (a == null || b == null) return false;
+
+            try { return a.Handle == b.Handle; }
+            catch { return false; }
+        }
+
+        private static bool Driving(Vehicle car, Ped me)
+        {
+            try
+            {
+                var driver = car.Driver;
+                return driver != null && driver.Exists() && Same(driver, me);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool Running(Vehicle v)
