@@ -150,6 +150,10 @@ namespace Fumes.Station
 
             _fallback = null;
 
+            // The prompt's memory only means anything while the nozzle is out. Left set, walking
+            // away and coming back would resume mid-argument with whatever it last decided.
+            if (_stage != Stage.Carrying) _prompt = 0;
+
             switch (_stage)
             {
                 case Stage.Idle: AtRest(me); break;
@@ -408,9 +412,34 @@ namespace Fumes.Station
             RangeOnce(toPump, toFiller);
 
             var canFill = vehicle != null && inReach && hasRoom;
-            var hangUpIsNearer = atPump && toPump < toFiller;
 
-            if (canFill && !hangUpIsNearer)
+            // AND IT STICKS ONCE IT HAS DECIDED. Nearer-wins was right and not enough.
+            //
+            // Reported from the wild: "it'll bounce between filling up the car and hanging up
+            // the nozzle, and it can be difficult to find the exact right place". The log says
+            // why -- standing at a pump the two distances come out 1.41m and 1.06m, or 2.46 and
+            // 2.24. Twenty to thirty centimetres apart. A bare "which is nearer" flips on every
+            // step, every idle sway of the camera, and the prompt strobes between two things
+            // that both want the same button.
+            //
+            // So a choice already made has to be BEATEN, not merely matched: the other one must
+            // be clearly nearer, by more than the distance a standing player drifts. Nothing
+            // changes when you are plainly at one or the other; it only stops the coin-flip in
+            // the middle, which is the only place it was ever wrong.
+            var margin = _cfg.PromptStickiness;
+
+            int choice;
+
+            if (!canFill && !atPump) choice = 0;
+            else if (canFill && !atPump) choice = 1;
+            else if (!canFill) choice = 2;
+            else if (_prompt == 1) choice = toFiller < toPump + margin ? 1 : 2;
+            else if (_prompt == 2) choice = toFiller < toPump - margin ? 1 : 2;
+            else choice = toFiller < toPump ? 1 : 2;
+
+            _prompt = choice;
+
+            if (choice == 1)
             {
                 Prompt(Control.Context, "Fill the " + vehicle.LocalizedName +
                                         "   $" + _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L");
@@ -441,7 +470,7 @@ namespace Fumes.Station
                 return;
             }
 
-            if (atPump)
+            if (choice == 2)
             {
                 Prompt(Control.Context, "Hang the nozzle up");
                 if (Pressed()) HangUp();
@@ -778,6 +807,9 @@ namespace Fumes.Station
         }
 
         private bool _rangeLogged;
+
+        /// <summary>Which prompt is showing: 0 none, 1 fill, 2 hang up. See Carrying.</summary>
+        private int _prompt;
 
         private void HangUp()
         {

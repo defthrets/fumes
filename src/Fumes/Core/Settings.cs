@@ -212,6 +212,16 @@ namespace Fumes.Core
         /// fill prompt at every station and filling up was a fight.
         /// </summary>
         public float HangUpReach = 1.2f;
+
+        /// <summary>
+        /// How much nearer the other thing must be before the prompt changes its mind, in metres.
+        ///
+        /// Filling and hanging up want the same button and you stand within reach of both at
+        /// once. Whichever is nearer wins -- but at a pump the two distances are twenty or
+        /// thirty centimetres apart, so a bare comparison flips on every step and the prompt
+        /// strobes. A choice already made has to be beaten by this much to be replaced.
+        /// </summary>
+        public float PromptStickiness = 0.5f;
         public float LitresPerSecond = 2.2f;
         public float PricePerLitre = 1.55f;
 
@@ -695,6 +705,7 @@ namespace Fumes.Core
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);
                 s.CapReach = ini.GetFloat("Station", "CapReach", s.CapReach, 0.5f, 12f);
                 s.HangUpReach = ini.GetFloat("Station", "HangUpReach", s.HangUpReach, 0.4f, 6f);
+                s.PromptStickiness = ini.GetFloat("Station", "PromptStickiness", s.PromptStickiness, 0f, 3f);
                 s.LitresPerSecond = ini.GetFloat("Station", "LitresPerSecond", s.LitresPerSecond, 0.1f, 60f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
