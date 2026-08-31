@@ -490,6 +490,20 @@ namespace Fumes.UI
                     var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
                                        Math.Sin(t * 5.1f - u * 11.7f) * a2);
 
+                    // THE SLOSH IS A TILT, not another wave. A hit throws the fuel at one wall
+                    // of the tank and it comes back -- so the whole surface leans, one end up
+                    // and the other down by the same amount, and the lean swings across and
+                    // dies away. Adding a bigger ripple instead would have been more of what
+                    // is already there rather than the thing an impact actually does.
+                    //
+                    // Cosine, so the very first frame is fully over to the right rather than
+                    // starting flat and building -- an impact has no wind-up.
+                    if (_slosh > 0.001f)
+                    {
+                        var lean = (float)Math.Cos(_sloshClock * _cfg.GaugeSloshHertz * 6.2832f);
+                        wave -= (u - 0.5f) * 2f * lean * _slosh * _cfg.GaugeSloshTilt;
+                    }
+
                     var top = surfaceY + wave;
                     if (top < y) top = y;
 
@@ -651,6 +665,67 @@ namespace Fumes.UI
         /// <summary>How tall the waves are, 0 to 1. See Sway.</summary>
         private float _sway = 1f;
 
+        /// <summary>How hard the fuel is still sloshing from a hit, 1 down to 0.</summary>
+        private float _slosh;
+
+        /// <summary>Its own clock, so the swing starts at the moment of the impact.</summary>
+        private float _sloshClock;
+
+        /// <summary>Last frame's speed, in metres a second, for working out deceleration.</summary>
+        private float _lastSpeed;
+
+        /// <summary>
+        /// Starts the fuel swinging when the car stops suddenly.
+        ///
+        /// DECELERATION, NOT COLLISION. HasCollided is true for kerbs, hedges and the underside
+        /// of a speed bump -- every one of which would set the gauge swinging for nothing. How
+        /// hard the car stopped is the thing actually being modelled, it comes free from a speed
+        /// we already read, and it scales: a scrape barely registers and hitting a wall at
+        /// eighty throws the fuel across the tank.
+        ///
+        /// Divided by dt to get an acceleration rather than testing the raw drop, because a
+        /// speed change is only a crash relative to the time it took. Twenty metres a second
+        /// lost over a second is heavy braking; over a frame it is a wall.
+        /// </summary>
+        private void Impact(Vehicle v, float dt)
+        {
+            // Decay first, so a hit landing this frame is not immediately faded.
+            if (_slosh > 0.0005f)
+            {
+                _sloshClock += dt;
+
+                if (_cfg.GaugeSloshSeconds > 0.01f)
+                    _slosh *= (float)Math.Exp(-dt / _cfg.GaugeSloshSeconds);
+            }
+            else
+            {
+                _slosh = 0f;
+            }
+
+            float speed;
+            try { speed = v == null ? 0f : Math.Abs(v.Speed); }
+            catch { speed = 0f; }
+
+            var was = _lastSpeed;
+            _lastSpeed = speed;
+
+            if (!_cfg.GaugeSloshOnImpact || v == null || dt <= 0.0001f) return;
+
+            var decel = (was - speed) / dt;
+            if (decel < _cfg.GaugeSloshTriggerG * 9.81f) return;
+
+            // Scaled by how hard, and never more than full. A new hit while still ringing takes
+            // the larger of the two rather than adding, or a tumble down a hill would stack up
+            // to a surface standing on end.
+            var force = decel / (_cfg.GaugeSloshTriggerG * 9.81f * 3f);
+            if (force > 1f) force = 1f;
+
+            if (force <= _slosh) return;
+
+            _slosh = force;
+            _sloshClock = 0f;
+        }
+
         /// <summary>
         /// How far the surface moves up and down, as a fraction of its full travel.
         ///
@@ -744,6 +819,8 @@ namespace Fumes.UI
                 _motion = target;
                 _sway = swayTarget;
             }
+
+            Impact(vehicle, dt);
 
             _clock += dt * _motion;
         }

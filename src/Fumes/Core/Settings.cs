@@ -766,6 +766,26 @@ namespace Fumes.Core
         public float GaugeSwayIdle = 0.35f;
         public float GaugeSwayFullKmh = 120f;
 
+        /// <summary>
+        /// The fuel swings to one side when the car stops suddenly, and settles.
+        ///
+        /// Triggered on DECELERATION rather than on collision: HasCollided is true for kerbs
+        /// and hedges, and a gauge that swings every time you clip a bollard is noise. How hard
+        /// the car stopped is the thing being modelled, and it scales -- a scrape barely
+        /// registers, a wall at eighty throws the fuel across the tank.
+        /// </summary>
+        public bool GaugeSloshOnImpact = true;
+
+        /// <summary>How hard a stop counts as one, in g. 4 is a real crash, not hard braking.</summary>
+        public float GaugeSloshTriggerG = 4.0f;
+
+        /// <summary>How far the surface leans at full force, as a fraction of the screen.</summary>
+        public float GaugeSloshTilt = 0.010f;
+
+        /// <summary>How fast it swings back and forth, and how long it takes to settle.</summary>
+        public float GaugeSloshHertz = 1.6f;
+        public float GaugeSloshSeconds = 1.1f;
+
         public float GaugeMotionRiseSeconds = 0.8f;
         public float GaugeMotionFallSeconds = 4.0f;
 
@@ -984,6 +1004,11 @@ namespace Fumes.Core
                 s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.05f, 1f);
                 s.GaugeMotionRestKmh = ini.GetFloat("HUD", "MotionRestKmh", s.GaugeMotionRestKmh, 0f, 100f);
                 s.GaugeSwayIdle = ini.GetFloat("HUD", "SwayIdle", s.GaugeSwayIdle, 0f, 1f);
+                s.GaugeSloshOnImpact = ini.GetBool("HUD", "SloshOnImpact", s.GaugeSloshOnImpact);
+                s.GaugeSloshTriggerG = ini.GetFloat("HUD", "SloshTriggerG", s.GaugeSloshTriggerG, 0.5f, 30f);
+                s.GaugeSloshTilt = ini.GetFloat("HUD", "SloshTilt", s.GaugeSloshTilt, 0f, 0.1f);
+                s.GaugeSloshHertz = ini.GetFloat("HUD", "SloshHertz", s.GaugeSloshHertz, 0.1f, 10f);
+                s.GaugeSloshSeconds = ini.GetFloat("HUD", "SloshSeconds", s.GaugeSloshSeconds, 0.05f, 10f);
                 s.GaugeSwayFullKmh = ini.GetFloat("HUD", "SwayFullKmh", s.GaugeSwayFullKmh, 1f, 400f);
                 s.GaugeMotionRiseSeconds = ini.GetFloat("HUD", "MotionRiseSeconds", s.GaugeMotionRiseSeconds, 0f, 30f);
                 s.GaugeMotionFallSeconds = ini.GetFloat("HUD", "MotionFallSeconds", s.GaugeMotionFallSeconds, 0f, 60f);
