@@ -19,7 +19,10 @@ namespace Fumes.Station
         Carrying,
 
         /// <summary>Nozzle in the filler, fuel going in.</summary>
-        Filling
+        Filling,
+
+        /// <summary>Emptying a jerry can into a tank, nowhere near a pump.</summary>
+        Pouring
     }
 
     /// <summary>
@@ -159,6 +162,7 @@ namespace Fumes.Station
                 case Stage.Idle: AtRest(me); break;
                 case Stage.Carrying: Carrying(me); break;
                 case Stage.Filling: Filling(me, dt); break;
+                case Stage.Pouring: Pouring(me, dt); break;
             }
 
             // AFTER the switch and driven by the stage rather than by calls inside it.
@@ -253,6 +257,12 @@ namespace Fumes.Station
 
         private void AtRest(Ped me)
         {
+            // THE CAN IS OFFERED FIRST, and before the pump lookup rather than after it. A jerry
+            // can is for the roadside -- the whole point of carrying one is that there is no
+            // pump -- so anything gated behind "is there a pump nearby" would only ever work in
+            // the one place it is not needed.
+            if (OfferCan(me)) return;
+
             var pump = _pumps.Nearest(me.Position, _cfg.PumpReach);
             if (pump == null) return;
 
@@ -260,6 +270,176 @@ namespace Fumes.Station
 
             if (Pressed()) Take(me, pump);
         }
+
+        /// <summary>
+        /// The prompt to pour a can into a tank. True when it took the prompt this frame.
+        /// </summary>
+        private bool OfferCan(Ped me)
+        {
+            if (!_cfg.JerryCan) return false;
+
+            var litres = CanLitres(me);
+            if (litres <= 0.01f) return false;
+
+            var vehicle = NearestFillable(me, out var filler, out var inReach);
+            if (vehicle == null || !inReach) return false;
+
+            var tank = _tanks.For(vehicle);
+            if (tank == null || tank.Litres >= tank.Capacity - 0.05f) return false;
+
+            Prompt(Control.Context, "Pour the can into the " + vehicle.LocalizedName +
+                                    "   " + litres.ToString("0.0", CultureInfo.InvariantCulture) + " L");
+
+            if (!Pressed()) return true;
+
+            _target = vehicle;
+            _targetTank = tank;
+            _canLitres = litres;
+            _stage = Stage.Pouring;
+
+            Log.Info("Pouring " + litres.ToString("0.0", CultureInfo.InvariantCulture) +
+                     " L from the can into " + vehicle.LocalizedName + " (" +
+                     tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + "/" +
+                     tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L).");
+
+            return true;
+        }
+
+        /// <summary>
+        /// What is left in the can he is holding, in litres, or 0 if he is not holding one.
+        ///
+        /// THE CAN'S AMMO IS ITS FUEL. GTA has no notion of a jerry can's contents beyond the
+        /// ammo count on the weapon -- which is exactly what it is, and what drains when you
+        /// pour petrol on the floor. Reading it means a can half emptied making a trail is half
+        /// empty here too, with no bookkeeping of our own to drift out of step with the game's.
+        ///
+        /// Scaled to litres by the weapon's own maximum rather than a hardcoded 4500, because
+        /// the number is the game's to change and a DLC can may not share it.
+        /// </summary>
+        private float CanLitres(Ped me)
+        {
+            try
+            {
+                var weapon = me.Weapons.Current;
+                if (weapon == null || weapon.Hash != WeaponHash.PetrolCan) return 0f;
+
+                var max = weapon.MaxAmmo;
+                if (max <= 0) return 0f;
+
+                return _cfg.JerryCanLitres * weapon.Ammo / max;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        /// <summary>Writes litres back to the can as ammo, so the game and the mod agree.</summary>
+        private void SetCanLitres(Ped me, float litres)
+        {
+            try
+            {
+                var weapon = me.Weapons.Current;
+                if (weapon == null || weapon.Hash != WeaponHash.PetrolCan) return;
+
+                var max = weapon.MaxAmmo;
+                if (max <= 0) return;
+
+                var ammo = (int)(litres / _cfg.JerryCanLitres * max);
+
+                if (ammo < 0) ammo = 0;
+                if (ammo > max) ammo = max;
+
+                weapon.Ammo = ammo;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-ammo", "Could not empty the can: " + ex.Message);
+            }
+        }
+
+        // ==================================================================
+        // Pouring: a jerry can into a tank
+        // ==================================================================
+
+        /// <summary>
+        /// No pump, no hose, no money, no station. Just a can and a filler.
+        ///
+        /// Deliberately slower than a pump. A forecourt sells fuel through a hose at a couple of
+        /// litres a second; a man tipping a can into a wing does not, and the difference is most
+        /// of what makes the can a last resort rather than a way to skip the drive.
+        /// </summary>
+        private void Pouring(Ped me, float dt)
+        {
+            if (_target == null || !_target.Exists() || _targetTank == null)
+            {
+                StopPouring(me, "the vehicle went away");
+                return;
+            }
+
+            // Putting the can away is how you stop, and it is the obvious gesture. Checked
+            // before anything else so swapping weapons cannot leave fuel pouring out of a
+            // pistol.
+            if (CanLitres(me) <= 0f && _canLitres > 0.01f)
+            {
+                StopPouring(me, "you put the can away");
+                return;
+            }
+
+            var filler = Filler.On(_target, out var exact);
+
+            if (!Filler.WithinReach(filler, me.Position, _cfg.CapReach + 0.6f, exact))
+            {
+                StopPouring(me, "you moved away from the filler");
+                return;
+            }
+
+            HoldStill(me);
+            FillPose(me);
+            FaceThe(me, filler);
+
+            var room = _targetTank.Capacity - _targetTank.Litres;
+            if (room <= 0.02f) { StopPouring(me, null); return; }
+
+            var wanted = _cfg.JerryCanLitresPerSecond * dt;
+            if (wanted > room) wanted = room;
+            if (wanted > _canLitres) wanted = _canLitres;
+
+            if (wanted > 0f)
+            {
+                _targetTank.Add(wanted);
+                _canLitres -= wanted;
+
+                SetCanLitres(me, _canLitres);
+                _tanks.Touch(_target, _targetTank, false);
+            }
+
+            _gauge.Update(_target, _targetTank, true);
+
+            Prompt(Control.Context, "Stop pouring   " +
+                                    _canLitres.ToString("0.0", CultureInfo.InvariantCulture) +
+                                    " L left");
+
+            if (Pressed()) { StopPouring(me, null); return; }
+
+            if (_canLitres <= 0.01f) StopPouring(me, "the can is empty");
+        }
+
+        private void StopPouring(Ped me, string why)
+        {
+            StopFillPose();
+
+            Log.Info("Stopped pouring" + (why == null ? "" : " - " + why) + ". " +
+                     _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L left in the can.");
+
+            _target = null;
+            _targetTank = null;
+            _canLitres = 0f;
+            _stage = Stage.Idle;
+        }
+
+        /// <summary>Litres left in the can being poured. See CanLitres.</summary>
+        private float _canLitres;
 
         private void Take(Ped me, Prop pump)
         {

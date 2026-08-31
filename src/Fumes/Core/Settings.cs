@@ -223,6 +223,26 @@ namespace Fumes.Core
         /// </summary>
         public float PromptStickiness = 0.5f;
         public float LitresPerSecond = 2.2f;
+
+        /// <summary>
+        /// Refuelling from the jerry can the player is carrying.
+        ///
+        /// Asked for on Nexus, and it fits: the game already has the can, and the can already
+        /// has a contents -- its ammo, which is what drains when you pour petrol on the floor.
+        /// </summary>
+        public bool JerryCan = true;
+
+        /// <summary>How many litres a full can holds.</summary>
+        public float JerryCanLitres = 20f;
+
+        /// <summary>
+        /// How fast it pours, in litres a second.
+        ///
+        /// Slower than the pump on purpose. A forecourt sells fuel through a hose; a man tipping
+        /// a can into a wing does not, and that difference is most of what keeps the can a last
+        /// resort rather than a way to skip the drive to a station.
+        /// </summary>
+        public float JerryCanLitresPerSecond = 0.8f;
         public float PricePerLitre = 1.55f;
 
         /// <summary>How far a station price may wander from the base, either way. 0 disables it.</summary>
@@ -707,6 +727,9 @@ namespace Fumes.Core
                 s.HangUpReach = ini.GetFloat("Station", "HangUpReach", s.HangUpReach, 0.4f, 6f);
                 s.PromptStickiness = ini.GetFloat("Station", "PromptStickiness", s.PromptStickiness, 0f, 3f);
                 s.LitresPerSecond = ini.GetFloat("Station", "LitresPerSecond", s.LitresPerSecond, 0.1f, 60f);
+                s.JerryCan = ini.GetBool("Station", "JerryCan", s.JerryCan);
+                s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
+                s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
                 s.ShowBlips = ini.GetBool("Station", "ShowBlips", s.ShowBlips);
