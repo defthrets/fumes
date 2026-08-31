@@ -765,7 +765,7 @@ namespace Fumes.Core
         /// hundred and twenty" is a thought you have in the units on your dash.
         /// </summary>
         public float GaugeMotionFromKmh = 80f;
-        public float GaugeMotionFullKmh = 200f;
+        public float GaugeMotionFullKmh = 150f;
 
 
         /// <summary>

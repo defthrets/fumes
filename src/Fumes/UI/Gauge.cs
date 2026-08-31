@@ -627,11 +627,11 @@ namespace Fumes.UI
                 var t = (speed - from) / (full - from);
                 if (t > 1f) t = 1f;
 
-                // Linear across the band, and the band is deliberately WIDE -- a hundred and
-                // twenty km/h from where it starts to where it tops out. A narrow band makes
-                // the change arrive all at once and reads as a switch being thrown; spread
-                // across most of the speeds anybody actually drives at, it is something you
-                // notice having happened rather than something you watch happen.
+                // Linear across the band, and the band is what sets how hard it comes on:
+                // same climb, fewer km/h to do it in, so each one counts for more. Seventy wide
+                // from 80 to 150 puts the whole change inside the speeds a car is actually
+                // driven hard at, rather than spreading it out to a top speed most vehicles in
+                // this game will never see.
                 return 1f + (_cfg.GaugeMotionMax - 1f) * t;
             }
             catch
