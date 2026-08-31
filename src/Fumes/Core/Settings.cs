@@ -746,6 +746,17 @@ namespace Fumes.Core
         public float GaugeMotionRestKmh = 12f;
 
         /// <summary>
+        /// How long the animation takes to reach a new speed, going up and coming down.
+        ///
+        /// ASYMMETRIC. Winding up follows the throttle closely because that is something you
+        /// did; winding down takes several seconds because fuel that has been thrown about does
+        /// not settle the moment you lift off -- and because dropping under 120 for a corner
+        /// should not slam the animation back and out again.
+        /// </summary>
+        public float GaugeMotionRiseSeconds = 0.8f;
+        public float GaugeMotionFallSeconds = 4.0f;
+
+        /// <summary>
         /// The speeds, IN KM/H, between which the animation winds up. Below the first it runs
         /// at its normal rate and nothing changes at all.
         ///
@@ -959,6 +970,8 @@ namespace Fumes.Core
                 s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
                 s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.05f, 1f);
                 s.GaugeMotionRestKmh = ini.GetFloat("HUD", "MotionRestKmh", s.GaugeMotionRestKmh, 0f, 100f);
+                s.GaugeMotionRiseSeconds = ini.GetFloat("HUD", "MotionRiseSeconds", s.GaugeMotionRiseSeconds, 0f, 30f);
+                s.GaugeMotionFallSeconds = ini.GetFloat("HUD", "MotionFallSeconds", s.GaugeMotionFallSeconds, 0f, 60f);
                 s.GaugeMotionFromKmh = ini.GetFloat("HUD", "MotionFromKmh", s.GaugeMotionFromKmh, 0f, 400f);
                 s.GaugeMotionFullKmh = ini.GetFloat("HUD", "MotionFullKmh", s.GaugeMotionFullKmh, 0f, 500f);
                 s.GaugeIconScale = ini.GetFloat("HUD", "IconScale", s.GaugeIconScale, 0.2f, 2f);

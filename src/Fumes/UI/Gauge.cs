@@ -184,7 +184,7 @@ namespace Fumes.UI
             //
             // Read here rather than inside the drawing so it is one lookup a frame, and so the
             // preview and a stalled car both get the resting value without a special case.
-            _motion = Motion(vehicle);
+            Tick(vehicle);
 
             try
             {
@@ -433,10 +433,8 @@ namespace Fumes.UI
         {
             const int columns = 8;
 
-            // The clock the waves run on, sped up with the car. Multiplying the TIME rather
-            // than the frequency keeps the two waves in the same relationship to each other, so
-            // it is the same liquid moving faster rather than a different pattern.
-            var t = Environment.TickCount / 1000f * _motion;
+            // The accumulated clock, not the wall clock. See _clock for why that matters.
+            var t = _clock;
 
             var level = h * fraction;
             var surfaceY = y + h - level;
@@ -532,7 +530,10 @@ namespace Fumes.UI
                 // Quicker while fuel is actually going in. refuelling reached this code and
                 // went unused for its whole life; with the waves gone the bubbles are the only
                 // thing left that can show the difference between filling and standing still.
-                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f) * _motion;
+                // NOT multiplied by _motion here: t is already the accelerated clock, and
+                // multiplying twice would square the effect -- and would put the same jump back
+                // into the bubbles that the clock was changed to remove.
+                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f);
                 var phase = (t * speed + i * 0.41f) % 1f;
 
                 var by = floor - level * phase;
@@ -636,8 +637,63 @@ namespace Fumes.UI
             }
         }
 
-        /// <summary>Set once a frame by Update. See Motion.</summary>
+        /// <summary>Set once a frame by Tick. See Motion.</summary>
         private float _motion = 1f;
+
+        /// <summary>
+        /// The clock the fuel moves on. ACCUMULATED, never computed from the wall clock.
+        ///
+        /// This was TickCount/1000 * _motion, and that is wrong in a way that only shows when
+        /// the multiplier moves. TickCount is milliseconds since the machine booted -- a number
+        /// in the millions -- so multiplying it by a factor that changes from 1.0 to 1.5 does
+        /// not speed the wave up, it advances the clock by hours between one frame and the
+        /// next. The sine of a number that has jumped by hours is an arbitrary value, so the
+        /// surface teleported to a new shape every time the speed changed and only looked
+        /// smooth while the speed was constant.
+        ///
+        /// Adding dt * motion each frame makes the PHASE continuous and the RATE the only thing
+        /// the multiplier touches, which is what was meant all along -- and it is what lets the
+        /// speed-up wind back down gradually instead of snapping.
+        /// </summary>
+        private float _clock;
+
+        /// <summary>
+        /// Advances the clock, and eases the rate toward what the car is doing.
+        ///
+        /// ASYMMETRIC ON PURPOSE. Winding up follows the throttle closely, because that is a
+        /// thing you did; winding down takes several seconds, because fuel that has been thrown
+        /// about does not stop the moment you lift off. It also means dropping under 120 for a
+        /// corner does not slam the animation back to walking pace and out again.
+        /// </summary>
+        private void Tick(Vehicle vehicle)
+        {
+            var dt = 0f;
+
+            try { dt = Game.LastFrameTime; }
+            catch { dt = 0f; }
+
+            // A paused or hitching game hands back nonsense; neither is a frame's worth of time.
+            if (dt <= 0f || dt > 0.5f) dt = dt > 0.5f ? 0.5f : 0f;
+
+            var target = Motion(vehicle);
+
+            var seconds = target > _motion ? _cfg.GaugeMotionRiseSeconds
+                                           : _cfg.GaugeMotionFallSeconds;
+
+            if (dt > 0f && seconds > 0.01f)
+            {
+                // Exponential easing, so the approach is the same on any framerate rather than
+                // however many times a second this happens to be called.
+                var k = 1f - (float)Math.Exp(-dt / seconds);
+                _motion += (target - _motion) * k;
+            }
+            else
+            {
+                _motion = target;
+            }
+
+            _clock += dt * _motion;
+        }
 
         private static bool InThisVehicle(Vehicle v)
         {
