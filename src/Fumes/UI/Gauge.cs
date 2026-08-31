@@ -627,8 +627,11 @@ namespace Fumes.UI
                 var t = (speed - from) / (full - from);
                 if (t > 1f) t = 1f;
 
-                // Linear across the band, and no easing. The band is eighty km/h wide rather
-                // than the whole speedometer, so there is no long tail for a curve to fix.
+                // Linear across the band, and the band is deliberately WIDE -- a hundred and
+                // twenty km/h from where it starts to where it tops out. A narrow band makes
+                // the change arrive all at once and reads as a switch being thrown; spread
+                // across most of the speeds anybody actually drives at, it is something you
+                // notice having happened rather than something you watch happen.
                 return 1f + (_cfg.GaugeMotionMax - 1f) * t;
             }
             catch

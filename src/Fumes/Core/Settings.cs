@@ -764,7 +764,7 @@ namespace Fumes.Core
         /// two are the ones somebody sets while thinking about a speedometer -- "faster than a
         /// hundred and twenty" is a thought you have in the units on your dash.
         /// </summary>
-        public float GaugeMotionFromKmh = 120f;
+        public float GaugeMotionFromKmh = 80f;
         public float GaugeMotionFullKmh = 200f;
 
 
