@@ -223,6 +223,9 @@ namespace Fumes.UI
                                   "Arrows move it, Shift+arrows resize, Enter keeps it."));
             hud.Items.Add(Toggle("Show the gauge", () => _cfg.ShowGauge, v => _cfg.ShowGauge = v,
                                  "HUD", "ShowGauge", "The bar beside the minimap."));
+            hud.Items.Add(Toggle("Hide with the game's HUD", () => _cfg.GaugeFollowsHud,
+                                 v => _cfg.GaugeFollowsHud = v, "HUD", "FollowsHud",
+                                 "Goes when the radar goes, whatever hid it."));
             hud.Items.Add(Toggle("Only in a vehicle", () => _cfg.GaugeOnlyInVehicle,
                                  v => _cfg.GaugeOnlyInVehicle = v, "HUD", "OnlyInVehicle",
                                  "Off shows the last car's tank while you are on foot."));
@@ -270,6 +273,9 @@ namespace Fumes.UI
             fuel.Items.Add(Toggle("Cars left running", () => _cfg.AbandonedIdle,
                                   v => _cfg.AbandonedIdle = v, "Fuel", "AbandonedIdle",
                                   "One you drove off and left idling keeps drinking."));
+            fuel.Items.Add(Toggle("Low fuel chime", () => _cfg.LowFuelChime,
+                                  v => _cfg.LowFuelChime = v, "Fuel", "LowFuelChime",
+                                  "Once when it drops into reserve, not on a loop."));
             fuel.Items.Add(Toggle("Tanks leak when shot", () => _cfg.TankLeaks,
                                   v => _cfg.TankLeaks = v, "Fuel", "TankLeaks", null));
             fuel.Items.Add(Toggle("Stall when empty", () => _cfg.StallWhenEmpty,

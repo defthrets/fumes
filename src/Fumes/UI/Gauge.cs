@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 using GTA;
+using GTA.Native;
 using Fumes.Core;
 using Fumes.Fuel;
 
@@ -162,6 +163,11 @@ namespace Fumes.UI
         public void Update(Vehicle vehicle, Tank tank, bool refuelling, bool stalled = false)
         {
             if (!_cfg.ShowGauge || tank == null) return;
+
+            // Gone when the game's own HUD or radar is. A bar beside a minimap that is not
+            // there is worse than no bar, and this way a screenshot key or a cinematic mod
+            // takes it with them without knowing Fumes exists.
+            if (_cfg.GaugeFollowsHud && HudHidden()) return;
 
             Measure();
 
@@ -500,6 +506,22 @@ namespace Fumes.UI
             if (a > 255) a = 255;
 
             return Color.FromArgb(a, c.R, c.G, c.B);
+        }
+
+        /// <summary>Whether the game is currently hiding its own HUD or radar.</summary>
+        private static bool HudHidden()
+        {
+            try
+            {
+                return Function.Call<bool>(Hash.IS_HUD_HIDDEN) ||
+                       Function.Call<bool>(Hash.IS_RADAR_HIDDEN);
+            }
+            catch
+            {
+                // If it cannot be asked, draw. A gauge that vanishes for an unknown reason is
+                // a bug report; one that stays is at worst untidy.
+                return false;
+            }
         }
 
         private static bool InThisVehicle(Vehicle v)

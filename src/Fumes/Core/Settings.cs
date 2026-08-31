@@ -182,6 +182,24 @@ namespace Fumes.Core
         /// <summary>Whether a shot petrol tank drains onto the road. See Consumption.Leak.</summary>
         public bool TankLeaks = true;
 
+        /// <summary>
+        /// A chime when a tank drops into reserve. No notification with it -- see LowFuel.
+        /// </summary>
+        public bool LowFuelChime = true;
+
+        /// <summary>
+        /// The sound, and the set it lives in.
+        ///
+        /// Settings rather than constants because a ONE-SHOT CANNOT BE PROBED. The filling loop
+        /// can be checked with HAS_SOUND_FINISHED -- a loop that is playing has not finished --
+        /// but a chime that played and a chime that never existed both report finished a moment
+        /// later, and nothing can tell them apart from in here. So it ships with a base-game
+        /// pair that needs no DLC bank, and anyone who wants a different one can say so.
+        /// </summary>
+        public string LowFuelSoundName = "5_SEC_WARNING";
+        public string LowFuelSoundSet = "HUD_MINI_GAME_SOUNDSET";
+        public string LowFuelSoundBank = "";
+
         // ---- running dry ------------------------------------------------------
         /// <summary>Litres left at which the engine starts coughing.</summary>
         public float SputterLitres = 0.6f;
@@ -545,6 +563,17 @@ namespace Fumes.Core
 
         public bool ShowGauge = true;
         public bool GaugeOnlyInVehicle = true;
+
+        /// <summary>
+        /// The gauge goes when the game's own HUD or radar does.
+        ///
+        /// Asked for by somebody running a mod that hides the radar: a fuel bar floating beside
+        /// a minimap that is not there is worse than no fuel bar. It follows IS_HUD_HIDDEN and
+        /// IS_RADAR_HIDDEN, so anything that turns those off -- a screenshot key, a cinematic
+        /// mod, the game's own display settings -- takes this with it and needs to know nothing
+        /// about Fumes to do it.
+        /// </summary>
+        public bool GaugeFollowsHud = true;
         /// <summary>
         /// The gauge, sitting under the minimap.
         ///
@@ -708,6 +737,10 @@ namespace Fumes.Core
                 s.SpawnedTanksFull = ini.GetBool("Fuel", "SpawnedTanksFull", s.SpawnedTanksFull);
                 s.ReserveFraction = ini.GetFloat("Fuel", "ReserveFraction", s.ReserveFraction, 0.01f, 0.6f);
                 s.TankLeaks = ini.GetBool("Fuel", "TankLeaks", s.TankLeaks);
+                s.LowFuelChime = ini.GetBool("Fuel", "LowFuelChime", s.LowFuelChime);
+                s.LowFuelSoundName = ini.GetString("Fuel", "LowFuelSoundName", s.LowFuelSoundName);
+                s.LowFuelSoundSet = ini.GetString("Fuel", "LowFuelSoundSet", s.LowFuelSoundSet);
+                s.LowFuelSoundBank = ini.GetString("Fuel", "LowFuelSoundBank", s.LowFuelSoundBank);
 
                 // An inverted pair is a typo, not a range. Swapping beats a Next(hi, lo) throw.
                 if (s.FoundFuelMin > s.FoundFuelMax)
@@ -787,6 +820,7 @@ namespace Fumes.Core
                 s.Prompts = ParseEnum(ini.GetString("HUD", "Prompts", "HelpText"), s.Prompts);
                 s.ShowGauge = ini.GetBool("HUD", "ShowGauge", s.ShowGauge);
                 s.GaugeOnlyInVehicle = ini.GetBool("HUD", "OnlyInVehicle", s.GaugeOnlyInVehicle);
+                s.GaugeFollowsHud = ini.GetBool("HUD", "FollowsHud", s.GaugeFollowsHud);
                 s.GaugeX = ini.GetFloat("HUD", "X", s.GaugeX, 0f, 1f);
                 s.GaugeY = ini.GetFloat("HUD", "Y", s.GaugeY, 0f, 1f);
                 s.GaugeWidth = ini.GetFloat("HUD", "Width", s.GaugeWidth, 0.0010f, 0.8f);
