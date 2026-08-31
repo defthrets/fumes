@@ -728,6 +728,16 @@ namespace Fumes.Core
         /// accelerating with the speedometer stops reading as fuel and starts reading as a
         /// loading spinner.
         /// </summary>
+        /// <summary>
+        /// How fast the fuel moves when the car is not.
+        ///
+        /// WELL UNDER ONE, on purpose. A parked car's fuel is settling, not sloshing, and at
+        /// full speed the animation was reading as busy the whole time -- there was nothing for
+        /// getting up to speed to be a change FROM. A quarter speed is slow enough to look like
+        /// a liquid at rest and still moving enough not to look frozen.
+        /// </summary>
+        public float GaugeMotionIdle = 0.25f;
+
         public float GaugeMotionMax = 3.0f;
 
         /// <summary>Metres a second at which the motion is at full. 30 is about 108 km/h.</summary>
@@ -932,7 +942,8 @@ namespace Fumes.Core
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
                 s.GaugeLiquid = ini.GetBool("HUD", "GaugeLiquid", s.GaugeLiquid);
-                s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
+                s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.02f, 5f);
+                s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 0.02f, 10f);
                 s.GaugeMotionSpeed = ini.GetFloat("HUD", "MotionSpeed", s.GaugeMotionSpeed, 1f, 120f);
                 s.GaugeIconScale = ini.GetFloat("HUD", "IconScale", s.GaugeIconScale, 0.2f, 2f);
                 s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);

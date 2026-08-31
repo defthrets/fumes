@@ -589,21 +589,28 @@ namespace Fumes.UI
         /// </summary>
         private float Motion(Vehicle v)
         {
-            if (v == null) return 1f;
+            if (v == null) return _cfg.GaugeMotionIdle;
 
             try
             {
                 var speed = Math.Abs(v.Speed);
-                if (speed <= 0.1f || _cfg.GaugeMotionSpeed <= 0.1f) return 1f;
+                if (_cfg.GaugeMotionSpeed <= 0.1f) return _cfg.GaugeMotionIdle;
 
                 var t = speed / _cfg.GaugeMotionSpeed;
+                if (t < 0f) t = 0f;
                 if (t > 1f) t = 1f;
 
-                return 1f + (_cfg.GaugeMotionMax - 1f) * t;
+                // SQUARED, so it stays slow and then comes on. Straight from idle to full is a
+                // ramp you feel most where you spend least time -- the first few miles an hour
+                // out of a parking space would already be half the speed-up. Squaring keeps the
+                // crawl through town and puts the change where the speed actually is.
+                t *= t;
+
+                return _cfg.GaugeMotionIdle + (_cfg.GaugeMotionMax - _cfg.GaugeMotionIdle) * t;
             }
             catch
             {
-                return 1f;
+                return _cfg.GaugeMotionIdle;
             }
         }
 
