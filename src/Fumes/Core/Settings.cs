@@ -674,9 +674,9 @@ namespace Fumes.Core
         public bool Vertical = true;
 
         public float GaugeX = 0.1330f;
-        public float GaugeY = 0.8045f;
+        public float GaugeY = 0.8100f;
         public float GaugeWidth = 0.0046f;
-        public float GaugeHeight = 0.1635f;
+        public float GaugeHeight = 0.1678f;
 
         public Units Units = Units.Litres;
         public bool ShowNumbers = false;
@@ -718,6 +718,20 @@ namespace Fumes.Core
         /// like every other bar on the screen.
         /// </summary>
         public bool GaugeLiquid = true;
+
+        /// <summary>
+        /// How much faster the fuel moves at speed, and the speed it gets there at.
+        ///
+        /// Fuel in a tank does what the tank does: still at rest, thrown about at speed. The
+        /// multiplier is flat above GaugeMotionSpeed, because past a point more speed does not
+        /// make a liquid slosh faster, it makes it slosh harder -- and an animation that keeps
+        /// accelerating with the speedometer stops reading as fuel and starts reading as a
+        /// loading spinner.
+        /// </summary>
+        public float GaugeMotionMax = 3.0f;
+
+        /// <summary>Metres a second at which the motion is at full. 30 is about 108 km/h.</summary>
+        public float GaugeMotionSpeed = 30f;
 
         /// <summary>
         /// How wide the pump is drawn, as a fraction of the bar's width.
@@ -918,6 +932,8 @@ namespace Fumes.Core
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
                 s.GaugeLiquid = ini.GetBool("HUD", "GaugeLiquid", s.GaugeLiquid);
+                s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
+                s.GaugeMotionSpeed = ini.GetFloat("HUD", "MotionSpeed", s.GaugeMotionSpeed, 1f, 120f);
                 s.GaugeIconScale = ini.GetFloat("HUD", "IconScale", s.GaugeIconScale, 0.2f, 2f);
                 s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);
                 s.GaugeOpacity = ini.GetFloat("HUD", "Opacity", s.GaugeOpacity, 0.15f, 1f);

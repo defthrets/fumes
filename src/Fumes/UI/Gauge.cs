@@ -175,6 +175,17 @@ namespace Fumes.UI
             // otherwise it is a permanent readout of a car you are not in.
             if (_cfg.GaugeOnlyInVehicle && !refuelling && !InThisVehicle(vehicle)) return;
 
+            // HOW HARD THE FUEL IS BEING THROWN ABOUT, from the car's own speed.
+            //
+            // Fuel in a tank does what the tank does. Standing still it settles and the surface
+            // barely moves; at speed it is being pushed around a box and the bubbles go with
+            // it. Tying the animation to the one number that says how much of that is happening
+            // costs nothing and means the gauge is never quite the same twice.
+            //
+            // Read here rather than inside the drawing so it is one lookup a frame, and so the
+            // preview and a stalled car both get the resting value without a special case.
+            _motion = Motion(vehicle);
+
             try
             {
                 var x = _cfg.GaugeX;
@@ -210,8 +221,8 @@ namespace Fumes.UI
                     iconW = w * _cfg.GaugeIconScale;
                     iconH = iconW * _aspect * _pump.Aspect;
 
-                    // Plate, plus its own border, plus a gap between it and the bar's.
-                    var take = iconH + edge * 4f;
+                    // Plate plus its own border. NO GAP: the two borders share an edge.
+                    var take = iconH + edge * 2f;
 
                     // Never so far that the bar stops being a bar. A gauge with no gauge in it
                     // is a worse trade than an icon that overlaps.
@@ -348,7 +359,10 @@ namespace Fumes.UI
                         // two dark shapes in a column that ALMOST line up read as a mistake in
                         // a way that either lining up or plainly differing does not. Same left
                         // edge, same right edge, same border thickness.
-                        var plateTop = y + h + edge * 3f;
+                        // SEAMLESS. The bar's outline ends at y + h + edge and the plate's
+                        // begins there -- one border thickness doing duty for both, so the two
+                        // read as one column rather than two things stacked near each other.
+                        var plateTop = y + h + edge * 2f;
                         var cx = x + w / 2f;
 
                         Draw.Bar(x - edge, plateTop - edge,
@@ -419,7 +433,10 @@ namespace Fumes.UI
         {
             const int columns = 8;
 
-            var t = Environment.TickCount / 1000f;
+            // The clock the waves run on, sped up with the car. Multiplying the TIME rather
+            // than the frequency keeps the two waves in the same relationship to each other, so
+            // it is the same liquid moving faster rather than a different pattern.
+            var t = Environment.TickCount / 1000f * _motion;
 
             var level = h * fraction;
             var surfaceY = y + h - level;
@@ -515,7 +532,7 @@ namespace Fumes.UI
                 // Quicker while fuel is actually going in. refuelling reached this code and
                 // went unused for its whole life; with the waves gone the bubbles are the only
                 // thing left that can show the difference between filling and standing still.
-                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f);
+                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f) * _motion;
                 var phase = (t * speed + i * 0.41f) % 1f;
 
                 var by = floor - level * phase;
@@ -561,6 +578,37 @@ namespace Fumes.UI
                 return false;
             }
         }
+
+        /// <summary>
+        /// A multiplier on how fast the fuel moves, from the vehicle's speed.
+        ///
+        /// One at rest and climbing to GaugeMotionMax at GaugeMotionSpeed, then flat. Flat
+        /// because past a point more speed does not make a liquid slosh faster, it makes it
+        /// slosh harder -- and an animation that keeps accelerating with the speedometer stops
+        /// reading as fuel and starts reading as a loading spinner.
+        /// </summary>
+        private float Motion(Vehicle v)
+        {
+            if (v == null) return 1f;
+
+            try
+            {
+                var speed = Math.Abs(v.Speed);
+                if (speed <= 0.1f || _cfg.GaugeMotionSpeed <= 0.1f) return 1f;
+
+                var t = speed / _cfg.GaugeMotionSpeed;
+                if (t > 1f) t = 1f;
+
+                return 1f + (_cfg.GaugeMotionMax - 1f) * t;
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
+        /// <summary>Set once a frame by Update. See Motion.</summary>
+        private float _motion = 1f;
 
         private static bool InThisVehicle(Vehicle v)
         {
