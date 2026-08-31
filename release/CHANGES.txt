@@ -1,6 +1,41 @@
 FUMES -- changes
 
 
+0.1.2
+=====
+
+  * IF IT WAS NOT LOADING FOR YOU, READ THIS FIRST. The requirements line said
+    "ScriptHookVDotNet 3 (3.9 or later)", which is true of the dll and useless as
+    an instruction: there is no release called 3.9. The build carrying assembly
+    version 3.9.0.0 is the ENHANCED FORK, released as v1.1.x. So people searched
+    for a 3.9, found nothing, installed the newest thing labelled 3, and got
+    silence. Both numbers are right and they are not the same number, and nothing
+    here said so. It is named outright now, with the link, and there is an
+    IF IT IS NOT LOADING section that narrows it in the right order.
+
+        https://www.gta5-mods.com/tools/script-hook-v-net-enhanced
+
+  * Fixed: the prompt bounced between "fill" and "hang up" and neither could be
+    pressed. Standing at a pump the two distances come out twenty to thirty
+    centimetres apart, so "whichever is nearer" flipped on every step and every
+    sway of the camera. A choice now has to be beaten by half a metre before it
+    is replaced. Reported by DirtCheap1.
+
+  * Fixed: DLC and online vehicles always arrived with a full tank. Anything
+    script-owned was being treated as "handed to the player deliberately, so fill
+    it" -- which is also true of everything a trainer spawns, and spawning is how
+    anyone gets at those cars. Their tank SIZES were always right; only the fill
+    was wrong. Reported by BlueLion.
+
+  * Refuel from a jerry can. Walk up to a filler carrying one and it offers to
+    pour. Slower than a pump on purpose. The can's ammo IS its fuel, so one half
+    emptied making a trail is half empty here too. Asked for by jerome74 and
+    DirtCheap1.
+
+  * Cars you have driven and left running keep burning fuel while they are
+    loaded, not just the one you are in or last got out of.
+
+
 0.1.1
 =====
 
