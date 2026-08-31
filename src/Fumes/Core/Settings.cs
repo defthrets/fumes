@@ -674,9 +674,9 @@ namespace Fumes.Core
         public bool Vertical = true;
 
         public float GaugeX = 0.1330f;
-        public float GaugeY = 0.8100f;
-        public float GaugeWidth = 0.0046f;
-        public float GaugeHeight = 0.1678f;
+        public float GaugeY = 0.8218f;
+        public float GaugeWidth = 0.0033f;
+        public float GaugeHeight = 0.1560f;
 
         public Units Units = Units.Litres;
         public bool ShowNumbers = false;
