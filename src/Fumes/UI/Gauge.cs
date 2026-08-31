@@ -194,6 +194,31 @@ namespace Fumes.UI
                 var edge = w * 0.22f;
                 if (edge < 0.0005f) edge = 0.0005f;
 
+                // THE PUMP SITS OUTSIDE THE BAR NOW, under its foot, and the BAR GIVES UP THE
+                // ROOM rather than the column growing into it.
+                //
+                // That is the part worth doing deliberately. Hanging the icon below an
+                // unchanged bar would push the whole thing past the bottom of the minimap --
+                // and the bar's foot was measured off a screenshot to line up with the health
+                // bar, which is work that would be silently undone by adding twenty pixels
+                // underneath it. Taking the space out of the bar keeps the column exactly where
+                // it was put.
+                float iconW = 0f, iconH = 0f;
+
+                if (_cfg.Vertical && _cfg.ShowGaugeIcon)
+                {
+                    iconW = w * _cfg.GaugeIconScale;
+                    iconH = iconW * _aspect * _pump.Aspect;
+
+                    var take = iconH + edge * 2f;
+
+                    // Never so far that the bar stops being a bar. A gauge with no gauge in it
+                    // is a worse trade than an icon that overlaps.
+                    if (take > h * 0.35f) take = h * 0.35f;
+
+                    h -= take;
+                }
+
                 Draw.Bar(x - edge, y - edge, w + edge * 2f, h + edge * 2f, Fade(Color.FromArgb(205, 0, 0, 0)));
                 Draw.Bar(x, y, w, h, Fade(Color.FromArgb(165, 28, 28, 32)));
 
@@ -307,18 +332,25 @@ namespace Fumes.UI
                         used += textH + inset;
                     }
 
-                    if (_cfg.ShowGaugeIcon)
+                    if (_cfg.ShowGaugeIcon && iconH > 0f)
                     {
-                        // Square ON SCREEN, which is not the same as square in the sprite canvas
-                        // -- see _aspect. Width is the bar's width, so it fits exactly.
-                        var iconW = w * _cfg.GaugeIconScale;
-                        var iconH = iconW * _aspect * _pump.Aspect;
+                        // Below the bar, on its own dark plate.
+                        //
+                        // The plate is not decoration. Inside the bar the pump was black on the
+                        // fuel and had a lit background guaranteed; out here it sits on whatever
+                        // the world happens to be, and a light icon on concrete at midday is
+                        // nothing at all. The same border the bar wears, wrapped round the icon,
+                        // ties the two into one instrument and settles the contrast in every
+                        // scene rather than most of them.
+                        var plateTop = y + h + edge * 2f;
+                        var cx = x + w / 2f;
 
-                        var iconLit = h * fraction >= used + iconH;
+                        Draw.Bar(cx - iconW / 2f - edge, plateTop - edge,
+                                 iconW + edge * 2f, iconH + edge * 2f,
+                                 Fade(Color.FromArgb(205, 0, 0, 0)));
 
-                        _pump.DrawSized(x + w / 2f, y + h - used - iconH / 2f, iconW, iconH,
-                                        Fade(iconLit ? Color.FromArgb(240, 10, 10, 12)
-                                                     : Color.FromArgb(215, 235, 235, 238)));
+                        _pump.DrawSized(cx, plateTop + iconH / 2f, iconW, iconH,
+                                        Fade(Color.FromArgb(230, 235, 235, 238)));
                     }
 
                     // FUEL, when it is asked for. It takes the same ink rule as the number
