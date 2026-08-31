@@ -582,35 +582,40 @@ namespace Fumes.UI
         /// <summary>
         /// A multiplier on how fast the fuel moves, from the vehicle's speed.
         ///
-        /// One at rest and climbing to GaugeMotionMax at GaugeMotionSpeed, then flat. Flat
-        /// because past a point more speed does not make a liquid slosh faster, it makes it
-        /// slosh harder -- and an animation that keeps accelerating with the speedometer stops
-        /// reading as fuel and starts reading as a loading spinner.
+        /// One everywhere below MotionFromKmh, climbing to GaugeMotionMax by MotionFullKmh,
+        /// then flat. Flat because past a point more speed does not make a liquid slosh faster,
+        /// it makes it slosh harder -- and an animation that keeps accelerating with the
+        /// speedometer stops reading as fuel and starts reading as a loading spinner.
         /// </summary>
         private float Motion(Vehicle v)
         {
-            if (v == null) return _cfg.GaugeMotionIdle;
+            if (v == null) return 1f;
 
             try
             {
-                var speed = Math.Abs(v.Speed);
-                if (_cfg.GaugeMotionSpeed <= 0.1f) return _cfg.GaugeMotionIdle;
+                // NOTHING HAPPENS BELOW THE THRESHOLD, and that is the point of having one.
+                //
+                // Scaling from a standstill meant the animation was different at every speed,
+                // which is a lot of change to spend on something nobody is looking at while
+                // they drive. Held at normal until it is worth remarking on, the speed-up
+                // becomes an event -- the fuel starts moving when you are actually moving.
+                var speed = Math.Abs(v.Speed) * 3.6f;   // to km/h, which is what the settings say
 
-                var t = speed / _cfg.GaugeMotionSpeed;
-                if (t < 0f) t = 0f;
+                var from = _cfg.GaugeMotionFromKmh;
+                var full = _cfg.GaugeMotionFullKmh;
+
+                if (speed <= from || full <= from) return 1f;
+
+                var t = (speed - from) / (full - from);
                 if (t > 1f) t = 1f;
 
-                // SQUARED, so it stays slow and then comes on. Straight from idle to full is a
-                // ramp you feel most where you spend least time -- the first few miles an hour
-                // out of a parking space would already be half the speed-up. Squaring keeps the
-                // crawl through town and puts the change where the speed actually is.
-                t *= t;
-
-                return _cfg.GaugeMotionIdle + (_cfg.GaugeMotionMax - _cfg.GaugeMotionIdle) * t;
+                // Linear across the band, and no easing. The band is eighty km/h wide rather
+                // than the whole speedometer, so there is no long tail for a curve to fix.
+                return 1f + (_cfg.GaugeMotionMax - 1f) * t;
             }
             catch
             {
-                return _cfg.GaugeMotionIdle;
+                return 1f;
             }
         }
 

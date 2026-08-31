@@ -723,25 +723,24 @@ namespace Fumes.Core
         /// How much faster the fuel moves at speed, and the speed it gets there at.
         ///
         /// Fuel in a tank does what the tank does: still at rest, thrown about at speed. The
-        /// multiplier is flat above GaugeMotionSpeed, because past a point more speed does not
-        /// make a liquid slosh faster, it makes it slosh harder -- and an animation that keeps
-        /// accelerating with the speedometer stops reading as fuel and starts reading as a
-        /// loading spinner.
+        /// It does nothing at all below MotionFromKmh and is flat above MotionFullKmh, because
+        /// past a point more speed does not make a liquid slosh faster, it makes it slosh harder
+        /// -- and an animation that keeps accelerating with the speedometer stops reading as
+        /// fuel and starts reading as a loading spinner.
         /// </summary>
-        /// <summary>
-        /// How fast the fuel moves when the car is not.
-        ///
-        /// WELL UNDER ONE, on purpose. A parked car's fuel is settling, not sloshing, and at
-        /// full speed the animation was reading as busy the whole time -- there was nothing for
-        /// getting up to speed to be a change FROM. A quarter speed is slow enough to look like
-        /// a liquid at rest and still moving enough not to look frozen.
-        /// </summary>
-        public float GaugeMotionIdle = 0.25f;
-
         public float GaugeMotionMax = 3.0f;
 
-        /// <summary>Metres a second at which the motion is at full. 30 is about 108 km/h.</summary>
-        public float GaugeMotionSpeed = 30f;
+        /// <summary>
+        /// The speeds, IN KM/H, between which the animation winds up. Below the first it runs
+        /// at its normal rate and nothing changes at all.
+        ///
+        /// In km/h rather than the metres a second used elsewhere in this file, because these
+        /// two are the ones somebody sets while thinking about a speedometer -- "faster than a
+        /// hundred and twenty" is a thought you have in the units on your dash.
+        /// </summary>
+        public float GaugeMotionFromKmh = 120f;
+        public float GaugeMotionFullKmh = 200f;
+
 
         /// <summary>
         /// How wide the pump is drawn, as a fraction of the bar's width.
@@ -942,9 +941,9 @@ namespace Fumes.Core
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
                 s.GaugeLiquid = ini.GetBool("HUD", "GaugeLiquid", s.GaugeLiquid);
-                s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.02f, 5f);
-                s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 0.02f, 10f);
-                s.GaugeMotionSpeed = ini.GetFloat("HUD", "MotionSpeed", s.GaugeMotionSpeed, 1f, 120f);
+                s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
+                s.GaugeMotionFromKmh = ini.GetFloat("HUD", "MotionFromKmh", s.GaugeMotionFromKmh, 0f, 400f);
+                s.GaugeMotionFullKmh = ini.GetFloat("HUD", "MotionFullKmh", s.GaugeMotionFullKmh, 0f, 500f);
                 s.GaugeIconScale = ini.GetFloat("HUD", "IconScale", s.GaugeIconScale, 0.2f, 2f);
                 s.HideFullReading = ini.GetBool("HUD", "HideFullReading", s.HideFullReading);
                 s.GaugeOpacity = ini.GetFloat("HUD", "Opacity", s.GaugeOpacity, 0.15f, 1f);
