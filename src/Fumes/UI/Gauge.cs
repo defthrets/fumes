@@ -445,8 +445,13 @@ namespace Fumes.UI
             var settle = Math.Min(fraction * 6f, 1f) * (1f - fraction * 0.55f);
             if (filling) settle = Math.Min(settle * 2.2f + 0.35f, 1.5f);
 
-            var a1 = 0.0013f * settle;
-            var a2 = 0.0008f * settle;
+            // Filling is exempt: the pump already lifts the waves on purpose, and scaling
+            // that back down by a parked car's sway would cancel the one moment the surface is
+            // meant to be disturbed while standing still.
+            var sway = filling ? 1f : _sway;
+
+            var a1 = 0.0013f * settle * sway;
+            var a2 = 0.0008f * settle * sway;
 
             var amplitude = a1 + a2;
 
@@ -643,6 +648,43 @@ namespace Fumes.UI
         /// <summary>Set once a frame by Tick. See Motion.</summary>
         private float _motion = 1f;
 
+        /// <summary>How tall the waves are, 0 to 1. See Sway.</summary>
+        private float _sway = 1f;
+
+        /// <summary>
+        /// How far the surface moves up and down, as a fraction of its full travel.
+        ///
+        /// SEPARATE FROM THE RATE, and on a different curve, because they are different things.
+        /// Fuel in a car creeping through town is not moving much OR quickly; fuel in one being
+        /// driven is doing both, and tying the two to one number would have made the surface
+        /// perfectly flat right up to 80 and then start heaving all at once.
+        ///
+        /// It reaches its full height at 120 -- the amplitude everything was authored at -- and
+        /// stops there. Past that only the RATE goes on climbing, which is the right way round:
+        /// a tank being thrown about harder does not slosh higher than the tank is deep, it
+        /// slops back and forth faster.
+        /// </summary>
+        private float Sway(Vehicle v)
+        {
+            if (v == null) return _cfg.GaugeSwayIdle;
+
+            try
+            {
+                var full = _cfg.GaugeSwayFullKmh;
+                if (full <= 1f) return 1f;
+
+                var t = Math.Abs(v.Speed) * 3.6f / full;
+                if (t < 0f) t = 0f;
+                if (t > 1f) t = 1f;
+
+                return _cfg.GaugeSwayIdle + (1f - _cfg.GaugeSwayIdle) * t;
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
         /// <summary>
         /// The clock the fuel moves on. ACCUMULATED, never computed from the wall clock.
         ///
@@ -679,6 +721,7 @@ namespace Fumes.UI
             if (dt <= 0f || dt > 0.5f) dt = dt > 0.5f ? 0.5f : 0f;
 
             var target = Motion(vehicle);
+            var swayTarget = Sway(vehicle);
 
             var seconds = target > _motion ? _cfg.GaugeMotionRiseSeconds
                                            : _cfg.GaugeMotionFallSeconds;
@@ -688,11 +731,18 @@ namespace Fumes.UI
                 // Exponential easing, so the approach is the same on any framerate rather than
                 // however many times a second this happens to be called.
                 var k = 1f - (float)Math.Exp(-dt / seconds);
+
                 _motion += (target - _motion) * k;
+
+                // The height of the waves eases on the SAME clock as their speed. Two
+                // independent lags would let the surface be flat and frantic, or tall and
+                // slow -- states that belong to no real liquid and look like a bug.
+                _sway += (swayTarget - _sway) * k;
             }
             else
             {
                 _motion = target;
+                _sway = swayTarget;
             }
 
             _clock += dt * _motion;

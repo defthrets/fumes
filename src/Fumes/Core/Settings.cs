@@ -753,6 +753,19 @@ namespace Fumes.Core
         /// not settle the moment you lift off -- and because dropping under 120 for a corner
         /// should not slam the animation back and out again.
         /// </summary>
+        /// <summary>
+        /// How far the surface moves up and down when the car is not moving, as a fraction of
+        /// its full travel -- and the speed at which it reaches that full travel.
+        ///
+        /// A separate curve from the rate, because they are separate things: fuel creeping
+        /// through town is not moving much OR quickly. Full height at 120 km/h, which is the
+        /// amplitude the waves were authored at, and no higher -- past that only the rate keeps
+        /// climbing, which is the right way round. A tank thrown about harder does not slosh
+        /// deeper than the tank is deep; it slops back and forth faster.
+        /// </summary>
+        public float GaugeSwayIdle = 0.35f;
+        public float GaugeSwayFullKmh = 120f;
+
         public float GaugeMotionRiseSeconds = 0.8f;
         public float GaugeMotionFallSeconds = 4.0f;
 
@@ -970,6 +983,8 @@ namespace Fumes.Core
                 s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
                 s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.05f, 1f);
                 s.GaugeMotionRestKmh = ini.GetFloat("HUD", "MotionRestKmh", s.GaugeMotionRestKmh, 0f, 100f);
+                s.GaugeSwayIdle = ini.GetFloat("HUD", "SwayIdle", s.GaugeSwayIdle, 0f, 1f);
+                s.GaugeSwayFullKmh = ini.GetFloat("HUD", "SwayFullKmh", s.GaugeSwayFullKmh, 1f, 400f);
                 s.GaugeMotionRiseSeconds = ini.GetFloat("HUD", "MotionRiseSeconds", s.GaugeMotionRiseSeconds, 0f, 30f);
                 s.GaugeMotionFallSeconds = ini.GetFloat("HUD", "MotionFallSeconds", s.GaugeMotionFallSeconds, 0f, 60f);
                 s.GaugeMotionFromKmh = ini.GetFloat("HUD", "MotionFromKmh", s.GaugeMotionFromKmh, 0f, 400f);
