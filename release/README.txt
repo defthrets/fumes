@@ -22,10 +22,45 @@ ScriptHookVDotNet: no asset mods, no OpenIV, nothing to install into an RPF.
 REQUIREMENTS
 ============
 
-  Script Hook V
-  ScriptHookVDotNet 3 (3.9 or later)
+  Script Hook V           (Alexander Blade, for your edition)
+  ScriptHookVDotNetEnhanced   v1.1.0.6 or later
+      https://www.gta5-mods.com/tools/script-hook-v-net-enhanced
 
 Nothing else. No NativeUI, no LemonUI, no iFruitAddon.
+
+READ THE SECOND LINE CAREFULLY, because the way it is usually written is what
+stops people installing this.
+
+Fumes needs ScriptHookVDotNet 3 with an ASSEMBLY VERSION of 3.9.0.0. That is not
+a number you can go and download: there is no release called "3.9". The build
+that has it is the ENHANCED FORK, whose releases are numbered v1.1.x - so people
+go looking for a 3.9, find nothing, install the newest thing that says 3, and the
+mod does not load. The dll inside says 3.9.0.0; the download that contains it
+says 1.1.0.6. Both numbers are correct and they are not the same number.
+
+The fork is also the one that runs on BOTH editions, Legacy and Enhanced, which
+is why Fumes is a single build for both.
+
+IF IT IS NOT LOADING
+====================
+
+There is no error and no crash, it simply is not there. Check, in this order:
+
+1. scripts\ScriptHookVDotNet.log, in your GTA V folder. If Fumes is not
+   mentioned at all, the dll was never loaded and this is a Script Hook problem,
+   not a Fumes one. If it IS mentioned with an exception, that is the answer.
+
+2. The version of ScriptHookVDotNet3.dll. Right-click it, Properties, Details.
+   It must read 3.9.0.0. Anything lower is the wrong build, whatever the
+   download was called.
+
+3. That ScriptHookVDotNet.asi, ScriptHookVDotNet2.dll and ScriptHookVDotNet3.dll
+   all came from the SAME download. Mixing an old asi with a new dll fails
+   quietly in exactly this way.
+
+4. scripts\Fumes\Fumes.log, or Documents\Fumes\Fumes.log if your game folder
+   is not writable. If that file exists at all, Fumes is running and the problem
+   is something else - say so, and paste it.
 
 
 INSTALLING

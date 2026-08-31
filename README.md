@@ -62,7 +62,15 @@ ScriptHookVDotNet, no asset mods, no OpenIV, nothing to install into an RPF.
 ## Install
 
 1. You need [ScriptHookV](http://www.dev-c.com/gtav/scripthookv/) and
-   ScriptHookVDotNet 3.
+   [ScriptHookVDotNetEnhanced](https://www.gta5-mods.com/tools/script-hook-v-net-enhanced)
+   v1.1.0.6 or later.
+
+   **The version numbers do not match, and that is what stops most installs.**
+   Fumes needs `ScriptHookVDotNet3.dll` with an assembly version of **3.9.0.0** —
+   which is not a release you can download. There is no "3.9". The build that
+   contains it is the Enhanced fork, released as **v1.1.x**. People search for a
+   3.9, find nothing, install the newest thing labelled 3, and the mod silently
+   does not load. Check the dll itself: right-click, Properties, Details.
 2. Drop the contents of the zip over your GTA V folder. That puts
    `Fumes.dll`, `Fumes.ini` and `scripts\Fumes\stations.json` where they belong.
 
