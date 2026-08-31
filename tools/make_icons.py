@@ -189,13 +189,15 @@ def _save_exact(img, name):
 
 
 def glyphs():
-    for n in range(10):
-        _save_exact(_rotated(str(n), GLYPH, GLYPH, 44), "g%d.png" % n)
+    """
+    The turned FUEL label.
 
-    _save_exact(_rotated("%", GLYPH, GLYPH, 38), "gpct.png")
-
-    # The word as one picture. Kerning inside a word is not worth four more files,
-    # and it only ever says one thing.
+    THE DIGITS USED TO BE HERE TOO -- g0 to g9 and gpct, one PNG per character, because GTA
+    cannot rotate text and a number had to run up the side of a bar too narrow for upright
+    letters. The gauge does not do that any more: the reading is plain DRAW_TEXT and the bar
+    is wide enough for it. Eleven files nothing loaded went on shipping in every download for
+    several versions after the code that read them was deleted.
+    """
     _save_exact(_rotated("FUEL", GLYPH * 4, GLYPH, 40), "label_fuel.png")
 
 

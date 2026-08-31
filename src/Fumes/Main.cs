@@ -339,7 +339,8 @@ namespace Fumes
                     if (tank == null || !tank.Known) continue;
 
                     var before = tank.Litres;
-                    tank.Burn(_burn.Burn(v, tank, slice));
+
+                    tank.Burn(_burn.Burn(v, tank, slice + Missed(tank, v)));
 
                     if (Math.Abs(before - tank.Litres) > 0.02f) _tanks.Touch(v, tank, false);
 
@@ -357,6 +358,53 @@ namespace Fumes
         }
 
         private float _sinceIdlers;
+
+        /// <summary>When each known running car was last accounted for, by tank key.</summary>
+        private readonly System.Collections.Generic.Dictionary<string, int> _lastSeen =
+            new System.Collections.Generic.Dictionary<string, int>();
+
+        /// <summary>
+        /// The seconds of idling that happened while nobody was looking.
+        ///
+        /// A car that unloads stops burning because there is nothing left to burn. Drive off,
+        /// come back, and it is running on the fuel it had when you left -- which is the one
+        /// place "cars left running keep drinking" quietly stopped being true, and the place
+        /// somebody would most expect it to hold.
+        ///
+        /// The gap between sightings is the answer, and it needs no clock of its own. A car
+        /// that stayed loaded is seen every second, so its gap IS the slice and this returns
+        /// nothing. A car that was away comes back with a real gap, and only the part beyond
+        /// the ordinary slice is owed.
+        ///
+        /// CAPPED, and in memory only. Uncapped it turns a car you forgot about into an empty
+        /// one you cannot explain; written down it would present a bill for however long the
+        /// game was closed.
+        /// </summary>
+        private float Missed(Fuel.Tank tank, Vehicle v)
+        {
+            if (tank.Key == null || _cfg.AbandonedIdleCatchUpSeconds <= 0f) return 0f;
+
+            var now = Game.GameTime;
+
+            int last;
+            var known = _lastSeen.TryGetValue(tank.Key, out last);
+
+            _lastSeen[tank.Key] = now;
+
+            if (!known) return 0f;
+
+            var gap = (now - last) / 1000f;
+
+            // Anything under a few seconds is just the sweep's own rhythm, already charged for.
+            if (gap <= 3f) return 0f;
+
+            if (gap > _cfg.AbandonedIdleCatchUpSeconds) gap = _cfg.AbandonedIdleCatchUpSeconds;
+
+            Log.Debug(v.LocalizedName + " was away " + gap.ToString("0") +
+                      "s with its engine running; charging for it.");
+
+            return gap;
+        }
 
         private void Traffic(float dt)
         {

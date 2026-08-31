@@ -159,22 +159,39 @@ namespace Fumes.Core
         /// </summary>
         public bool AbandonedIdle = true;
 
+        /// <summary>
+        /// The longest stretch of unwatched idling that gets charged for, in seconds of real
+        /// time, when a car left running comes back into view.
+        ///
+        /// A car that unloads stops burning, because there is nothing left to burn -- so drive
+        /// off and come back and it is exactly as you left it, running, on the fuel it had ten
+        /// minutes ago. Catching up on the gap fixes that; capping the catch-up stops it being
+        /// a nasty surprise. Ten minutes of real time is five in-game hours, which is a big
+        /// enough bite to be felt and small enough not to turn a car you forgot about into an
+        /// empty one you cannot explain.
+        ///
+        /// In-session only. Nothing is written down about it, so quitting and coming back
+        /// tomorrow does not present a bill for the night.
+        /// </summary>
+        public float AbandonedIdleCatchUpSeconds = 600f;
+
         /// <summary>Fuel a vehicle is found with, as a fraction of its tank. Player-owned cars start full.</summary>
         public float FoundFuelMin = 0.18f;
         public float FoundFuelMax = 0.85f;
 
         /// <summary>
-        /// Whether a script-owned vehicle starts with a full tank.
+        /// A full tank for vehicles the game hands you DURING A MISSION, and only those.
         ///
-        /// OFF, and it used to be the unconditional rule. "Script-owned" means a mission entity
-        /// -- which covers story vehicles, and equally covers everything a trainer spawns. Since
-        /// spawning is how anyone gets at the online and DLC cars, every one of them arrived
-        /// full, every time, and the mod appeared to have no data for them when it has always
-        /// read their real tank size out of their handling.
+        /// This started as "anything script-owned is full", which made every DLC and online car
+        /// arrive at 100% -- script-owned covers everything a trainer spawns. Turning it off
+        /// fixed that and created a worse problem: a story mission that gives you a car for a
+        /// scripted drive would hand it over at a random 18 to 85 per cent, and a mission
+        /// written expecting a full tank can fail through nothing the player did.
         ///
-        /// On, story missions hand you a full tank. Off, a car is a car.
+        /// The mission flag separates them, and nothing else does: both kinds are persistent,
+        /// only one appears while a mission is running.
         /// </summary>
-        public bool SpawnedTanksFull = false;
+        public bool MissionTanksFull = true;
 
         /// <summary>Below this fraction of the tank, the low-fuel warning starts.</summary>
         public float ReserveFraction = 0.12f;
@@ -261,6 +278,18 @@ namespace Fumes.Core
         /// resort rather than a way to skip the drive to a station.
         /// </summary>
         public float JerryCanLitresPerSecond = 0.8f;
+
+        /// <summary>Drawing fuel out of somebody else's tank and into the can.</summary>
+        public bool Siphon = true;
+
+        /// <summary>
+        /// How fast it siphons, in litres a second.
+        ///
+        /// Slower than pouring, which is slower than the pump. A hose and a mouthful of petrol
+        /// is the least efficient way to move fuel there is, and it should feel like the thing
+        /// you do because there is no other option.
+        /// </summary>
+        public float SiphonLitresPerSecond = 0.5f;
         public float PricePerLitre = 1.55f;
 
         /// <summary>How far a station price may wander from the base, either way. 0 disables it.</summary>
@@ -732,9 +761,10 @@ namespace Fumes.Core
                 s.AffectAircraft = ini.GetBool("Fuel", "AffectAircraft", s.AffectAircraft);
                 s.AffectTraffic = ini.GetBool("Fuel", "AffectTraffic", s.AffectTraffic);
                 s.AbandonedIdle = ini.GetBool("Fuel", "AbandonedIdle", s.AbandonedIdle);
+                s.AbandonedIdleCatchUpSeconds = ini.GetFloat("Fuel", "AbandonedIdleCatchUpSeconds", s.AbandonedIdleCatchUpSeconds, 0f, 3600f);
                 s.FoundFuelMin = ini.GetFloat("Fuel", "FoundFuelMin", s.FoundFuelMin, 0f, 1f);
                 s.FoundFuelMax = ini.GetFloat("Fuel", "FoundFuelMax", s.FoundFuelMax, 0f, 1f);
-                s.SpawnedTanksFull = ini.GetBool("Fuel", "SpawnedTanksFull", s.SpawnedTanksFull);
+                s.MissionTanksFull = ini.GetBool("Fuel", "MissionTanksFull", s.MissionTanksFull);
                 s.ReserveFraction = ini.GetFloat("Fuel", "ReserveFraction", s.ReserveFraction, 0.01f, 0.6f);
                 s.TankLeaks = ini.GetBool("Fuel", "TankLeaks", s.TankLeaks);
                 s.LowFuelChime = ini.GetBool("Fuel", "LowFuelChime", s.LowFuelChime);
@@ -763,6 +793,8 @@ namespace Fumes.Core
                 s.JerryCan = ini.GetBool("Station", "JerryCan", s.JerryCan);
                 s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
+                s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
+                s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
                 s.ShowBlips = ini.GetBool("Station", "ShowBlips", s.ShowBlips);

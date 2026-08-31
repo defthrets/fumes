@@ -33,25 +33,6 @@ namespace Fumes.UI
 
         public bool LabelMissing => _label.Missing;
 
-        /// <summary>
-        /// A number, reading bottom to top.
-        ///
-        /// Index 0 goes at the BOTTOM, because the glyphs were turned anti-clockwise and that
-        /// is the direction the eye then travels. Written the other way round, "62" reads "26".
-        /// </summary>
-        public void Number(string text, float centreX, float bottomY, float width, float pitch, Color tint)
-        {
-            if (string.IsNullOrEmpty(text)) return;
-
-            for (var i = 0; i < text.Length; i++)
-            {
-                var glyph = For(text[i]);
-                if (glyph == null) continue;
-
-                glyph.DrawSized(centreX, bottomY - pitch * (i + 0.5f), width, pitch, tint);
-            }
-        }
-
         private Icon For(char c)
         {
             if (_chars.TryGetValue(c, out var found)) return found;

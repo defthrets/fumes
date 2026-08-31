@@ -22,7 +22,13 @@ namespace Fumes.Station
         Filling,
 
         /// <summary>Emptying a jerry can into a tank, nowhere near a pump.</summary>
-        Pouring
+        Pouring,
+
+        /// <summary>Filling the can from the pump, with the nozzle in hand.</summary>
+        FillingCan,
+
+        /// <summary>Drawing fuel out of somebody's tank into the can.</summary>
+        Siphoning
     }
 
     /// <summary>
@@ -163,6 +169,8 @@ namespace Fumes.Station
                 case Stage.Carrying: Carrying(me); break;
                 case Stage.Filling: Filling(me, dt); break;
                 case Stage.Pouring: Pouring(me, dt); break;
+                case Stage.FillingCan: FillingCan(me, dt); break;
+                case Stage.Siphoning: Siphoning(me, dt); break;
             }
 
             // AFTER the switch and driven by the stage rather than by calls inside it.
@@ -290,6 +298,8 @@ namespace Fumes.Station
             Prompt(Control.Context, "Pour the can into the " + vehicle.LocalizedName +
                                     "   " + litres.ToString("0.0", CultureInfo.InvariantCulture) + " L");
 
+            OfferSiphon(me, vehicle, tank, litres);
+
             if (!Pressed()) return true;
 
             _target = vehicle;
@@ -303,6 +313,247 @@ namespace Fumes.Station
                      tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L).");
 
             return true;
+        }
+
+        /// <summary>
+        /// The petrol can in his inventory, held or not, or null if he has none.
+        ///
+        /// INDEXED RATHER THAN TAKEN FROM Current, and that is what makes filling one at a pump
+        /// possible at all: with the nozzle in his hand the current weapon is the invisible one
+        /// holding the pose, so anything that asked "is he holding a can" would answer no at
+        /// exactly the moment he is standing at a pump wanting to fill it.
+        /// </summary>
+        private static Weapon Can(Ped me)
+        {
+            try
+            {
+                var w = me.Weapons[WeaponHash.PetrolCan];
+                return w != null && w.IsPresent ? w : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Litres in the can he owns, held or not.</summary>
+        private float CanFuel(Ped me)
+        {
+            var can = Can(me);
+            if (can == null) return 0f;
+
+            try
+            {
+                var max = can.MaxAmmo;
+                return max <= 0 ? 0f : _cfg.JerryCanLitres * can.Ammo / max;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        /// <summary>Writes litres back to the can he owns, held or not.</summary>
+        private void SetCanFuel(Ped me, float litres)
+        {
+            var can = Can(me);
+            if (can == null) return;
+
+            try
+            {
+                var max = can.MaxAmmo;
+                if (max <= 0) return;
+
+                var ammo = (int)(litres / _cfg.JerryCanLitres * max);
+
+                if (ammo < 0) ammo = 0;
+                if (ammo > max) ammo = max;
+
+                can.Ammo = ammo;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-ammo", "Could not change what is in the can: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Taking fuel OUT of a tank and into the can, on the secondary button.
+        ///
+        /// On its own button rather than sharing one, because at a car with a part-full can
+        /// both directions are sensible at once -- top the car up, or help yourself -- and
+        /// there is no reading of "nearer" or "longer press" that guesses which you meant.
+        /// Two intentions, two buttons.
+        /// </summary>
+        private void OfferSiphon(Ped me, Vehicle vehicle, Tank tank, float inCan)
+        {
+            if (!_cfg.Siphon) return;
+            if (inCan >= _cfg.JerryCanLitres - 0.05f) return;   // can already full
+            if (tank.Litres <= 0.05f) return;                   // nothing to take
+
+            Prompt(Control.ContextSecondary, "Siphon from the " + vehicle.LocalizedName);
+
+            if (!SecondaryPressed()) return;
+
+            _target = vehicle;
+            _targetTank = tank;
+            _canLitres = inCan;
+            _stage = Stage.Siphoning;
+
+            Log.Info("Siphoning from " + vehicle.LocalizedName + " (" +
+                     tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + " L) into a can " +
+                     "holding " + inCan.ToString("0.0", CultureInfo.InvariantCulture) + " L.");
+        }
+
+        // ==================================================================
+        // Filling the can at the pump, and siphoning it out of a tank
+        // ==================================================================
+
+        /// <summary>
+        /// Buying fuel into the can, with the nozzle in hand and the pump running.
+        ///
+        /// The same hose, the same price, the same meter -- only the thing on the other end of
+        /// it is a can rather than a car. Without this the can is a consumable you can empty
+        /// and never refill, which makes it a thing you use once and then forget you own.
+        /// </summary>
+        private void FillingCan(Ped me, float dt)
+        {
+            if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
+
+            var anchor = Anchor();
+            _hose.Update(anchor, _nozzle.HoseEnd());
+
+            if (_hazard.Update(_pump.Position, true)) { Abandon("the pump went up"); return; }
+
+            LockHands();
+            HoldStill(me);
+            FillPose(me);
+
+            if (me.Position.DistanceTo(_pump.Position) > _cfg.PumpReach + 1.2f)
+            {
+                StopCan(me, "you walked away from the pump");
+                return;
+            }
+
+            var room = _cfg.JerryCanLitres - _canLitres;
+            if (room <= 0.02f) { StopCan(me, "the can is full"); return; }
+
+            var wanted = _cfg.LitresPerSecond * dt;
+            if (wanted > room) wanted = room;
+
+            if (_cfg.ChargeMoney && _price > 0f)
+            {
+                var unpaid = _owed - _paid;
+                var affordable = (Money() - unpaid) / _price;
+
+                if (affordable <= 0.0005f) { StopCan(me, "you are out of money"); return; }
+                if (wanted > affordable) wanted = affordable;
+            }
+
+            if (wanted > 0f)
+            {
+                _canLitres += wanted;
+                _dispensed += wanted;
+                _owed += wanted * _price;
+
+                SetCanFuel(me, _canLitres);
+                Settle();
+            }
+
+            // THE GLASS SHOWS THE CAN. Passing null draws an empty one, which Meter tolerates
+            // but which reads as a car sitting at zero while the numbers beside it climb -- the
+            // one part of that display whose whole job is to show the level, showing the wrong
+            // thing's level. A stand-in tank costs nothing and makes the glass mean what it
+            // looks like it means.
+            _canGlass.Capacity = _cfg.JerryCanLitres;
+            _canGlass.Litres = _canLitres;
+
+            _meter.Draw(_stationBrand, _stationPlace, _dispensed, _price, _owed,
+                        !_cfg.ChargeMoney, _canGlass);
+
+            Prompt(Control.Context, "Stop   can " +
+                                    _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
+                                    _cfg.JerryCanLitres.ToString("0.#", CultureInfo.InvariantCulture) + " L");
+
+            if (Pressed()) StopCan(me, null);
+        }
+
+        private void StopCan(Ped me, string why)
+        {
+            StopFillPose();
+
+            Log.Info("Stopped filling the can" + (why == null ? "" : " - " + why) + ". " +
+                     _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L in it, $" +
+                     _owed.ToString("0.00", CultureInfo.InvariantCulture) + " owed.");
+
+            // Back to carrying, not to idle: the nozzle is still in his hand and the hose is
+            // still run. Ending at Idle would leave both hanging in mid-air.
+            _stage = Stage.Carrying;
+        }
+
+        /// <summary>
+        /// Drawing fuel out of a tank into the can. Slow, and free, because it is not bought.
+        /// </summary>
+        private void Siphoning(Ped me, float dt)
+        {
+            if (_target == null || !_target.Exists() || _targetTank == null)
+            {
+                StopSiphon(me, "the vehicle went away");
+                return;
+            }
+
+            if (Can(me) == null) { StopSiphon(me, "you have no can"); return; }
+
+            var filler = Filler.On(_target, out var exact);
+
+            if (!Filler.WithinReach(filler, me.Position, _cfg.CapReach + 0.6f, exact))
+            {
+                StopSiphon(me, "you moved away");
+                return;
+            }
+
+            HoldStill(me);
+            FillPose(me);
+            FaceThe(me, filler);
+
+            var room = _cfg.JerryCanLitres - _canLitres;
+            if (room <= 0.02f) { StopSiphon(me, "the can is full"); return; }
+
+            if (_targetTank.Litres <= 0.02f) { StopSiphon(me, "the tank is dry"); return; }
+
+            var wanted = _cfg.SiphonLitresPerSecond * dt;
+            if (wanted > room) wanted = room;
+            if (wanted > _targetTank.Litres) wanted = _targetTank.Litres;
+
+            if (wanted > 0f)
+            {
+                _targetTank.Burn(wanted);
+                _canLitres += wanted;
+
+                SetCanFuel(me, _canLitres);
+                _tanks.Touch(_target, _targetTank, false);
+            }
+
+            _gauge.Update(_target, _targetTank, true);
+
+            Prompt(Control.Context, "Stop   can " +
+                                    _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
+                                    _cfg.JerryCanLitres.ToString("0.#", CultureInfo.InvariantCulture) + " L");
+
+            if (Pressed()) StopSiphon(me, null);
+        }
+
+        private void StopSiphon(Ped me, string why)
+        {
+            StopFillPose();
+
+            Log.Info("Stopped siphoning" + (why == null ? "" : " - " + why) + ". " +
+                     _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L in the can.");
+
+            _target = null;
+            _targetTank = null;
+            _canLitres = 0f;
+            _stage = Stage.Idle;
         }
 
         /// <summary>
@@ -440,6 +691,41 @@ namespace Fumes.Station
 
         /// <summary>Litres left in the can being poured. See CanLitres.</summary>
         private float _canLitres;
+
+        /// <summary>A stand-in tank so the pump display can show the CAN filling.</summary>
+        private readonly Tank _canGlass = new Tank { Capacity = 20f, Litres = 0f };
+
+        /// <summary>
+        /// The secondary prompt at the pump: fill the can you are carrying.
+        ///
+        /// Offered where hanging up is offered, because that is where the pump is -- and on the
+        /// secondary button, because the primary one there already means "put it back" and
+        /// stacking a third meaning on it would bring back exactly the strobing this took two
+        /// attempts to get rid of.
+        /// </summary>
+        private void OfferCanFill(Ped me)
+        {
+            if (!_cfg.JerryCan) return;
+
+            var can = Can(me);
+            if (can == null) return;
+
+            var litres = CanFuel(me);
+            if (litres >= _cfg.JerryCanLitres - 0.05f) return;
+
+            Prompt(Control.ContextSecondary, "Fill the can   " +
+                                             litres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
+                                             _cfg.JerryCanLitres.ToString("0.#", CultureInfo.InvariantCulture) + " L");
+
+            if (!SecondaryPressed()) return;
+
+            _canLitres = litres;
+            _stage = Stage.FillingCan;
+
+            Log.Info("Filling the can at " + _stationName + " ($" +
+                     _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L), " +
+                     litres.ToString("0.0", CultureInfo.InvariantCulture) + " L in it.");
+        }
 
         private void Take(Ped me, Prop pump)
         {
@@ -653,6 +939,9 @@ namespace Fumes.Station
             if (choice == 2)
             {
                 Prompt(Control.Context, "Hang the nozzle up");
+
+                OfferCanFill(me);
+
                 if (Pressed()) HangUp();
                 return;
             }

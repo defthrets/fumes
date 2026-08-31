@@ -267,9 +267,9 @@ namespace Fumes.UI
                                   "Off by default: a helicopter running dry is a long fall."));
             fuel.Items.Add(Toggle("Traffic", () => _cfg.AffectTraffic, v => _cfg.AffectTraffic = v,
                                   "Fuel", "AffectTraffic", "Everyone else runs out too."));
-            fuel.Items.Add(Toggle("Spawned cars start full", () => _cfg.SpawnedTanksFull,
-                                  v => _cfg.SpawnedTanksFull = v, "Fuel", "SpawnedTanksFull",
-                                  "Off, a car you spawn is fuelled like one you found."));
+            fuel.Items.Add(Toggle("Mission cars start full", () => _cfg.MissionTanksFull,
+                                  v => _cfg.MissionTanksFull = v, "Fuel", "MissionTanksFull",
+                                  "Only cars handed to you mid-mission. Not trainer spawns."));
             fuel.Items.Add(Toggle("Cars left running", () => _cfg.AbandonedIdle,
                                   v => _cfg.AbandonedIdle = v, "Fuel", "AbandonedIdle",
                                   "One you drove off and left idling keeps drinking."));

@@ -208,23 +208,27 @@ namespace Fumes.Fuel
         /// </summary>
         private float FoundFraction(Vehicle v)
         {
-            // A PERSISTENT VEHICLE IS NOT A FULL ONE, and treating it as one is why every DLC
-            // car came out at 100%.
+            // A FULL TANK FOR MISSION VEHICLES, AND ONLY THOSE.
             //
-            // IsPersistent means the entity is script-owned -- a mission entity. It was read
-            // here as "the game gave this to the player deliberately, so fill it", and for a
-            // story mission that is defensible. But it is also true of everything a trainer
-            // spawns, which is how anybody actually gets at the online cars: spawn a Zentorno,
-            // it is persistent, it is full, and it is full again the next time. The mod looked
-            // like it had no data for DLC vehicles when it has always had their real tank sizes
-            // straight out of their handling.
+            // This was "if (v.IsPersistent) return 1f", which meant every DLC car arrived at
+            // 100% -- IsPersistent is true of anything script-owned, and that covers everything
+            // a trainer spawns, which is how anyone gets at the online cars at all.
             //
-            // So the special case is a setting now, and it is off. Spawned cars are found cars.
-            if (_cfg.SpawnedTanksFull)
+            // Then it was off entirely, and that swung too far the other way. A story mission
+            // that hands you a car for a scripted drive now hands you one at a random 18 to 85
+            // per cent, and a mission written on the assumption of a full tank can fail through
+            // nothing the player did. Trading a cosmetic annoyance for a soft-lock is a bad
+            // trade even when the annoyance is the one being complained about.
+            //
+            // GET_MISSION_FLAG separates them, and it is the only thing that does: both kinds
+            // of vehicle are persistent, but only one of them appears while a mission is
+            // actually running. A trainer spawn in free roam is a found car; a car the game
+            // gives you mid-mission is not.
+            if (_cfg.MissionTanksFull)
             {
                 try
                 {
-                    if (v.IsPersistent) return 1f;
+                    if (v.IsPersistent && Game.IsMissionActive) return 1f;
                 }
                 catch
                 {
