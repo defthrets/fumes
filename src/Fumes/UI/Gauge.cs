@@ -601,6 +601,23 @@ namespace Fumes.UI
                 // becomes an event -- the fuel starts moving when you are actually moving.
                 var speed = Math.Abs(v.Speed) * 3.6f;   // to km/h, which is what the settings say
 
+                // STANDING STILL IS ITS OWN STATE, and it gets a slower clock. Fuel in a parked
+                // car is settling rather than being pushed about, and the difference is worth
+                // a glance -- but only a little, because the last attempt at this ran the idle
+                // at quarter speed and the bar looked broken rather than calm.
+                //
+                // Eased out over the first few km/h rather than snapped at the first
+                // millimetre of movement: a car rolling at walking pace is not parked, and a
+                // gauge that changes gear the instant the handbrake comes off draws the eye to
+                // the wrong thing.
+                var rest = _cfg.GaugeMotionRestKmh;
+
+                if (speed < rest && rest > 0.1f)
+                {
+                    var idle = _cfg.GaugeMotionIdle;
+                    return idle + (1f - idle) * (speed / rest);
+                }
+
                 var from = _cfg.GaugeMotionFromKmh;
                 var full = _cfg.GaugeMotionFullKmh;
 

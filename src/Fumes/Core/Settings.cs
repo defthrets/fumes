@@ -731,6 +731,21 @@ namespace Fumes.Core
         public float GaugeMotionMax = 3.0f;
 
         /// <summary>
+        /// How fast the fuel moves at a dead stop, and the speed by which it is back to normal.
+        ///
+        /// A LITTLE slower, not slow motion. Fuel in a parked car is settling rather than being
+        /// thrown about, and that is worth a glance -- but an earlier attempt ran the idle at a
+        /// quarter speed and the bar read as broken rather than as calm. Seven tenths is the
+        /// difference you notice without wondering whether something has stopped working.
+        ///
+        /// Eased out over the first few km/h rather than snapped off the moment the car moves:
+        /// something rolling at walking pace is not parked, and a gauge that changes gear as
+        /// the handbrake comes off draws the eye at exactly the wrong moment.
+        /// </summary>
+        public float GaugeMotionIdle = 0.70f;
+        public float GaugeMotionRestKmh = 12f;
+
+        /// <summary>
         /// The speeds, IN KM/H, between which the animation winds up. Below the first it runs
         /// at its normal rate and nothing changes at all.
         ///
@@ -942,6 +957,8 @@ namespace Fumes.Core
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
                 s.GaugeLiquid = ini.GetBool("HUD", "GaugeLiquid", s.GaugeLiquid);
                 s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
+                s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.05f, 1f);
+                s.GaugeMotionRestKmh = ini.GetFloat("HUD", "MotionRestKmh", s.GaugeMotionRestKmh, 0f, 100f);
                 s.GaugeMotionFromKmh = ini.GetFloat("HUD", "MotionFromKmh", s.GaugeMotionFromKmh, 0f, 400f);
                 s.GaugeMotionFullKmh = ini.GetFloat("HUD", "MotionFullKmh", s.GaugeMotionFullKmh, 0f, 500f);
                 s.GaugeIconScale = ini.GetFloat("HUD", "IconScale", s.GaugeIconScale, 0.2f, 2f);
