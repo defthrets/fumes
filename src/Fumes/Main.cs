@@ -169,11 +169,33 @@ namespace Fumes
             try
             {
                 GTA.UI.Notification.PostTicker(
-                    "~b~" + Build.Name + "~s~ " + Build.Version + " by " + Build.By, false, false);
+                    "~b~" + Build.Name + "~s~ " + Build.Version + " - by " + Build.By +
+                    " loaded.  Press ~b~" + MenuKeyName() + "~s~ for settings.", false, false);
             }
             catch
             {
                 // Not being able to say hello is not a reason to stop.
+            }
+        }
+
+        /// <summary>
+        /// The menu's key, written the way it is actually bound.
+        ///
+        /// BUILT FROM THE SETTINGS, not written into the greeting as "Shift+F". Both halves are
+        /// configurable, so a hardcoded string is a line that tells a player who rebound it to
+        /// press the wrong key -- and the only thing worse than no hotkey in the greeting is a
+        /// wrong one, because they will believe it and conclude the menu is broken.
+        /// </summary>
+        private string MenuKeyName()
+        {
+            var key = _cfg.MenuKey.ToString();
+
+            switch (_cfg.MenuModifier)
+            {
+                case MenuModifier.Shift: return "Shift+" + key;
+                case MenuModifier.Control: return "Ctrl+" + key;
+                case MenuModifier.Alt: return "Alt+" + key;
+                default: return key;
             }
         }
 
