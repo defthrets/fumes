@@ -38,8 +38,6 @@ namespace Fumes
         private readonly Stations _stations;
         private readonly Gauge _gauge;
         private readonly Menu _menu;
-        private readonly Ignition _ignition;
-        private readonly Blinkers _blinkers;
         private readonly Meter _meter;
         private readonly Buttons _buttons;
         private readonly Refuel _refuel;
@@ -80,8 +78,6 @@ namespace Fumes
             _stations = new Stations(_cfg);
             _gauge = new Gauge(_cfg);
             _menu = new Menu(_cfg, _gauge);
-            _ignition = new Ignition(_cfg, _tanks);
-            _blinkers = new Blinkers(_cfg);
             _meter = new Meter(_cfg, _gauge);
             _buttons = new Buttons();
             _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter, _buttons);
@@ -123,14 +119,6 @@ namespace Fumes
 
                 _refuel.InputBlocked = _menu.IsOpen;
 
-                // Not while the menu has the keyboard, or Backspace and the arrows would be
-                // steering a car nobody is looking at.
-                if (!_menu.IsOpen)
-                {
-                    _ignition.Update(me);
-                    Indicate(me);
-                }
-
                 _stations.ShowBlips();
                 _tanks.Update(dt);
 
@@ -163,32 +151,6 @@ namespace Fumes
             catch (Exception ex)
             {
                 Fail(ex);
-            }
-        }
-
-        /// <summary>
-        /// The indicators, for the car he is actually driving.
-        ///
-        /// The driving test is done here rather than inside Blinkers so there is one answer to
-        /// "is he driving this" in the mod rather than two that can disagree -- and it is by
-        /// HANDLE, because every one of these properties hands back a fresh wrapper and
-        /// reference equality between two of them is never true.
-        /// </summary>
-        private void Indicate(Ped me)
-        {
-            try
-            {
-                var car = me.CurrentVehicle;
-
-                var driving = car != null && car.Exists() && !car.IsDead &&
-                              car.Driver != null && car.Driver.Exists() &&
-                              car.Driver.Handle == me.Handle;
-
-                _blinkers.Update(me, car, driving);
-            }
-            catch (Exception ex)
-            {
-                Log.Once("indicate", "Could not work the indicators: " + ex.Message);
             }
         }
 
