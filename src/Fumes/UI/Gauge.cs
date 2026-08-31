@@ -210,7 +210,8 @@ namespace Fumes.UI
                     iconW = w * _cfg.GaugeIconScale;
                     iconH = iconW * _aspect * _pump.Aspect;
 
-                    var take = iconH + edge * 2f;
+                    // Plate, plus its own border, plus a gap between it and the bar's.
+                    var take = iconH + edge * 4f;
 
                     // Never so far that the bar stops being a bar. A gauge with no gauge in it
                     // is a worse trade than an icon that overlaps.
@@ -342,11 +343,16 @@ namespace Fumes.UI
                         // nothing at all. The same border the bar wears, wrapped round the icon,
                         // ties the two into one instrument and settles the contrast in every
                         // scene rather than most of them.
-                        var plateTop = y + h + edge * 2f;
+                        // THE PLATE IS THE WIDTH OF THE BAR'S OUTLINE, not of the icon.
+                        // Sized to the icon it came out narrower than the thing above it, and
+                        // two dark shapes in a column that ALMOST line up read as a mistake in
+                        // a way that either lining up or plainly differing does not. Same left
+                        // edge, same right edge, same border thickness.
+                        var plateTop = y + h + edge * 3f;
                         var cx = x + w / 2f;
 
-                        Draw.Bar(cx - iconW / 2f - edge, plateTop - edge,
-                                 iconW + edge * 2f, iconH + edge * 2f,
+                        Draw.Bar(x - edge, plateTop - edge,
+                                 w + edge * 2f, iconH + edge * 2f,
                                  Fade(Color.FromArgb(205, 0, 0, 0)));
 
                         _pump.DrawSized(cx, plateTop + iconH / 2f, iconW, iconH,
