@@ -37,6 +37,7 @@ namespace Fumes.Fuel
             public float Litres;
             public float Capacity;
             public long Seen;      // Unix seconds, so the file is readable and sortable
+            public int Grade;      // 0 regular, 1 plus, 2 premium
         }
 
         private readonly Dictionary<int, Live> _live = new Dictionary<int, Live>();
@@ -184,6 +185,7 @@ namespace Fumes.Fuel
                 // out from under them, so they are clamped rather than rescaled.
                 tank.Litres = Tank.Clamp(remembered.Litres, 0f, capacity);
                 tank.Known = true;
+                tank.Grade = (FuelGrade)remembered.Grade;
 
                 if (Math.Abs(remembered.Capacity - capacity) > 0.5f)
                 {
@@ -353,7 +355,12 @@ namespace Fumes.Fuel
                     {
                         Litres = node["l"].AsFloat(0f),
                         Capacity = node["c"].AsFloat(65f),
-                        Seen = node["t"].AsLong(Now())
+                        Seen = node["t"].AsLong(Now()),
+
+                        // Absent in files written before grades existed, which is every file
+                        // out there. Regular is both the default and the right answer for fuel
+                        // bought when there was only one kind.
+                        Grade = node["g"].AsInt(0)
                     };
                 }
 
@@ -388,7 +395,8 @@ namespace Fumes.Fuel
                     tanks.Set(pair.Key, Json.Object()
                         .Set("l", Math.Round(pair.Value.Litres, 2))
                         .Set("c", Math.Round(pair.Value.Capacity, 1))
-                        .Set("t", pair.Value.Seen));
+                        .Set("t", pair.Value.Seen)
+                        .Set("g", pair.Value.Grade));
                 }
 
                 var root = Json.Object()

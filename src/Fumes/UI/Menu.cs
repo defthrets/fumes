@@ -287,6 +287,9 @@ namespace Fumes.UI
                                      v => _cfg.PricePerLitre = v, 0.05f, 0f, 20f, "0.00",
                                      "Station", "PricePerLitre",
                                      "Before each station's own variance."));
+            station.Items.Add(Choice("Grade", () => _cfg.Grade, v => _cfg.Grade = v,
+                                     "Station", "Grade",
+                                     "Premium costs a quarter more and goes a tenth further."));
             station.Items.Add(Toggle("Take the money", () => _cfg.ChargeMoney,
                                      v => _cfg.ChargeMoney = v, "Station", "ChargeMoney",
                                      "Off fills for nothing."));

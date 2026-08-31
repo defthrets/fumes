@@ -63,7 +63,9 @@ namespace Fumes.Fuel
                 var driving = thirst * km / 100f;
                 var idling = _cfg.IdleLitresPerHour * dt / 3600f;
 
-                var litres = (driving * Load(v) + idling) * MapScale * _cfg.ConsumptionMultiplier;
+                // THE GRADE IN THE TANK, not the one selected. See Tank.Grade.
+                var litres = (driving * Load(v) + idling) * MapScale * _cfg.ConsumptionMultiplier
+                             * _cfg.EconomyFor(tank.Grade);
 
                 // A wrecked engine is an inefficient one. Health runs 0..1000 and anything
                 // under about half is smoking.

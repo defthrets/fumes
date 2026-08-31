@@ -15,6 +15,16 @@ namespace Fumes.Core
         Alt
     }
 
+    /// <summary>
+    /// What the pumps sell. The signs on them have said this all along.
+    /// </summary>
+    internal enum FuelGrade
+    {
+        Regular,
+        Plus,
+        Premium
+    }
+
     internal enum Units
     {
         Litres,
@@ -291,6 +301,45 @@ namespace Fumes.Core
         /// </summary>
         public float SiphonLitresPerSecond = 0.5f;
         public float PricePerLitre = 1.55f;
+
+        /// <summary>
+        /// Which grade you buy. The price and the economy both follow it.
+        ///
+        /// The pumps have had REGULAR, PLUS and PREMIUM written down their sides since the game
+        /// shipped and it has never meant anything. It is a setting rather than a prompt at the
+        /// pump because it is a habit, not a decision you make afresh at every forecourt -- and
+        /// because the button it would need is the one that took two goes to stop strobing.
+        /// </summary>
+        public FuelGrade Grade = FuelGrade.Regular;
+
+        /// <summary>What Plus and Premium cost, as a multiple of the regular price.</summary>
+        public float PlusPrice = 1.12f;
+        public float PremiumPrice = 1.25f;
+
+        /// <summary>
+        /// What they do for consumption, as a multiple. Under 1 goes further.
+        ///
+        /// Small on purpose. Premium is a tenth better and a quarter dearer, so it is a bad
+        /// deal in money and a good one in range -- which is the honest shape of the real
+        /// trade, and more interesting than a straight upgrade.
+        /// </summary>
+        public float PlusEconomy = 0.96f;
+        public float PremiumEconomy = 0.90f;
+
+        /// <summary>The multipliers for a grade, without a switch at every call site.</summary>
+        public float PriceFor(FuelGrade grade)
+        {
+            if (grade == FuelGrade.Plus) return PlusPrice;
+            if (grade == FuelGrade.Premium) return PremiumPrice;
+            return 1f;
+        }
+
+        public float EconomyFor(FuelGrade grade)
+        {
+            if (grade == FuelGrade.Plus) return PlusEconomy;
+            if (grade == FuelGrade.Premium) return PremiumEconomy;
+            return 1f;
+        }
 
         /// <summary>How far a station price may wander from the base, either way. 0 disables it.</summary>
         public float PriceVariance = 0.18f;
@@ -796,6 +845,11 @@ namespace Fumes.Core
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
                 s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
+                s.Grade = ParseEnum(ini.GetString("Station", "Grade", "Regular"), s.Grade);
+                s.PlusPrice = ini.GetFloat("Station", "PlusPrice", s.PlusPrice, 0.1f, 5f);
+                s.PremiumPrice = ini.GetFloat("Station", "PremiumPrice", s.PremiumPrice, 0.1f, 5f);
+                s.PlusEconomy = ini.GetFloat("Station", "PlusEconomy", s.PlusEconomy, 0.5f, 2f);
+                s.PremiumEconomy = ini.GetFloat("Station", "PremiumEconomy", s.PremiumEconomy, 0.5f, 2f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
                 s.ShowBlips = ini.GetBool("Station", "ShowBlips", s.ShowBlips);
                 s.LearnStations = ini.GetBool("Station", "LearnStations", s.LearnStations);

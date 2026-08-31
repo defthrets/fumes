@@ -737,7 +737,7 @@ namespace Fumes.Station
             // machine.
             _anchorLocal = LocalAnchor(pump, me.Position);
 
-            _price = _stations.PriceAt(pump.Position, out var forecourt);
+            _price = _stations.PriceAt(pump.Position, out var forecourt) * _cfg.PriceFor(_cfg.Grade);
 
             _stationBrand = forecourt == null ? "PUMP" : forecourt.Brand;
             _stationPlace = forecourt == null ? "" : forecourt.Name;
@@ -1120,6 +1120,8 @@ namespace Fumes.Station
             if (wanted > 0f)
             {
                 _targetTank.Add(wanted);
+                _targetTank.Grade = _cfg.Grade;
+
                 _dispensed += wanted;
                 _owed += wanted * _price;
                 Settle();

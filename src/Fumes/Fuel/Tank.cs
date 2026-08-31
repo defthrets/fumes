@@ -26,6 +26,20 @@ namespace Fumes.Fuel
         /// <summary>Whether the player has ever actually been in it. Only these are worth saving.</summary>
         public bool Known;
 
+        /// <summary>
+        /// What is actually IN it, not what you would buy today.
+        ///
+        /// Kept per tank because that is the only way it can mean anything: the economy has to
+        /// follow the fuel that is in the car, and a car you filled with premium last week is
+        /// still running on premium whatever the setting says now. Reading the setting at burn
+        /// time would let somebody flip a menu row and change the mileage of every car they own
+        /// retroactively, which is a cheat, not a feature.
+        ///
+        /// Last fill wins. Blending grades by volume would be more accurate and would need a
+        /// paragraph to explain what a tank of 0.4 Premium means; this needs none.
+        /// </summary>
+        public FuelGrade Grade;
+
         public float Fraction => Capacity > 0.01f ? Litres / Capacity : 0f;
         public bool Empty => Litres <= 0.001f;
 
