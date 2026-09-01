@@ -600,6 +600,21 @@ namespace Fumes.Core
         /// </summary>
         public float FillAnimPhase = 0.18f;
 
+        /// <summary>
+        /// The animation for tipping a jerry can into a tank. Blank uses the built-in list.
+        ///
+        /// The game's own pouring clip, played directly rather than by handing him the can and
+        /// making him fire it -- which is how the animation normally happens, and which also
+        /// lays a petrol trail across the forecourt, drains the ammo on the game's schedule
+        /// instead of ours, and leaves a lit fuse next to a pump.
+        ///
+        /// Blank because clip names inside a dictionary cannot be listed from a script. Fumes
+        /// tries a handful and checks each with IS_ENTITY_PLAYING_ANIM -- one that is not
+        /// playing a moment after being asked for is not in there -- and logs the winner.
+        /// </summary>
+        public string PourAnimDict = "";
+        public string PourAnimClip = "";
+
         /// <summary>Whether refuelling makes a noise at all.</summary>
         public bool FillSound = true;
 
@@ -1022,6 +1037,8 @@ namespace Fumes.Core
                 s.FillAnimDict = ini.GetString("Nozzle", "FillAnimDict", s.FillAnimDict);
                 s.FillAnimClip = ini.GetString("Nozzle", "FillAnimClip", s.FillAnimClip);
                 s.FillAnimPhase = ini.GetFloat("Nozzle", "FillAnimPhase", s.FillAnimPhase, -1f, 1f);
+                s.PourAnimDict = ini.GetString("Nozzle", "PourAnimDict", s.PourAnimDict);
+                s.PourAnimClip = ini.GetString("Nozzle", "PourAnimClip", s.PourAnimClip);
                 s.FillSound = ini.GetBool("Nozzle", "FillSound", s.FillSound);
                 s.FillSoundName = ini.GetString("Nozzle", "FillSoundName", s.FillSoundName);
                 s.FillSoundSet = ini.GetString("Nozzle", "FillSoundSet", s.FillSoundSet);

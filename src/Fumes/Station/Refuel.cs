@@ -646,7 +646,7 @@ namespace Fumes.Station
             }
 
             HoldStill(me);
-            FillPose(me);
+            PourPose(me);
             FaceThe(me, filler);
 
             var room = _targetTank.Capacity - _targetTank.Litres;
@@ -678,7 +678,7 @@ namespace Fumes.Station
 
         private void StopPouring(Ped me, string why)
         {
-            StopFillPose();
+            StopPourPose();
 
             Log.Info("Stopped pouring" + (why == null ? "" : " - " + why) + ". " +
                      _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L left in the can.");
@@ -1571,6 +1571,157 @@ namespace Fumes.Station
 
         /// <summary>Set when the configured clip cannot work at all, so nothing keeps retrying.</summary>
         private bool _poseImpossible;
+
+        // ==================================================================
+        // The pouring animation
+        // ==================================================================
+
+        /// <summary>
+        /// Clips to try for tipping the can, best first.
+        ///
+        /// THE GAME'S OWN POURING ANIMATION, PLAYED DIRECTLY. The alternative is to give him the
+        /// petrol can and make him fire it, which is how the animation normally happens -- and
+        /// which also lays a petrol trail down the forecourt, drains the ammo on the game's
+        /// schedule rather than ours, and leaves a lit fuse next to a pump. Playing the clip
+        /// gets the motion and none of the consequences.
+        ///
+        /// CANDIDATES, because clip names inside a dictionary cannot be listed from a script:
+        /// DOES_ANIM_DICT_EXIST answers for the dictionary and nothing answers for what is in
+        /// it. Each is started and then checked with IS_ENTITY_PLAYING_ANIM -- an animation that
+        /// is not playing a moment after being asked for does not exist -- and the one that
+        /// takes is written to the log so it can become the setting.
+        /// </summary>
+        private static readonly string[][] PourClips =
+        {
+            new[] { "weapons@misc@jerrycan@mp_male", "fire" },
+            new[] { "weapons@misc@jerrycan@mp_male", "idle" },
+            new[] { "weapons@misc@jerrycan@", "fire" },
+            new[] { "anim@weapons@misc@jerrycan@mp_male", "fire" },
+            new[] { "amb@world_human_gardener_plant@male@base", "base" },
+        };
+
+        private int _pourClip = -1;
+        private bool _pouring;
+        private int _pourStartedAt;
+        private bool _pourImpossible;
+
+        /// <summary>Plays the pour, looping, and moves on from a clip that will not run.</summary>
+        private void PourPose(Ped me)
+        {
+            if (_pourImpossible) return;
+
+            var dict = Dict();
+            var clip = Clip();
+
+            if (string.IsNullOrEmpty(dict) || string.IsNullOrEmpty(clip)) return;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict)) { NextPour(dict, clip, "no such dictionary"); return; }
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
+                {
+                    // Asked every frame until it arrives; one request can be dropped under
+                    // streaming load and never made again.
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                    _pourStartedAt = Game.GameTime;
+                    return;
+                }
+
+                var playing = Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, dict, clip, 3);
+
+                if (!playing)
+                {
+                    if (_pouring && Game.GameTime - _pourStartedAt > 700)
+                    {
+                        // Asked for, loaded, and still not playing: the dictionary is real and
+                        // this clip is not in it.
+                        NextPour(dict, clip, "the clip is not in it");
+                        return;
+                    }
+
+                    // LOOPING, not held. Pouring is a repeated motion -- the flag band 48-63 is
+                    // the game's own "upper body, still in control", and 1 on top of it loops.
+                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
+                                  4f, -4f, -1, 49, 0f, false, false, false);
+
+                    if (!_pouring) _pourStartedAt = Game.GameTime;
+                    _pouring = true;
+                    return;
+                }
+
+                if (_pourClip >= 0 && !_pourLogged)
+                {
+                    _pourLogged = true;
+                    Log.Info("Pour animation: \"" + clip + "\" from \"" + dict + "\". Put those in " +
+                             "[Nozzle] PourAnimDict and PourAnimClip to skip the search.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("pourpose", "Could not play the pouring animation: " + ex.Message);
+                _pourImpossible = true;
+            }
+        }
+
+        private bool _pourLogged;
+
+        private string Dict()
+        {
+            if (!string.IsNullOrEmpty(_cfg.PourAnimDict)) return _cfg.PourAnimDict;
+            return _pourClip < 0 || _pourClip >= PourClips.Length ? PourClips[0][0] : PourClips[_pourClip][0];
+        }
+
+        private string Clip()
+        {
+            if (!string.IsNullOrEmpty(_cfg.PourAnimClip)) return _cfg.PourAnimClip;
+            return _pourClip < 0 || _pourClip >= PourClips.Length ? PourClips[0][1] : PourClips[_pourClip][1];
+        }
+
+        private void NextPour(string dict, string clip, string why)
+        {
+            Log.Info("Pour animation: \"" + clip + "\" from \"" + dict + "\" - " + why + ".");
+
+            _pouring = false;
+
+            if (!string.IsNullOrEmpty(_cfg.PourAnimDict))
+            {
+                // Written in by hand and wrong. Not falling through to the list: a name was
+                // asked for by name, and quietly using a different one hides the mistake.
+                _pourImpossible = true;
+                Log.Warn("Pour animation: the configured clip will not play. Clear [Nozzle] " +
+                         "PourAnimDict to go back to the built-in list.");
+                return;
+            }
+
+            _pourClip = _pourClip < 0 ? 1 : _pourClip + 1;
+
+            if (_pourClip >= PourClips.Length)
+            {
+                _pourImpossible = true;
+                Log.Warn("Pour animation: none of the " + PourClips.Length + " candidates will " +
+                         "play. He will pour without an animation.");
+            }
+        }
+
+        private void StopPourPose()
+        {
+            if (!_pouring) return;
+            _pouring = false;
+            _pourLogged = false;
+
+            try
+            {
+                var me = Player();
+                if (me == null) return;
+
+                Function.Call(Hash.STOP_ANIM_TASK, me.Handle, Dict(), Clip(), -4f);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not stop the pouring animation: " + ex.Message);
+            }
+        }
 
         private bool _posing;
 
