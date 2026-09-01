@@ -44,6 +44,26 @@ namespace Fumes.UI
 
         private bool _open;
 
+        // ---- motion -----------------------------------------------------
+        //
+        // A menu that appears fully formed and jumps a row at a time is readable and dead. The
+        // three things below cost a float each and are the difference between a list and an
+        // instrument: the panel arrives, the highlight travels to where you sent it, and a
+        // value you just changed says so.
+
+        /// <summary>0 shut, 1 fully open. Drives the slide and the fade.</summary>
+        private float _reveal;
+
+        /// <summary>Where the highlight actually is, in rows, as opposed to where _row says.</summary>
+        private float _highlight;
+
+        /// <summary>The row that just changed, and how recently, for the flash.</summary>
+        private int _flashRow = -1;
+        private float _flash;
+
+        /// <summary>Which page the tab strip is sliding from, and how far along.</summary>
+        private float _tabAt;
+
         /// <summary>True while the gauge is being dragged rather than the menu navigated.</summary>
         public bool Placing { get; private set; }
 
@@ -83,6 +103,7 @@ namespace Fumes.UI
         private sealed class Page
         {
             public string Title;
+            public Icon Badge;
             public readonly List<Item> Items = new List<Item>();
         }
 
@@ -106,9 +127,9 @@ namespace Fumes.UI
             public Func<string> Written;
         }
 
-        private Page Add(string title)
+        private Page Add(string title, string icon)
         {
-            var p = new Page { Title = title };
+            var p = new Page { Title = title, Badge = new Icon(icon) };
             _pages.Add(p);
             return p;
         }
@@ -218,7 +239,7 @@ namespace Fumes.UI
 
         private void Build()
         {
-            var hud = Add("HUD");
+            var hud = Add("HUD", "icon_hud.png");
             hud.Items.Add(Action_("Move and size the gauge", () => Placing = true,
                                   "Arrows move it, Shift+arrows resize, Enter keeps it."));
             hud.Items.Add(Toggle("Show the gauge", () => _cfg.ShowGauge, v => _cfg.ShowGauge = v,
@@ -249,7 +270,7 @@ namespace Fumes.UI
             hud.Items.Add(Choice("Prompts", () => _cfg.Prompts, v => _cfg.Prompts = v,
                                  "HUD", "Prompts", "Help box top left, or the button bar."));
 
-            var fuel = Add("FUEL");
+            var fuel = Add("FUEL", "drop.png");
             fuel.Items.Add(Number("Consumption", () => _cfg.ConsumptionMultiplier,
                                   v => _cfg.ConsumptionMultiplier = v, 0.05f, 0f, 5f, "0.00",
                                   "Fuel", "ConsumptionMultiplier",
@@ -282,7 +303,7 @@ namespace Fumes.UI
                                   v => _cfg.StallWhenEmpty = v, "Engine", "StallWhenEmpty",
                                   "Off leaves you driving on an empty tank."));
 
-            var station = Add("STATION");
+            var station = Add("STATION", "icon_station.png");
             station.Items.Add(Number("Price a litre", () => _cfg.PricePerLitre,
                                      v => _cfg.PricePerLitre = v, 0.05f, 0f, 20f, "0.00",
                                      "Station", "PricePerLitre",
@@ -315,7 +336,7 @@ namespace Fumes.UI
                                      v => _cfg.ForecourtHazard = v, "Hazard", "ForecourtHazard",
                                      "Gunfire at the pumps can set the vapour off."));
 
-            var hose = Add("HOSE");
+            var hose = Add("HOSE", "icon_hose.png");
             hose.Items.Add(Whole("Rope", () => _cfg.HoseRopeType, v =>
                                  {
                                      // Through the probe, so a type known to crash this install
@@ -367,7 +388,17 @@ namespace Fumes.UI
                     Placing = false;
                 }
                 else if (_open) Close();
-                else _open = true;
+                else
+                {
+                    _open = true;
+
+                    // From scratch each time. Left where it was, a menu reopened a second later
+                    // would appear already in place and the arrival would only ever be seen once.
+                    _reveal = 0f;
+                    _highlight = _row;
+                    _tabAt = _page;
+                    _flash = 0f;
+                }
             }
 
             if (!_open) return;
@@ -376,10 +407,70 @@ namespace Fumes.UI
             // Enter answers the phone, and the player shoots whatever is in front of them.
             Deafen();
 
+            Animate();
+
             if (Placing) { Place(); return; }
 
             Navigate();
             Render();
+        }
+
+        /// <summary>
+        /// Moves everything that moves, once a frame.
+        ///
+        /// EXPONENTIAL, not linear, and framerate-independent for the same reason the fuel is:
+        /// a fixed step per frame runs at half speed on a machine doing thirty and twice on one
+        /// doing a hundred and twenty, which is a menu that feels different on every PC.
+        /// </summary>
+        private void Animate()
+        {
+            var dt = 0f;
+
+            try { dt = Game.LastFrameTime; }
+            catch { dt = 0f; }
+
+            if (dt <= 0f || dt > 0.5f) dt = dt > 0.5f ? 0.5f : 0f;
+
+            // Once. The tab badges are sized as a fraction of the screen's WIDTH and drawn with
+            // a height that has to undo the screen's shape, or a square icon comes out a third
+            // wider than it is tall on anything ultrawide -- the same trap the pump icon in the
+            // gauge falls into, and the same fix.
+            if (!_measured)
+            {
+                _measured = true;
+
+                try
+                {
+                    var res = GTA.UI.Screen.Resolution;
+                    if (res.Height > 0) _aspect = res.Width / (float)res.Height;
+                }
+                catch
+                {
+                    // 16:9 stands, and the badges are a little wide. Nothing else cares.
+                }
+            }
+
+            Ease(ref _reveal, 1f, dt, 0.085f);
+            Ease(ref _highlight, _row, dt, 0.055f);
+            Ease(ref _tabAt, _page, dt, 0.070f);
+
+            // The flash decays rather than easing to a target: it is a one-off, not a position.
+            if (_flash > 0f)
+            {
+                _flash -= dt / 0.45f;
+                if (_flash < 0f) _flash = 0f;
+            }
+        }
+
+        private static void Ease(ref float value, float target, float dt, float seconds)
+        {
+            if (dt <= 0f || seconds <= 0.001f) { value = target; return; }
+
+            value += (target - value) * (1f - (float)Math.Exp(-dt / seconds));
+
+            // Snap when it is close enough to see, or a highlight spends forever approaching a
+            // row it is already sitting on and the scroll maths never quite settles.
+            if (Math.Abs(target - value) < 0.002f) value = target;
         }
 
         private bool Modifier()
@@ -468,6 +559,9 @@ namespace Fumes.UI
         {
             item.Nudge(direction);
             if (item.Section != null) _changed.Add(item);
+
+            _flashRow = _row;
+            _flash = 1f;
         }
 
         /// <summary>
@@ -619,6 +713,15 @@ namespace Fumes.UI
         // Drawing
         // ==================================================================
 
+        /// <summary>Everything the panel draws, faded and slid by how open it is.</summary>
+        private Color A(Color c)
+        {
+            var a = (int)(c.A * _reveal);
+            if (a < 0) a = 0;
+            if (a > 255) a = 255;
+            return Color.FromArgb(a, c.R, c.G, c.B);
+        }
+
         private void Render()
         {
             var page = _pages[_page];
@@ -627,17 +730,42 @@ namespace Fumes.UI
             var bodyH = shown * RowH;
             var totalH = TitleH + bodyH + FootH;
 
-            Draw.Bar(PanelX, PanelTop, PanelW, totalH, Panel);
-            Draw.Bar(PanelX, PanelTop, PanelW, TitleH, Head);
-            Draw.Bar(PanelX, PanelTop + TitleH - 0.0022f, PanelW, 0.0022f, Amber);
+            // IT ARRIVES FROM THE LEFT rather than appearing. Three hundredths of a screen over
+            // about a tenth of a second -- far enough to register as movement, short enough that
+            // nobody waiting to change a setting is kept waiting by it.
+            var left = PanelX - (1f - _reveal) * 0.030f;
 
-            Draw.Text("Fumes", PanelX + 0.012f, PanelTop + 0.004f, 0.62f, Amber, Script);
+            Draw.Bar(left, PanelTop, PanelW, totalH, A(Panel));
+            Draw.Bar(left, PanelTop, PanelW, TitleH, A(Head));
+            Draw.Bar(left, PanelTop + TitleH - 0.0022f, PanelW, 0.0022f, A(Amber));
 
-            // THE PAGES, NAMED. This was "HUD 1/4" -- the page's name and its number out of
-            // four -- and it read as a value belonging to the row under it. A number that has
-            // to be explained is not a label. All four names, the current one lit, says the
-            // same thing and needs no explaining.
-            Tabs();
+            Draw.Text("Fumes", left + 0.012f, PanelTop + 0.004f, 0.62f, A(Amber), Script);
+
+            Tabs(left);
+
+            Rows_(page, left, shown, bodyH);
+            Footer(page, left, bodyH);
+        }
+
+        /// <summary>The rows, with the highlight riding between them.</summary>
+        private void Rows_(Page page, float left, int shown, float bodyH)
+        {
+            var top = PanelTop + TitleH;
+
+            // THE HIGHLIGHT IS DRAWN FROM _highlight, NOT _row, and that is the whole of the
+            // travelling effect: _row jumps the instant you press a key, _highlight is chasing
+            // it, and the bar is drawn wherever the chase has got to. Scrolling still uses _row,
+            // because the list must show the row you are ON, not the one the animation is
+            // passing over.
+            var at = _highlight - _scroll;
+
+            if (at > -1f && at < shown)
+            {
+                var hy = top + at * RowH;
+
+                Draw.Bar(left, hy, PanelW, RowH, A(Color.FromArgb(38, 245, 196, 60)));
+                Draw.Bar(left, hy, 0.0022f, RowH, A(Amber));
+            }
 
             for (var i = 0; i < shown; i++)
             {
@@ -645,101 +773,160 @@ namespace Fumes.UI
                 if (index >= page.Items.Count) break;
 
                 var item = page.Items[index];
-                var y = PanelTop + TitleH + i * RowH;
+                var y = top + i * RowH;
                 var selected = index == _row;
-
-                if (selected)
-                {
-                    Draw.Bar(PanelX, y, PanelW, RowH, Color.FromArgb(38, 245, 196, 60));
-                    Draw.Bar(PanelX, y, 0.0022f, RowH, Amber);
-                }
 
                 var label = item.Show == null ? item.Label.ToUpperInvariant() : item.Label;
 
-                Draw.Text(label, PanelX + 0.012f, y + 0.0044f, 0.295f,
-                          selected ? Ink : Color.FromArgb(200, 205, 205, 208), Plain);
+                Draw.Text(label, left + 0.012f, y + 0.0044f, 0.295f,
+                          A(selected ? Ink : Color.FromArgb(200, 205, 205, 208)), Plain);
 
-                if (item.Show != null)
+                if (item.Show == null)
                 {
-                    Draw.Text(item.Show(), PanelX + PanelW - 0.010f, y + 0.0044f, 0.295f,
-                              selected ? Amber : Dim, Plain, false, true);
+                    if (selected)
+                    {
+                        Draw.Text("ENTER", left + PanelW - 0.010f, y + 0.0044f, 0.295f,
+                                  A(Amber), Plain, false, true);
+                    }
+
+                    continue;
                 }
-                else if (selected)
+
+                // A VALUE THAT JUST CHANGED SAYS SO. Without it, holding left on a number is a
+                // column of digits quietly replacing themselves and the only way to know the
+                // key registered is to read them. The flash is on the value alone, not the row:
+                // the row did not change, one number did.
+                var ink = selected ? Amber : Dim;
+
+                if (index == _flashRow && _flash > 0f)
                 {
-                    Draw.Text("ENTER", PanelX + PanelW - 0.010f, y + 0.0044f, 0.295f,
-                              Amber, Plain, false, true);
+                    ink = Mix(ink, Color.FromArgb(255, 255, 255, 255), _flash * 0.85f);
                 }
+
+                Draw.Text(item.Show(), left + PanelW - 0.010f, y + 0.0044f, 0.295f,
+                          A(ink), Plain, false, true);
             }
 
-            // The scroll bar, only when there is something to scroll.
             if (page.Items.Count > Rows)
             {
                 var track = bodyH;
                 var thumb = track * Rows / page.Items.Count;
-                var at = track * _scroll / page.Items.Count;
 
-                Draw.Bar(PanelX + PanelW - 0.0018f, PanelTop + TitleH, 0.0018f, track,
-                         Color.FromArgb(60, 255, 255, 255));
-                Draw.Bar(PanelX + PanelW - 0.0018f, PanelTop + TitleH + at, 0.0018f, thumb, Amber);
+                // From the HIGHLIGHT rather than the scroll offset, so the thumb glides with
+                // the selection instead of stepping only when the list happens to scroll.
+                var span = Math.Max(1, page.Items.Count - 1);
+                var slide = (track - thumb) * _highlight / span;
+
+                Draw.Bar(left + PanelW - 0.0018f, PanelTop + TitleH, 0.0018f, track,
+                         A(Color.FromArgb(50, 255, 255, 255)));
+                Draw.Bar(left + PanelW - 0.0018f, PanelTop + TitleH + slide, 0.0018f, thumb,
+                         A(Amber));
             }
+        }
 
+        private void Footer(Page page, float left, float bodyH)
+        {
             var foot = PanelTop + TitleH + bodyH;
 
-            Draw.Bar(PanelX, foot, PanelW, 0.0016f, Color.FromArgb(70, 255, 255, 255));
+            Draw.Bar(left, foot, PanelW, 0.0016f, A(Color.FromArgb(70, 255, 255, 255)));
 
             var hint = page.Items[_row].Hint;
 
-            Draw.Text(string.IsNullOrEmpty(hint)
-                          ? "TAB page    ARROWS change    BACKSPACE save and close"
-                          : hint,
-                      PanelX + 0.012f, foot + 0.008f, 0.26f, Dim, Plain);
+            Draw.Text(string.IsNullOrEmpty(hint) ? "" : hint,
+                      left + 0.012f, foot + 0.008f, 0.26f, A(Dim), Plain);
 
-            Draw.Text("TAB page   BACKSPACE save & close",
-                      PanelX + 0.012f, foot + 0.024f, 0.24f,
-                      Color.FromArgb(120, 150, 150, 156), Plain);
+            Draw.Text("TAB page    ARROWS change    BACKSPACE save & close",
+                      left + 0.012f, foot + 0.024f, 0.24f,
+                      A(Color.FromArgb(120, 150, 150, 156)), Plain);
         }
 
         /// <summary>
-        /// The page names across the head of the panel, current one lit.
+        /// The page names across the head of the panel, with an icon each, and a marker that
+        /// slides between them.
         ///
-        /// LAID OUT BY MEASUREMENT rather than by fixed columns: the names are different
-        /// lengths and there are four of them across a fifth of the screen, so evenly spaced
-        /// columns would either crowd STATION or strand HUD. Each is measured, and they are
-        /// spread across whatever room is left.
+        /// LAID OUT BY MEASUREMENT rather than in fixed columns: four names of different lengths
+        /// across a fifth of the screen, so even columns would either crowd STATION or strand
+        /// HUD. The icon's width is included in each name's slot, or the badge on the longest
+        /// name would push it into its neighbour.
         /// </summary>
-        private void Tabs()
+        private void Tabs(float left)
         {
             const float scale = 0.26f;
 
-            var left = PanelX + 0.012f;
-            var right = PanelX + PanelW - 0.012f;
+            var x0 = left + 0.012f;
+            var x1 = left + PanelW - 0.012f;
             var y = PanelTop + 0.030f;
+
+            var badge = 0.0055f;                 // icon width, as a fraction of the screen
+            var badgeH = badge * _aspect;
+            var pad = 0.0022f;
 
             var widths = new float[_pages.Count];
             var total = 0f;
 
             for (var i = 0; i < _pages.Count; i++)
             {
-                widths[i] = Draw.Width(_pages[i].Title, scale, Plain);
+                widths[i] = Draw.Width(_pages[i].Title, scale, Plain) + badge + pad;
                 total += widths[i];
             }
 
-            var gap = _pages.Count > 1 ? (right - left - total) / (_pages.Count - 1) : 0f;
-            if (gap < 0.004f) gap = 0.004f;
+            var gap = _pages.Count > 1 ? (x1 - x0 - total) / (_pages.Count - 1) : 0f;
+            if (gap < 0.003f) gap = 0.003f;
 
-            var x = left;
+            // Where each tab starts, kept so the marker can be put between two of them.
+            var starts = new float[_pages.Count];
+            var x = x0;
+
+            for (var i = 0; i < _pages.Count; i++)
+            {
+                starts[i] = x;
+                x += widths[i] + gap;
+            }
+
+            // THE MARKER IS INTERPOLATED BETWEEN TABS, which is why _tabAt is a float. Drawn
+            // under the current tab it would jump the width of a word; slid, it carries the eye
+            // from the page you left to the one you are on.
+            var from = (int)Math.Floor(_tabAt);
+            if (from < 0) from = 0;
+            if (from > _pages.Count - 1) from = _pages.Count - 1;
+
+            var to = Math.Min(from + 1, _pages.Count - 1);
+            var f = _tabAt - from;
+
+            var markX = starts[from] + (starts[to] - starts[from]) * f;
+            var markW = widths[from] + (widths[to] - widths[from]) * f;
+
+            Draw.Bar(markX, y + 0.0165f, markW, 0.0016f, A(Amber));
 
             for (var i = 0; i < _pages.Count; i++)
             {
                 var on = i == _page;
+                var tint = on ? Amber : Color.FromArgb(120, 150, 150, 156);
 
-                Draw.Text(_pages[i].Title, x, y, scale,
-                          on ? Amber : Color.FromArgb(120, 150, 150, 156), Plain);
+                if (_pages[i].Badge != null)
+                {
+                    _pages[i].Badge.DrawSized(starts[i] + badge / 2f, y + badgeH / 2f + 0.0015f,
+                                              badge, badgeH, A(tint));
+                }
 
-                if (on) Draw.Bar(x, y + 0.0165f, widths[i], 0.0016f, Amber);
-
-                x += widths[i] + gap;
+                Draw.Text(_pages[i].Title, starts[i] + badge + pad, y, scale, A(tint), Plain);
             }
+        }
+
+        /// <summary>Screen width over height, for keeping the tab badges square. See Gauge.</summary>
+        private float _aspect = 16f / 9f;
+        private bool _measured;
+
+        private static Color Mix(Color a, Color b, float t)
+        {
+            if (t < 0f) t = 0f;
+            if (t > 1f) t = 1f;
+
+            return Color.FromArgb(
+                (int)(a.A + (b.A - a.A) * t),
+                (int)(a.R + (b.R - a.R) * t),
+                (int)(a.G + (b.G - a.G) * t),
+                (int)(a.B + (b.B - a.B) * t));
         }
 
         // ==================================================================

@@ -127,6 +127,52 @@ def fuel_pump_bar():
     _save_exact(img.resize((cw, ch), Image.LANCZOS), "fuel_bar.png")
 
 
+# ---------------------------------------------------------------------------
+# Menu page icons
+# ---------------------------------------------------------------------------
+#
+# One per page of the settings menu. Drawn as SILHOUETTES with the detail punched
+# out rather than stroked, because at the size the menu draws them -- about twenty
+# pixels -- a one-pixel outline is a grey smudge and a hole is still a hole.
+
+
+def icon_hud():
+    """The gauge itself: an upright bar, part full."""
+    img, d = canvas()
+
+    rrect(d, (86, 20, 170, 236), 26, WHITE)     # the bar
+    rrect(d, (104, 38, 152, 150), 16, CLEAR)    # the empty part, punched out
+
+    save(img, "icon_hud.png")
+
+
+def icon_hose():
+    """A nozzle on a hose: the arm from the pump, on its own."""
+    img, d = canvas()
+
+    # The hose, an arc thick enough to read at twenty pixels.
+    d.arc([s(28), s(60), s(210), s(242)], start=180, end=310,
+          fill=WHITE, width=s(26))
+
+    # The nozzle: a body on the end of it, and a spout.
+    rrect(d, (150, 30, 226, 96), 24, WHITE)
+    rrect(d, (196, 74, 232, 150), 16, WHITE)
+
+    save(img, "icon_hose.png")
+
+
+def icon_station():
+    """A forecourt: the pump under its canopy."""
+    img, d = canvas()
+
+    rrect(d, (24, 32, 232, 70), 14, WHITE)      # canopy
+    rrect(d, (118, 70, 138, 108), 6, WHITE)     # its post
+    rrect(d, (70, 108, 186, 236), 18, WHITE)    # the pump
+    rrect(d, (94, 132, 162, 176), 10, CLEAR)    # its window
+
+    save(img, "icon_station.png")
+
+
 def droplet():
     """A fuel drop, for anywhere the pump is too busy a shape to read."""
     img, d = canvas()
@@ -206,6 +252,9 @@ def main():
     fuel_pump()
     fuel_pump_bar()
     droplet()
+    icon_hud()
+    icon_hose()
+    icon_station()
     glyphs()
     print("Done. Deploy with:  .\\build.ps1 -Deploy -FreshData")
 
