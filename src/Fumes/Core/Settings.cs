@@ -359,6 +359,42 @@ namespace Fumes.Core
         /// Corrections go to stations.local.json, never to the shipped file.
         /// </summary>
         public bool LearnStations = true;
+
+        /// <summary>
+        /// Traffic that is low on fuel and ALREADY NEAR a station pulls in, sits at the pumps,
+        /// and drives off again.
+        ///
+        /// Deliberately not "low car seeks out a station": stations are a median six hundred
+        /// metres apart, the mod simulates a hundred and twenty, and the game despawns traffic
+        /// well before that -- a car sent half a kilometre for fuel vanishes on the way. Keeping
+        /// it alive would mean marking it a mission entity, and those are never reclaimed, so
+        /// every low NPC would sit in the vehicle pool for the session.
+        ///
+        /// Inverted, it all happens inside the radius: nothing needs persisting, nothing leaks,
+        /// and it lands where the player actually is -- at a forecourt, watching other cars use
+        /// it. Independent of AffectTraffic, because tanks are generated part-full whether or
+        /// not traffic burns fuel, so there are always some low cars about.
+        /// </summary>
+        public bool TrafficRefuels = true;
+
+        /// <summary>How empty a car has to be before it will bother, as a fraction.</summary>
+        public float TrafficRefuelBelow = 0.22f;
+
+        /// <summary>How near a station it must already be, in metres.</summary>
+        public float TrafficRefuelRadius = 160f;
+
+        /// <summary>How long it sits at the pumps, and how long before it gives up trying.</summary>
+        public float TrafficRefuelSeconds = 9f;
+        public float TrafficRefuelGiveUpSeconds = 45f;
+
+        /// <summary>Most cars doing this at once. Two is ambience; ten is a traffic jam.</summary>
+        public int TrafficRefuelMax = 2;
+
+        /// <summary>
+        /// The driving style handed to the tasks. GTA's standard "obeys lights and traffic"
+        /// set of flags -- a bitfield rather than a number that means anything on its own.
+        /// </summary>
+        public int TrafficDrivingStyle = 786603;
         public bool ChargeMoney = true;
 
         // ---- the nozzle and its hose -----------------------------------------
@@ -935,6 +971,13 @@ namespace Fumes.Core
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
                 s.ShowBlips = ini.GetBool("Station", "ShowBlips", s.ShowBlips);
                 s.LearnStations = ini.GetBool("Station", "LearnStations", s.LearnStations);
+                s.TrafficRefuels = ini.GetBool("Station", "TrafficRefuels", s.TrafficRefuels);
+                s.TrafficRefuelBelow = ini.GetFloat("Station", "TrafficRefuelBelow", s.TrafficRefuelBelow, 0.01f, 1f);
+                s.TrafficRefuelRadius = ini.GetFloat("Station", "TrafficRefuelRadius", s.TrafficRefuelRadius, 10f, 400f);
+                s.TrafficRefuelSeconds = ini.GetFloat("Station", "TrafficRefuelSeconds", s.TrafficRefuelSeconds, 1f, 120f);
+                s.TrafficRefuelGiveUpSeconds = ini.GetFloat("Station", "TrafficRefuelGiveUpSeconds", s.TrafficRefuelGiveUpSeconds, 5f, 300f);
+                s.TrafficRefuelMax = ini.GetInt("Station", "TrafficRefuelMax", s.TrafficRefuelMax, 0, 12);
+                s.TrafficDrivingStyle = ini.GetInt("Station", "TrafficDrivingStyle", s.TrafficDrivingStyle, 0, int.MaxValue);
                 s.ChargeMoney = ini.GetBool("Station", "ChargeMoney", s.ChargeMoney);
 
                 s.InteractKey = ini.GetKey("Nozzle", "InteractKey", s.InteractKey);

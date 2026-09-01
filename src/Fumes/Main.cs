@@ -39,6 +39,7 @@ namespace Fumes
         private readonly Gauge _gauge;
         private readonly Menu _menu;
         private readonly LowFuel _lowFuel;
+        private readonly TrafficRefuel _forecourt;
         private readonly Meter _meter;
         private readonly Buttons _buttons;
         private readonly Refuel _refuel;
@@ -80,6 +81,7 @@ namespace Fumes
             _gauge = new Gauge(_cfg);
             _menu = new Menu(_cfg, _gauge);
             _lowFuel = new LowFuel(_cfg);
+            _forecourt = new TrafficRefuel(_cfg, _tanks, _stations);
             _meter = new Meter(_cfg, _gauge);
             _buttons = new Buttons();
             _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter, _buttons);
@@ -131,6 +133,10 @@ namespace Fumes
 
                 if (_cfg.AffectTraffic) Traffic(dt);
                 else Idlers(dt);
+
+                // Not inside either branch: tanks are generated part-full whether or not
+                // traffic burns fuel, so there are low cars about either way.
+                _forecourt.Update(me, dt);
 
                 _refuel.Update(dt);
 

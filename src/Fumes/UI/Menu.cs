@@ -329,6 +329,9 @@ namespace Fumes.UI
                                      "Station", "HangUpReach", null));
             station.Items.Add(Toggle("Map blips", () => _cfg.ShowBlips, v => _cfg.ShowBlips = v,
                                      "Station", "ShowBlips", null));
+            station.Items.Add(Toggle("Traffic uses the pumps", () => _cfg.TrafficRefuels,
+                                     v => _cfg.TrafficRefuels = v, "Station", "TrafficRefuels",
+                                     "Low cars already near a forecourt pull in and fill up."));
             station.Items.Add(Toggle("Learn stations", () => _cfg.LearnStations,
                                      v => _cfg.LearnStations = v, "Station", "LearnStations",
                                      "Corrects the shipped list from the pumps it finds."));

@@ -275,8 +275,15 @@ namespace Fumes.Station
             }
         }
 
-        /// <summary>The closest station to a point within a radius, or null.</summary>
-        private Forecourt Nearest(Vector3 to, float radius)
+        /// <summary>
+        /// The closest station to a point within a radius, or null.
+        ///
+        /// Public because the forecourt traffic needs the same question asked from further out:
+        /// At() is fixed to the "am I standing at a pump" distance, and this one takes the range
+        /// as an argument. It was already here and already private -- writing a second copy of
+        /// it was the wrong instinct, and the compiler said so.
+        /// </summary>
+        public Forecourt Nearest(Vector3 to, float radius)
         {
             Forecourt best = null;
             var bestDist = radius;
