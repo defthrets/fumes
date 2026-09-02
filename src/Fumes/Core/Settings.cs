@@ -612,8 +612,8 @@ namespace Fumes.Core
         /// tries a handful and checks each with IS_ENTITY_PLAYING_ANIM -- one that is not
         /// playing a moment after being asked for is not in there -- and logs the winner.
         /// </summary>
-        public string PourAnimDict = "";
-        public string PourAnimClip = "";
+        public string PourAnimDict = "weapons@misc@jerrycan@";
+        public string PourAnimClip = "fire";
 
         /// <summary>Whether refuelling makes a noise at all.</summary>
         public bool FillSound = true;

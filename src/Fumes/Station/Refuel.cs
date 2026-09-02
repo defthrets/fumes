@@ -116,6 +116,7 @@ namespace Fumes.Station
             _meter = meter;
             _buttons = buttons;
             _nozzle = new Nozzle(cfg);
+            _siphonLine = new Hose(cfg);
             _hose = new Hose(cfg);
             _hazard = new Hazard(cfg);
             _sound = new FillSound(cfg);
@@ -400,6 +401,8 @@ namespace Fumes.Station
             _canLitres = inCan;
             _stage = Stage.Siphoning;
 
+            PutCanDown(me);
+
             Log.Info("Siphoning from " + vehicle.LocalizedName + " (" +
                      tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + " L) into a can " +
                      "holding " + inCan.ToString("0.0", CultureInfo.InvariantCulture) + " L.");
@@ -516,6 +519,14 @@ namespace Fumes.Station
             FillPose(me);
             FaceThe(me, filler);
 
+            // The line, every frame, from the filler down to the can on the floor. Same rope as
+            // the pump hose and the same dark paint, because it is the same kind of object and
+            // two different-looking hoses in one mod is one too many.
+            if (_canOnGround != null && _canOnGround.Exists())
+            {
+                _siphonLine.Update(filler, _canOnGround.Position + new Vector3(0f, 0f, 0.28f));
+            }
+
             var room = _cfg.JerryCanLitres - _canLitres;
             if (room <= 0.02f) { StopSiphon(me, "the can is full"); return; }
 
@@ -543,8 +554,77 @@ namespace Fumes.Station
             if (Pressed()) StopSiphon(me, null);
         }
 
+        /// <summary>
+        /// Stands the can on the floor beside him for the duration.
+        ///
+        /// A REAL PROP, not the weapon. He is holding the can as a weapon, and a weapon cannot
+        /// be put down without taking it off him -- so this is a second, separate object placed
+        /// on the ground, and the one in his hands is simply hidden for as long as it is there.
+        /// Hiding rather than removing, because removing a weapon and giving it back is how you
+        /// lose a player's ammo.
+        /// </summary>
+        private void PutCanDown(Ped me)
+        {
+            try
+            {
+                var at = me.Position + me.RightVector * 0.55f - me.ForwardVector * 0.15f;
+
+                foreach (var name in CanProps)
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid) continue;
+
+                    model.Request(1200);
+                    if (!model.IsLoaded) { model.MarkAsNoLongerNeeded(); continue; }
+
+                    _canOnGround = World.CreateProp(model, at, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_canOnGround == null || !_canOnGround.Exists()) continue;
+
+                    _canOnGround.IsPositionFrozen = true;
+                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _canOnGround.Handle);
+
+                    // Turned to face him, so the handle is not pointing into the car.
+                    _canOnGround.Heading = me.Heading + 90f;
+
+                    Log.Once("can-prop", "Siphon can prop: " + name + ".");
+                    break;
+                }
+
+                // The one in his hands goes away while the one on the floor is out, or he is
+                // holding a can AND standing over one.
+                me.Weapons.Select(WeaponHash.Unarmed, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-down", "Could not put the can down: " + ex.Message);
+            }
+        }
+
+        private void PickCanUp(Ped me)
+        {
+            _siphonLine.Retract();
+
+            try
+            {
+                if (_canOnGround != null && _canOnGround.Exists()) _canOnGround.Delete();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not clear the can prop: " + ex.Message);
+            }
+
+            _canOnGround = null;
+
+            // Back in his hands. The ammo was never touched, so it comes back as it was.
+            try { if (me != null && me.Exists()) me.Weapons.Select(WeaponHash.PetrolCan, true); }
+            catch { /* he can pick it himself */ }
+        }
+
         private void StopSiphon(Ped me, string why)
         {
+            PickCanUp(me);
             StopFillPose();
 
             Log.Info("Stopped siphoning" + (why == null ? "" : " - " + why) + ". " +
@@ -691,6 +771,18 @@ namespace Fumes.Station
 
         /// <summary>Litres left in the can being poured. See CanLitres.</summary>
         private float _canLitres;
+
+        /// <summary>The can on the ground, and the line from it to the filler, while siphoning.</summary>
+        private Prop _canOnGround;
+        private readonly Hose _siphonLine;
+
+        /// <summary>Jerry can props, in the order they are tried.</summary>
+        private static readonly string[] CanProps =
+        {
+            "prop_jerrycan_01a",
+            "prop_ld_jerrycan_01",
+            "w_am_jerrycan"
+        };
 
         /// <summary>A stand-in tank so the pump display can show the CAN filling.</summary>
         private readonly Tank _canGlass = new Tank { Capacity = 20f, Litres = 0f };
@@ -1350,6 +1442,7 @@ namespace Fumes.Station
         {
             _nozzle.PutBack();
             _hose.Release();
+            _siphonLine.Release();
             _sound.Silence();
             TidyDropped(true);
             Clear();
@@ -1593,11 +1686,20 @@ namespace Fumes.Station
         /// </summary>
         private static readonly string[][] PourClips =
         {
-            new[] { "weapons@misc@jerrycan@mp_male", "fire" },
-            new[] { "weapons@misc@jerrycan@mp_male", "idle" },
+            // THE RIGHT ONE, and it is now known rather than guessed. The trailing @ is not a
+            // typo: weapons@misc@jerrycan@ holds discard, fire, fire_intro, fire_outro and
+            // unholster -- the ACTIONS -- while weapons@misc@jerrycan@mp_male holds idle, run,
+            // sprint and walk, which are how you CARRY one. Two dictionaries a character apart,
+            // and only one of them pours.
+            //
+            // The probe settled on mp_male/idle and was not wrong to: idle exists and plays,
+            // so "is this animation running" answered yes. It cannot answer "is this the
+            // animation I meant", which is the same wall the fill sound hit. The fix was not a
+            // better probe, it was looking the clips up -- they are listed in DurtyFree's
+            // gta-v-data-dumps animDictsCompact.json, all twenty thousand dictionaries of them.
             new[] { "weapons@misc@jerrycan@", "fire" },
-            new[] { "anim@weapons@misc@jerrycan@mp_male", "fire" },
-            new[] { "amb@world_human_gardener_plant@male@base", "base" },
+            new[] { "weapon@w_sp_jerrycan", "fire" },
+            new[] { "weapons@misc@jerrycan@", "fire_intro" },
         };
 
         private int _pourClip = -1;
