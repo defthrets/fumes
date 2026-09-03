@@ -460,7 +460,7 @@ namespace Fumes.Core
         /// where honest scale disappears. Thick enough to be a hose, not so thick it is a
         /// pipe.
         /// </summary>
-        public float HoseThickness = 0.013f;
+        public float HoseThickness = 0.028f;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
         public float HoseSag = 1.08f;

@@ -337,7 +337,12 @@ namespace Fumes.Station
             // third they are five strips a quarter of a pixel wide, which is five draw calls
             // to produce banding on something too thin to be round in the first place -- and a
             // power line is not round-looking anyway, it is a dark line.
-            var bands = _cfg.HoseThickness < 0.020f ? 1 : Bands;
+            // FLAT UP TO FOUR AND A HALF CENTIMETRES, not two. The bands shade a ribbon like a
+            // cylinder, and that is the right call for a fat rubber hose -- but the thing being
+            // matched here is a power cable, which is a flat dark line at any thickness you
+            // actually see one at. Raising the threshold above the working thickness keeps it
+            // flat while leaving the shading for anyone who dials the hose back up to a hose.
+            var bands = _cfg.HoseThickness < 0.045f ? 1 : Bands;
 
             Vector3 eye;
             try { eye = GameplayCamera.Position; }
