@@ -332,6 +332,13 @@ namespace Fumes.Station
             var radius = _cfg.HoseThickness * 0.5f;
             if (radius < 0.002f) radius = 0.002f;
 
+            // THE BANDS COLLAPSE ON A THIN LINE. The five lengthways shades exist to make a
+            // wide ribbon read as a round tube, and at five centimetres they do. At one and a
+            // third they are five strips a quarter of a pixel wide, which is five draw calls
+            // to produce banding on something too thin to be round in the first place -- and a
+            // power line is not round-looking anyway, it is a dark line.
+            var bands = _cfg.HoseThickness < 0.020f ? 1 : Bands;
+
             Vector3 eye;
             try { eye = GameplayCamera.Position; }
             catch { eye = points[0]; }
@@ -382,11 +389,11 @@ namespace Fumes.Station
             // cylinder: dark at the rims, lifting through the middle, with a narrow sheen down
             // the centre. That is the whole trick behind every drawn cable in every game, and
             // at this size it is indistinguishable from the real thing.
-            for (var b = 0; b < Bands; b++)
+            for (var b = 0; b < bands; b++)
             {
                 // Across the width, -1 at one rim to +1 at the other.
-                var u0 = -1f + 2f * b / Bands;
-                var u1 = -1f + 2f * (b + 1) / Bands;
+                var u0 = -1f + 2f * b / bands;
+                var u1 = -1f + 2f * (b + 1) / bands;
                 var mid = (u0 + u1) * 0.5f;
 
                 var colour = Rubber(mid);
