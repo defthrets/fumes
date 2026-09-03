@@ -342,7 +342,11 @@ namespace Fumes.Station
             // matched here is a power cable, which is a flat dark line at any thickness you
             // actually see one at. Raising the threshold above the working thickness keeps it
             // flat while leaving the shading for anyone who dials the hose back up to a hose.
-            var bands = _cfg.HoseThickness < 0.045f ? 1 : Bands;
+            // The threshold is well clear of the working thickness ON PURPOSE. It was set just
+            // above it, which meant one nudge upward in the ini would silently switch the round
+            // shading back on -- the setting would appear to have changed two things at once,
+            // and the second one would look like a bug rather than a consequence.
+            var bands = _cfg.HoseThickness < 0.080f ? 1 : Bands;
 
             Vector3 eye;
             try { eye = GameplayCamera.Position; }

@@ -460,7 +460,18 @@ namespace Fumes.Core
         /// where honest scale disappears. Thick enough to be a hose, not so thick it is a
         /// pipe.
         /// </summary>
-        public float HoseThickness = 0.028f;
+        /// <summary>
+        /// How thick the drawn hose is, in metres.
+        ///
+        /// SIX CENTIMETRES, which is thicker than the 5.5 that once drew planks across the
+        /// forecourt -- and it is not the same situation. Those planks were a BANDED ribbon:
+        /// five lengthways shades meant to suggest a cylinder, which instead advertised that
+        /// the thing was flat the moment you saw it side on. Flat black has no such tell; a
+        /// wide flat ribbon that always faces the camera just reads as a thick cable.
+        ///
+        /// So the ceiling that mattered was never the width. It was the shading.
+        /// </summary>
+        public float HoseThickness = 0.060f;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
         public float HoseSag = 1.08f;
