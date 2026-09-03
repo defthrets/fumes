@@ -400,7 +400,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Painted;
+        public HoseMode Hose = HoseMode.Auto;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -416,7 +416,7 @@ namespace Fumes.Core
         /// little of it that shows through the drawn hose reads as shadow rather than as beige
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 5;
+        public int HoseRopeType = 4;
 
         /// <summary>
         /// The in-game rope picker: NumPad * to cycle, NumPad 0 to keep.
@@ -450,7 +450,7 @@ namespace Fumes.Core
         /// 0 is a flat silhouette -- honest black, and it stops looking like an object. This is
         /// the lowest figure that still reads as round.
         /// </summary>
-        public int HoseSheen = 8;
+        public int HoseSheen = 24;
 
         /// <summary>
         /// How thick the hose is, in metres across.
@@ -460,21 +460,10 @@ namespace Fumes.Core
         /// where honest scale disappears. Thick enough to be a hose, not so thick it is a
         /// pipe.
         /// </summary>
-        /// <summary>
-        /// How thick the drawn hose is, in metres.
-        ///
-        /// SIX CENTIMETRES, which is thicker than the 5.5 that once drew planks across the
-        /// forecourt -- and it is not the same situation. Those planks were a BANDED ribbon:
-        /// five lengthways shades meant to suggest a cylinder, which instead advertised that
-        /// the thing was flat the moment you saw it side on. Flat black has no such tell; a
-        /// wide flat ribbon that always faces the camera just reads as a thick cable.
-        ///
-        /// So the ceiling that mattered was never the width. It was the shading.
-        /// </summary>
-        public float HoseThickness = 0.060f;
+        public float HoseThickness = 0.055f;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
-        public float HoseSag = 1.08f;
+        public float HoseSag = 1.22f;
 
         /// <summary>Whether over-stretching yanks the nozzle out of your hand, or merely stops you.</summary>
         public bool HoseSnaps = true;
