@@ -775,8 +775,19 @@ namespace Fumes.UI
         /// <summary>Everything the panel draws, faded and slid by how open it is.</summary>
         private readonly Icon _logo = new Icon("logo.png");
 
-        /// <summary>How tall the wordmark sits in the title bar. The width follows from it.</summary>
-        private const float LogoH = 0.034f;
+        /// <summary>
+        /// How tall the wordmark sits, and where its top edge goes.
+        ///
+        /// IT SHARES THE TITLE BAR WITH THE TAB ROW, which is the constraint that sets the
+        /// size. Tabs are drawn at PanelTop + 0.030 and the bar is only 0.052 deep, so the
+        /// wordmark has the top 0.027 of it and no more -- at 0.034 it ran straight through
+        /// the tabs and sat on the word HUD.
+        ///
+        /// Height rather than width, because height is the dimension that has somewhere to be:
+        /// the panel is far wider than this needs and the bar is not far taller.
+        /// </summary>
+        private const float LogoH = 0.023f;
+        private const float LogoTop = PanelTop + 0.003f;
 
         /// <summary>
         /// The FUMES wordmark, or the word itself if the file is not there.
@@ -796,8 +807,6 @@ namespace Fumes.UI
         /// </summary>
         private void Wordmark(float left)
         {
-            var y = PanelTop + TitleH / 2f;
-
             if (_logo.Missing || _logo.Aspect <= 0.01f)
             {
                 Draw.Text("Fumes", left + 0.012f, PanelTop + 0.004f, 0.62f, A(Amber), Script);
@@ -806,7 +815,9 @@ namespace Fumes.UI
 
             var w = LogoH / (_aspect * _logo.Aspect);
 
-            _logo.DrawSized(left + 0.012f + w / 2f, y, w, LogoH, A(Amber));
+            // DrawSized centres what it is given, and the constraint is on the TOP edge -- so
+            // the centre is worked out from the top rather than the top being hoped for.
+            _logo.DrawSized(left + 0.012f + w / 2f, LogoTop + LogoH / 2f, w, LogoH, A(Amber));
         }
 
         private Color A(Color c)
