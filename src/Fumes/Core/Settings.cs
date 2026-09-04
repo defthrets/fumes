@@ -359,10 +359,22 @@ namespace Fumes.Core
         public string SiphonAnimClip = "mp_player_int_wank_02";
 
         /// <summary>
-        /// Where in the motion to freeze. Mid-stroke, where the arm is out. See FillAnimPhase.
+        /// NOT FROZEN. Negative means let it run, and the flag below loops it, so the arm keeps
+        /// working for as long as the siphon does instead of holding one frame.
+        ///
+        /// Every pose in this mod up to now has been a still: the pump fill is a handshake
+        /// stopped at 18 per cent because a handshake that runs is an arm that pumps and drops.
+        /// A siphon is different -- something IS happening for the whole time, so a still is the
+        /// wrong idea rather than a badly chosen frame.
         /// </summary>
-        public float SiphonAnimPhase = 0.50f;
-        public int SiphonAnimFlag = 50;
+        public float SiphonAnimPhase = -1f;
+
+        /// <summary>
+        /// 49, not 50. Both are 32 + 16 -- player keeps control, upper body only -- and the last
+        /// bit is the difference: 1 loops, 2 holds the final frame. A held frame was right when
+        /// the pose was a still and is wrong now.
+        /// </summary>
+        public int SiphonAnimFlag = 49;
 
         /// <summary>
         /// He can walk about and crouch while siphoning, instead of being planted.
@@ -391,13 +403,25 @@ namespace Fumes.Core
         public bool SiphonCrouch = true;
 
         /// <summary>
-        /// How many presses of the duck control to spend before accepting he will not crouch.
+        /// The clip he crouches in, played full-body underneath the arm.
         ///
-        /// There is a real chance he cannot -- a man holding a jerry can may simply not be
-        /// allowed the stance -- and a mod that keeps pressing a button forever is worse than
-        /// one that says so in the log and gets on with it.
+        /// An animation because the STANCE will not do it -- proved rather than assumed: six
+        /// presses of the duck control, IsInStealthMode checked after each, upright every time.
+        /// A man holding a jerry can is not allowed the stealth stance.
+        ///
+        /// Full-body, so it owns the legs while the arm clip owns the arms. That is what the
+        /// upper-body flag is for and it is why the two do not fight. The cost is walking: a
+        /// full-body clip means he stays where he is.
+        ///
+        /// Others worth a look:
+        ///   amb@medic@standing@kneel@base           base    on one knee, more upright
+        ///   missheistdocks2a@crouch                 crouching_idle_a
         /// </summary>
-        public int SiphonCrouchTries = 6;
+        public string SiphonCrouchDict = "anim@amb@inspect@crouch@male_a@base";
+        public string SiphonCrouchClip = "base";
+
+        /// <summary>1 = loop, full body. Not 49: the legs are the point, so it is not upper-body.</summary>
+        public int SiphonCrouchFlag = 1;
 
         /// <summary>
         /// A full can does not stop the siphon -- the overflow goes on the ground.
@@ -656,7 +680,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Auto;
+        public HoseMode Hose = HoseMode.Tube;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -690,9 +714,9 @@ namespace Fumes.Core
         public string BadRopeTypes = "8";
 
         /// <summary>The colour of a painted hose. NOT a tint on the rope -- see HoseMode.Painted.</summary>
-        public int HoseRed = 8;
-        public int HoseGreen = 8;
-        public int HoseBlue = 10;
+        public int HoseRed;
+        public int HoseGreen;
+        public int HoseBlue;
 
         /// <summary>
         /// The highlight down the middle of the hose, added on top of the colour above.
@@ -706,7 +730,14 @@ namespace Fumes.Core
         /// 0 is a flat silhouette -- honest black, and it stops looking like an object. This is
         /// the lowest figure that still reads as round.
         /// </summary>
-        public int HoseSheen = 24;
+        /// <summary>
+        /// Zero, and the reason it is zero has changed. It used to be a fake highlight painted
+        /// down the middle of a flat strip to imply a tube. On real geometry the shading is
+        /// real -- faces along the silhouette go dark, faces pointing at you light up -- so a
+        /// sheen here is now an honest highlight rather than a drawn-on one. It is off because
+        /// flat black on a round silhouette is what looked right, not because it cannot work.
+        /// </summary>
+        public int HoseSheen;
 
         /// <summary>
         /// How thick the hose is, in metres across.
@@ -716,7 +747,14 @@ namespace Fumes.Core
         /// where honest scale disappears. Thick enough to be a hose, not so thick it is a
         /// pipe.
         /// </summary>
-        public float HoseThickness = 0.055f;
+        /// <summary>
+        /// Thicker than the siphon line at 0.030, so that it LOOKS the same.
+        ///
+        /// The siphon hangs under a metre from the eye and this one spans two or three metres
+        /// across a forecourt, and the same real diameter at three times the distance reads
+        /// thinner. Matching the number would not have matched the hose.
+        /// </summary>
+        public float HoseThickness = 0.040f;
 
         /// <summary>How many faces round the tube, when the hose is drawn as one.</summary>
         public int HoseSides = 7;
@@ -1244,7 +1282,9 @@ namespace Fumes.Core
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);
                 s.SiphonCrouch = ini.GetBool("Station", "SiphonCrouch", s.SiphonCrouch);
-                s.SiphonCrouchTries = ini.GetInt("Station", "SiphonCrouchTries", s.SiphonCrouchTries, 1, 60);
+                s.SiphonCrouchDict = ini.GetString("Station", "SiphonCrouchDict", s.SiphonCrouchDict);
+                s.SiphonCrouchClip = ini.GetString("Station", "SiphonCrouchClip", s.SiphonCrouchClip);
+                s.SiphonCrouchFlag = ini.GetInt("Station", "SiphonCrouchFlag", s.SiphonCrouchFlag, 0, 255);
                 s.SiphonOverflow = ini.GetBool("Station", "SiphonOverflow", s.SiphonOverflow);
                 s.SiphonPool = ini.GetBool("Station", "SiphonPool", s.SiphonPool);
                 s.SiphonPoolWidth = ini.GetFloat("Station", "SiphonPoolWidth", s.SiphonPoolWidth, 0.05f, 3f);

@@ -420,9 +420,6 @@ namespace Fumes.Station
             catch { _wasStealthy = false; }
 
             _crouched = false;
-            _crouchChecked = false;
-            _crouchAskedAt = 0;
-            _crouchTries = 0;
 
             _spilled = 0f;
             _poolWidth = 0f;
@@ -748,6 +745,9 @@ namespace Fumes.Station
             {
                 if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true);
 
+                // The legs first, then the arm on top of them. Reversed, the full-body clip
+                // lands on a ped that is already running an upper-body one and takes the arm
+                // back with it.
                 if (_cfg.SiphonCrouch) Crouch(me);
 
                 // AN ANIMATION, NOT IK, and that is a correction rather than a preference.
@@ -951,53 +951,58 @@ namespace Fumes.Station
         }
 
         /// <summary>
-        /// Puts him in the crouch by PRESSING THE BUTTON, the way the player would.
+        /// Crouches him with an ANIMATION, because the stance system will not.
         ///
-        /// SET_PED_STEALTH_MOVEMENT is the obvious native and it does not work on the player.
-        /// It is a ped instruction, and the player's stance is owned by the player's control
-        /// state -- so on anyone else it works and on him it is accepted, returns nothing, and
-        /// changes nothing. The stealth-asset request was a real omission and fixing it changed
-        /// nothing, which is what said the native was not the problem.
+        /// THAT IS SETTLED RATHER THAN ASSUMED, which is what the last attempt was for. It
+        /// pressed the duck control six times, checked IsInStealthMode after each, and wrote
+        /// the result down: he stayed upright every time. A man holding a jerry can is not
+        /// allowed the stealth stance, and no amount of asking changes that.
         ///
-        /// Duck is a TOGGLE, not a hold. Feeding it every frame would flip the stance sixty
-        /// times a second, so this presses once and then watches: IsInStealthMode says whether
-        /// it took, and if it did not, it tries again after a beat. A few attempts, then it
-        /// gives up and says so rather than fighting the game forever.
+        /// So the crouch is a full-body clip played underneath, and the arm clip is upper-body
+        /// on top of it. That is what the upper-body flag is FOR -- it is how the game lays a
+        /// gesture over an idle -- and it is why the two do not fight: one owns the legs, the
+        /// other owns the arms.
         ///
-        /// The same toggle is why standing back up is a press too, not a false.
+        /// The cost is walking. A full-body clip owns the legs, so he cannot crouch and walk at
+        /// once; SiphonWalk still governs the leash, but with a crouch on he will stay put.
         /// </summary>
         private void Crouch(Ped me)
         {
+            if (string.IsNullOrEmpty(_cfg.SiphonCrouchDict) ||
+                string.IsNullOrEmpty(_cfg.SiphonCrouchClip)) return;
+
+            if (_crouchImpossible) return;
+
             try
             {
-                if (me.IsInStealthMode) { _crouched = true; return; }
-
-                // Given up on.
-                if (_crouchTries > _cfg.SiphonCrouchTries)
+                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, _cfg.SiphonCrouchDict))
                 {
-                    if (!_crouchChecked)
-                    {
-                        _crouchChecked = true;
-                        Log.Warn("SiphonCrouch: he will not crouch after " + _cfg.SiphonCrouchTries +
-                                 " presses of the duck control. Something is holding him upright " +
-                                 "-- most likely what he is carrying. Set SiphonCrouch = false " +
-                                 "in the ini if it stays that way.");
-                    }
+                    _crouchImpossible = true;
+                    Log.Warn("SiphonCrouchDict '" + _cfg.SiphonCrouchDict + "' is not an animation " +
+                             "dictionary this game has. He will siphon standing up.");
                     return;
                 }
 
-                // One press, then a beat to let the game act on it. A toggle spammed every
-                // frame is a man standing up and sitting down sixty times a second.
-                if (Game.GameTime < _crouchAskedAt) return;
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, _cfg.SiphonCrouchDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, _cfg.SiphonCrouchDict);
+                    return;
+                }
 
-                Game.SetControlValueNormalized(Control.Duck, 1f);
+                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle,
+                                         _cfg.SiphonCrouchDict, _cfg.SiphonCrouchClip, 3))
+                {
+                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle,
+                                  _cfg.SiphonCrouchDict, _cfg.SiphonCrouchClip,
+                                  4f, -4f, -1, _cfg.SiphonCrouchFlag, 0f, false, false, false);
+                }
 
-                _crouchAskedAt = Game.GameTime + 350;
-                _crouchTries++;
+                _crouched = true;
             }
             catch (Exception ex)
             {
                 Log.Once("crouch", "Could not crouch him: " + ex.Message);
+                _crouchImpossible = true;
             }
         }
 
@@ -1009,11 +1014,10 @@ namespace Fumes.Station
 
             try
             {
-                // A toggle both ways. Only pressed if the stance is not already the one he
-                // started in, or this stands him up out of a crouch he chose himself.
-                if (me != null && me.Exists() && me.IsInStealthMode != _wasStealthy)
+                if (me != null && me.Exists())
                 {
-                    Game.SetControlValueNormalized(Control.Duck, 1f);
+                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle,
+                                  _cfg.SiphonCrouchDict, _cfg.SiphonCrouchClip, -4f);
                 }
             }
             catch (Exception ex)
@@ -2092,9 +2096,7 @@ namespace Fumes.Station
         /// <summary>Whether he was already crouched when the siphon began, so it can be put back.</summary>
         private bool _wasStealthy;
         private bool _crouched;
-        private bool _crouchChecked;
-        private int _crouchAskedAt;
-        private int _crouchTries;
+        private bool _crouchImpossible;
 
         /// <summary>
         /// Holds a ped at one frame of a clip, for as long as it is called.
