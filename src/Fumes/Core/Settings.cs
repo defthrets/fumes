@@ -317,6 +317,19 @@ namespace Fumes.Core
         /// </summary>
         public float JerryCanLitresPerSecond = 0.8f;
 
+        /// <summary>
+        /// An emptied can stays in his hands instead of being taken off him.
+        ///
+        /// The game removes a petrol can the moment its ammo hits zero -- vanilla behaviour,
+        /// sensible while a can is only a weapon, and wrong here, because an empty can is still
+        /// the thing you siphon INTO. Losing it exactly when it becomes useful is backwards.
+        ///
+        /// One unit of ammo is reserved and never spent, so the game always sees a can with
+        /// something in it. The reserved unit is not readable as fuel, so nothing can be poured
+        /// out of an empty can either.
+        /// </summary>
+        public bool KeepEmptyCan = true;
+
         /// <summary>Drawing fuel out of somebody else's tank and into the can.</summary>
         public bool Siphon = true;
 
@@ -1350,6 +1363,7 @@ namespace Fumes.Core
                 s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
+                s.KeepEmptyCan = ini.GetBool("Station", "KeepEmptyCan", s.KeepEmptyCan);
                 s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
                 s.SiphonHoseRightHand = ini.GetBool("Station", "SiphonHoseRightHand", s.SiphonHoseRightHand);
                 s.SiphonTurnRight = ini.GetFloat("Station", "SiphonTurnRight", s.SiphonTurnRight, -360f, 360f);

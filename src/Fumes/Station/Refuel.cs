@@ -351,6 +351,49 @@ namespace Fumes.Station
         }
 
         /// <summary>Litres in the can he owns, held or not.</summary>
+        /// <summary>
+        /// Litres from an ammo count, and ammo back from litres, with ONE UNIT HELD BACK.
+        ///
+        /// THE GAME TAKES AN EMPTY PETROL CAN OFF YOU. That is vanilla behaviour and nothing to
+        /// do with this mod -- run the ammo to zero and he drops it, which is fine when the can
+        /// is only ever a weapon and ruinous here, where an empty can is still the thing you
+        /// siphon INTO. Losing it at the exact moment it becomes useful is the wrong way round.
+        ///
+        /// So one unit of ammo is reserved and never spent. Ammo 1 means "he has a can and it
+        /// is empty"; the useful range is 1..max mapped onto 0..capacity, so the reserved unit
+        /// is not readable as fuel and cannot be poured. The can stays in his hands and the
+        /// mod's own litres stay honest.
+        ///
+        /// Both directions live here because the mapping is written in four places -- held and
+        /// owned, read and write -- and a reserve applied to three of them is a can that gains
+        /// or loses a litre depending on which one asked.
+        /// </summary>
+        private float LitresFrom(int ammo, int max)
+        {
+            var floor = _cfg.KeepEmptyCan ? 1 : 0;
+
+            if (max <= floor) return 0f;
+
+            var have = ammo - floor;
+            if (have <= 0) return 0f;
+
+            return _cfg.JerryCanLitres * have / (max - floor);
+        }
+
+        private int AmmoFrom(float litres, int max)
+        {
+            var floor = _cfg.KeepEmptyCan ? 1 : 0;
+
+            if (max <= floor) return 0;
+
+            var ammo = floor + (int)(litres / _cfg.JerryCanLitres * (max - floor));
+
+            if (ammo < floor) ammo = floor;
+            if (ammo > max) ammo = max;
+
+            return ammo;
+        }
+
         private float CanFuel(Ped me)
         {
             var can = Can(me);
@@ -358,8 +401,7 @@ namespace Fumes.Station
 
             try
             {
-                var max = can.MaxAmmo;
-                return max <= 0 ? 0f : _cfg.JerryCanLitres * can.Ammo / max;
+                return LitresFrom(can.Ammo, can.MaxAmmo);
             }
             catch
             {
@@ -375,15 +417,9 @@ namespace Fumes.Station
 
             try
             {
-                var max = can.MaxAmmo;
-                if (max <= 0) return;
+                if (can.MaxAmmo <= 0) return;
 
-                var ammo = (int)(litres / _cfg.JerryCanLitres * max);
-
-                if (ammo < 0) ammo = 0;
-                if (ammo > max) ammo = max;
-
-                can.Ammo = ammo;
+                can.Ammo = AmmoFrom(litres, can.MaxAmmo);
             }
             catch (Exception ex)
             {
@@ -1217,10 +1253,7 @@ namespace Fumes.Station
                 var weapon = me.Weapons.Current;
                 if (weapon == null || weapon.Hash != WeaponHash.PetrolCan) return 0f;
 
-                var max = weapon.MaxAmmo;
-                if (max <= 0) return 0f;
-
-                return _cfg.JerryCanLitres * weapon.Ammo / max;
+                return LitresFrom(weapon.Ammo, weapon.MaxAmmo);
             }
             catch
             {
@@ -1236,15 +1269,9 @@ namespace Fumes.Station
                 var weapon = me.Weapons.Current;
                 if (weapon == null || weapon.Hash != WeaponHash.PetrolCan) return;
 
-                var max = weapon.MaxAmmo;
-                if (max <= 0) return;
+                if (weapon.MaxAmmo <= 0) return;
 
-                var ammo = (int)(litres / _cfg.JerryCanLitres * max);
-
-                if (ammo < 0) ammo = 0;
-                if (ammo > max) ammo = max;
-
-                weapon.Ammo = ammo;
+                weapon.Ammo = AmmoFrom(litres, weapon.MaxAmmo);
             }
             catch (Exception ex)
             {
