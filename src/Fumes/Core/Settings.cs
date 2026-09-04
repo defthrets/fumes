@@ -327,19 +327,30 @@ namespace Fumes.Core
         /// the one the game plays for someone carrying a one-handed weapon -- right arm keeps
         /// hold of the object, left arm does the pushing, which is the exact shape wanted here.
         ///
-        /// Others worth a look if this one sits wrong, all left-armed:
-        ///   doors@unarmed  l_hand_sweep          the same clip without the weapon carry
-        ///   doors@         door_sweep_l_hand_medium
-        ///   laddersbase    base_left_hand_up     reaches UP rather than out
+        /// The door sweep was the first named-left clip found and it read as a man checking
+        /// his watch: a push starts with the elbow bent and the hand near the chest, and no
+        /// freeze point in it looks like a hand going INTO something.
+        ///
+        /// The bunker workbench clips do. anim@amb@machinery@speed_drill@ is a ped standing at
+        /// a bench and loading parts into a machine, with the hand in the clip name -- load_lh
+        /// is the left hand reaching forward into the bench, load_rh the right, load_ll and
+        /// load_rl the same reach made low. A bench is filler height, and reaching into a bench
+        /// is the exact motion of feeding a hose into a tank. The _amy_skater_01 suffix is the
+        /// ped rig; the other suffixes in that dictionary are the props in the scene.
+        ///
+        /// Others worth a look, all left-handed, same dictionary:
+        ///   load_lh_02_amy_skater_01      a second take of the same reach
+        ///   load_ll_01_amy_skater_01      the reach made LOW -- for a filler near the sill
+        ///   unload_lh_01_amy_skater_01    the reverse motion, hand coming back out
         /// </summary>
-        public string SiphonAnimDict = "doors@1handed";
-        public string SiphonAnimClip = "l_hand_sweep";
+        public string SiphonAnimDict = "anim@amb@machinery@speed_drill@";
+        public string SiphonAnimClip = "load_lh_01_amy_skater_01";
 
         /// <summary>
-        /// Where in the sweep to freeze. Later than the pump pose, because a door push starts
-        /// with the arm back and this wants it at full stretch. See FillAnimPhase.
+        /// Where in the load to freeze. A load goes reach, grip, bring back, so the stretch is
+        /// early-to-mid rather than at the end. See FillAnimPhase.
         /// </summary>
-        public float SiphonAnimPhase = 0.45f;
+        public float SiphonAnimPhase = 0.35f;
         public int SiphonAnimFlag = 50;
 
         /// <summary>
