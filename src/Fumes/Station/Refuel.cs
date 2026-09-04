@@ -414,6 +414,18 @@ namespace Fumes.Station
             _canLitres = inCan;
             _stage = Stage.Siphoning;
 
+            // SQUARE HIM UP FIRST, once, before any of the pose goes on.
+            //
+            // The pose is a fixed clip: it puts his arm wherever the animator put it, relative
+            // to HIM, and it has no idea where the car is. So the only way the hand lands on
+            // the filler is for him to be standing at the right angle to it, and that is an
+            // offset from facing the cap rather than facing it -- the clip reaches across his
+            // body, not straight out in front.
+            //
+            // Once, here, rather than every frame: held every frame it would fight him the
+            // moment he tried to move, and he is allowed to move.
+            Turn(me, Filler.On(vehicle, out var _), _cfg.SiphonTurnRight);
+
             // Read ONCE, here, before anything changes it. Reading it later would read back
             // the crouch this mod put on him and then "restore" it.
             try { _wasStealthy = me.IsInStealthMode; }
@@ -2004,7 +2016,7 @@ namespace Fumes.Station
         /// instead of desiring it. Used once when filling starts, because a desired heading
         /// needs a locomotion system to act on it and he has none while held still.
         /// </summary>
-        private static void Turn(Ped me, Vector3 point)
+        private static void Turn(Ped me, Vector3 point, float rightwards = 0f)
         {
             try
             {
@@ -2013,10 +2025,22 @@ namespace Fumes.Station
 
                 var heading = (float)(Math.Atan2(-to.X, to.Y) * 180d / Math.PI);
 
+                // SUBTRACTED, because a GTA heading counts anticlockwise: north is 0 and west
+                // is 90, so turning to the right is going down through the numbers rather than
+                // up. Adding here would turn him the other way and look like the setting was
+                // simply the wrong size.
+                heading -= rightwards;
+
+                while (heading < 0f) heading += 360f;
+                while (heading >= 360f) heading -= 360f;
+
                 me.Heading = heading;
                 Function.Call(Hash.SET_PED_DESIRED_HEADING, me.Handle, heading);
 
-                Log.Debug("Turned him to " + heading.ToString("0") + " degrees to face the filler.");
+                Log.Debug("Turned him to " + heading.ToString("0") + " degrees" +
+                          (Math.Abs(rightwards) > 0.5f
+                              ? " (" + rightwards.ToString("0") + " right of the filler)."
+                              : " to face the filler."));
             }
             catch (Exception ex)
             {

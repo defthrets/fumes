@@ -409,6 +409,20 @@ namespace Fumes.Core
         public bool SiphonCrouch = true;
 
         /// <summary>
+        /// How far to the right he turns as the siphon starts, in degrees.
+        ///
+        /// The pose is a fixed clip. It puts his arm where the animator put it, relative to
+        /// HIM, and knows nothing about where the car is -- so the hand lands on the filler
+        /// only if he is standing at the right angle to it. Since the clip reaches across his
+        /// body rather than straight out in front, that angle is not "facing the cap"; it is an
+        /// offset from it.
+        ///
+        /// Negative turns him the other way. It is applied once, as the siphon begins, and not
+        /// held -- held, it would fight him every time he moved.
+        /// </summary>
+        public float SiphonTurnRight = 80f;
+
+        /// <summary>
         /// The hose end sits in his RIGHT hand rather than his left.
         ///
         /// FreeHand used to answer this on its own -- the hose went in whichever hand was not
@@ -1294,6 +1308,7 @@ namespace Fumes.Core
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
                 s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
                 s.SiphonHoseRightHand = ini.GetBool("Station", "SiphonHoseRightHand", s.SiphonHoseRightHand);
+                s.SiphonTurnRight = ini.GetFloat("Station", "SiphonTurnRight", s.SiphonTurnRight, -360f, 360f);
                 s.SiphonAnimDict = ini.GetString("Station", "SiphonAnimDict", s.SiphonAnimDict);
                 s.SiphonAnimClip = ini.GetString("Station", "SiphonAnimClip", s.SiphonAnimClip);
                 s.SiphonAnimPhase = ini.GetFloat("Station", "SiphonAnimPhase", s.SiphonAnimPhase, -1f, 1f);
