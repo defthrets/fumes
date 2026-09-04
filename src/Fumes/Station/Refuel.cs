@@ -414,6 +414,12 @@ namespace Fumes.Station
             _canLitres = inCan;
             _stage = Stage.Siphoning;
 
+            // Read ONCE, here, before anything changes it. Reading it later would read back
+            // the crouch this mod put on him and then "restore" it.
+            try { _wasStealthy = me.IsInStealthMode; }
+            catch { _wasStealthy = false; }
+            _crouched = false;
+
             PutCanDown(me);
 
             Log.Info("Siphoning from " + vehicle.LocalizedName + " (" +
@@ -718,6 +724,15 @@ namespace Fumes.Station
             {
                 if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true);
 
+                // Down, every frame it is on. Stealth is a stance the game will drop on its
+                // own -- a bump, a swing, a control the player touches -- so this is a request
+                // for THIS frame rather than a state set once and trusted.
+                if (_cfg.SiphonCrouch)
+                {
+                    Function.Call(Hash.SET_PED_STEALTH_MOVEMENT, me.Handle, true, "DEFAULT_ACTION");
+                    _crouched = true;
+                }
+
                 // AN ANIMATION, NOT IK, and that is a correction rather than a preference.
                 //
                 // IK was the obvious way to put one arm somewhere: name the part, name the
@@ -849,8 +864,28 @@ namespace Fumes.Station
             catch { /* the pose reselects it next frame anyway */ }
         }
 
+        /// <summary>Puts his stance back to whatever it was before the siphon.</summary>
+        private void StandUp(Ped me)
+        {
+            if (!_crouched) return;
+            _crouched = false;
+
+            try
+            {
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.SET_PED_STEALTH_MOVEMENT, me.Handle, _wasStealthy, "DEFAULT_ACTION");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not stand him back up: " + ex.Message);
+            }
+        }
+
         private void StopSiphon(Ped me, string why)
         {
+            StandUp(me);
             Swung(me);
             PickCanUp(me);
             StopFillPose();
@@ -1908,6 +1943,10 @@ namespace Fumes.Station
 
         /// <summary>Which clip is currently held, so the right one gets stopped.</summary>
         private string _posedDict, _posedClip;
+
+        /// <summary>Whether he was already crouched when the siphon began, so it can be put back.</summary>
+        private bool _wasStealthy;
+        private bool _crouched;
 
         /// <summary>
         /// Holds a ped at one frame of a clip, for as long as it is called.

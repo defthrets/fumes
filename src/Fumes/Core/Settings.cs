@@ -355,6 +355,20 @@ namespace Fumes.Core
         public bool SiphonWalk = true;
 
         /// <summary>
+        /// He crouches while siphoning.
+        ///
+        /// Stealth movement, because that IS the crouch: the game has no separate on-foot
+        /// crouch for the player, the stealth stance is the crouched one, and it is what Ctrl
+        /// puts you in. It composes with the reach -- the pose is upper-body-only, so it plays
+        /// over whatever the legs are doing, standing or crouched -- and with walking, since a
+        /// stealth walk is still a walk.
+        ///
+        /// Whatever stance he was in before is put back afterwards. A man who was already
+        /// creeping up on a car does not stand up because he finished stealing from it.
+        /// </summary>
+        public bool SiphonCrouch = true;
+
+        /// <summary>
         /// How far from the filler he can get before the hose comes out, in metres.
         ///
         /// This is the leash, and it replaces the reach test the other stages use. Standing
@@ -1155,6 +1169,7 @@ namespace Fumes.Core
                 s.SiphonSpoutForward = ini.GetFloat("Station", "SiphonSpoutForward", s.SiphonSpoutForward, -0.5f, 0.5f);
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);
+                s.SiphonCrouch = ini.GetBool("Station", "SiphonCrouch", s.SiphonCrouch);
                 s.SiphonLeash = ini.GetFloat("Station", "SiphonLeash", s.SiphonLeash, 0.3f, 10f);
                 s.SiphonHose = ParseEnum(ini.GetString("Station", "SiphonHose", "Painted"), s.SiphonHose);
                 s.SiphonHoseRed = ini.GetInt("Station", "SiphonHoseRed", s.SiphonHoseRed, 0, 255);
