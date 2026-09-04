@@ -327,30 +327,29 @@ namespace Fumes.Core
         /// the one the game plays for someone carrying a one-handed weapon -- right arm keeps
         /// hold of the object, left arm does the pushing, which is the exact shape wanted here.
         ///
-        /// The door sweep was the first named-left clip found and it read as a man checking
-        /// his watch: a push starts with the elbow bent and the hand near the chest, and no
-        /// freeze point in it looks like a hand going INTO something.
+        /// A DIALOGUE GESTURE, and the reasons it is the right kind of clip are the reasons the
+        /// two before it were not. The door sweep bent the elbow and read as checking a watch.
+        /// The workbench load was a two-handed job, so both arms came up. A gesture is ONE arm,
+        /// it is slight by design, and it was built to be laid over whatever the body is
+        /// already doing -- talking peds play these while walking, sitting, driving -- which is
+        /// precisely what flag 50 asks of a clip.
         ///
-        /// The bunker workbench clips do. anim@amb@machinery@speed_drill@ is a ped standing at
-        /// a bench and loading parts into a machine, with the hand in the clip name -- load_lh
-        /// is the left hand reaching forward into the bench, load_rh the right, load_ll and
-        /// load_rl the same reach made low. A bench is filler height, and reaching into a bench
-        /// is the exact motion of feeding a hose into a tank. The _amy_skater_01 suffix is the
-        /// ped rig; the other suffixes in that dictionary are the props in the scene.
+        /// gesture_hand_left and gesture_hand_right are an explicit pair in the standing set,
+        /// and the in-car sets carry ONLY the left one -- a driver's right hand is on the
+        /// wheel -- which is what confirms the name means the hand and not a direction.
         ///
-        /// Others worth a look, all left-handed, same dictionary:
-        ///   load_lh_02_amy_skater_01      a second take of the same reach
-        ///   load_ll_01_amy_skater_01      the reach made LOW -- for a filler near the sill
-        ///   unload_lh_01_amy_skater_01    the reverse motion, hand coming back out
+        /// Others worth a look, same dictionary:
+        ///   gesture_why_left      palm up, a touch higher
+        ///   gesture_hand_right    the mirror, should left turn out to mean right
         /// </summary>
-        public string SiphonAnimDict = "anim@amb@machinery@speed_drill@";
-        public string SiphonAnimClip = "load_lh_01_amy_skater_01";
+        public string SiphonAnimDict = "gestures@m@standing@casual";
+        public string SiphonAnimClip = "gesture_hand_left";
 
         /// <summary>
-        /// Where in the load to freeze. A load goes reach, grip, bring back, so the stretch is
-        /// early-to-mid rather than at the end. See FillAnimPhase.
+        /// Where in the gesture to freeze. A gesture goes out and comes back, so the reach is
+        /// in the middle. See FillAnimPhase.
         /// </summary>
-        public float SiphonAnimPhase = 0.35f;
+        public float SiphonAnimPhase = 0.40f;
         public int SiphonAnimFlag = 50;
 
         /// <summary>
