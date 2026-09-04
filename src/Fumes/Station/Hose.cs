@@ -113,6 +113,22 @@ namespace Fumes.Station
         ///
         /// from = where the hose leaves the pump, to = the hand holding the nozzle.
         /// </summary>
+        /// <summary>Runs the hose from one point to another by way of a third.</summary>
+        public void Update(Vector3 from, Vector3 via, Vector3 to)
+        {
+            if (_mode == HoseMode.None) return;
+
+            // Only the drawn modes can be told where to go. A rope is a physics object with two
+            // ends and no opinion about the middle, so it gets the straight run.
+            if (_mode == HoseMode.Line || _mode == HoseMode.Tube)
+            {
+                DrawCatenary(from, via, to);
+                return;
+            }
+
+            Update(from, to);
+        }
+
         public void Update(Vector3 from, Vector3 to)
         {
             if (_mode == HoseMode.None) return;
@@ -167,8 +183,7 @@ namespace Fumes.Station
                 var points = new Vector3[count];
                 for (var i = 0; i < count; i++) points[i] = _rope.GetVertexCoord(i);
 
-                if (_mode == HoseMode.Tube) Sleeve(points);
-                else Stroke(points);
+                Stroke(points);
             }
             catch (Exception ex)
             {
@@ -301,32 +316,99 @@ namespace Fumes.Station
         /// than a real catenary -- over three metres of hose the two are the same picture, and
         /// only one of them needs a cosh.
         /// </summary>
+        /// <summary>
+        /// One hanging leg, as points. Sag is worked out per LEG rather than across the whole
+        /// run -- a short leg between two hands should barely dip while a long one to the floor
+        /// droops properly, and one figure for both gives you a hose that either sags between
+        /// his hands or runs dead straight to the can.
+        /// </summary>
+        private Vector3[] Leg(Vector3 from, Vector3 to, int segments)
+        {
+            var span = from.DistanceTo(to);
+            var sag = Clamp(span * (Sag - 1f) * 1.6f, 0.02f, 1.4f);
+
+            var points = new Vector3[segments + 1];
+
+            for (var i = 0; i <= segments; i++)
+            {
+                var t = (float)i / segments;
+                var point = Vector3.Lerp(from, to, t);
+                point.Z -= 4f * sag * t * (1f - t);
+                points[i] = point;
+            }
+
+            return points;
+        }
+
+        /// <summary>
+        /// Tube draws real geometry, everything else draws the billboarded ribbon.
+        ///
+        /// THIS LINE WAS IN THE WRONG METHOD. It was put into PaintRope, which only runs for
+        /// Painted mode over a live rope -- and Tube never gets there, because it returns to
+        /// DrawCatenary long before. So Sleeve was written, compiled, shipped, and never once
+        /// called: everything drawn under the name Tube has actually been Stroke.
+        ///
+        /// The patch that placed it reported success, because the text it wrote was in the file
+        /// afterwards. It was in the wrong function. A string being present is not the same
+        /// question as a string being where it was meant to go, and only the first one was
+        /// being asked.
+        /// </summary>
+        private void Draw(Vector3[] points)
+        {
+            if (_mode == HoseMode.Tube) Sleeve(points);
+            else Stroke(points);
+        }
+
         private void DrawCatenary(Vector3 from, Vector3 to)
         {
             const int segments = 16;
 
             try
             {
-                var span = from.DistanceTo(to);
-                if (span < 0.05f) return;
+                if (from.DistanceTo(to) < 0.05f) return;
 
-                // Slack from the same figure the rope uses, so both hoses hang alike.
-                var sag = Clamp(span * (Sag - 1f) * 1.6f, 0.08f, 1.4f);
-
-                var points = new Vector3[segments + 1];
-                for (var i = 0; i <= segments; i++)
-                {
-                    var t = (float)i / segments;
-                    var point = Vector3.Lerp(from, to, t);
-                    point.Z -= 4f * sag * t * (1f - t);
-                    points[i] = point;
-                }
-
-                Stroke(points);
+                Draw(Leg(from, to, segments));
             }
             catch (Exception ex)
             {
                 Log.Once("hose-draw", "Could not draw the hose: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The same hose, but running THROUGH a point on its way.
+        ///
+        /// Two legs joined into ONE array rather than drawn as two hoses. Drawn separately a
+        /// tube would start and end at the join, and a tube's end is an open ring -- you would
+        /// see the hole, and the halves would shade independently either side of it. Joined,
+        /// the rings carry through and the bend is just a bend.
+        ///
+        /// The join point appears once, not twice: a repeated point has no direction between
+        /// itself and itself, so the frame carried along the tube would have nothing to
+        /// re-square against there.
+        /// </summary>
+        private void DrawCatenary(Vector3 from, Vector3 via, Vector3 to)
+        {
+            const int segments = 9;
+
+            try
+            {
+                if (from.DistanceTo(via) < 0.02f) { DrawCatenary(from, to); return; }
+                if (via.DistanceTo(to) < 0.02f) { DrawCatenary(from, via); return; }
+
+                var first = Leg(from, via, segments);
+                var second = Leg(via, to, segments);
+
+                var all = new Vector3[first.Length + second.Length - 1];
+
+                Array.Copy(first, all, first.Length);
+                Array.Copy(second, 1, all, first.Length, second.Length - 1);
+
+                Draw(all);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hose-draw-via", "Could not draw the hose: " + ex.Message);
             }
         }
 

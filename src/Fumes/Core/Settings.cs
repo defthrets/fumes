@@ -551,6 +551,15 @@ namespace Fumes.Core
         public float SiphonCanForward = 0.50f;
         public float SiphonCanSide = 0.12f;
 
+        /// <summary>
+        /// The hose runs through his other hand on the way to the can.
+        ///
+        /// One hand holds the end at the car and the other feeds it down, which is how a person
+        /// holds a length of hose. It also gives the run a bend, so it stops reading as a
+        /// straight line from an armpit to the floor.
+        /// </summary>
+        public bool SiphonHoseBothHands = true;
+
         /// <summary>Across the can. The third axis, because two was not enough to land on a neck.</summary>
         public float SiphonSpoutSide;
 
@@ -1379,6 +1388,7 @@ namespace Fumes.Core
                 s.SiphonSpoutSide = ini.GetFloat("Station", "SiphonSpoutSide", s.SiphonSpoutSide, -0.5f, 0.5f);
                 s.SiphonCanForward = ini.GetFloat("Station", "SiphonCanForward", s.SiphonCanForward, -2f, 2f);
                 s.SiphonCanSide = ini.GetFloat("Station", "SiphonCanSide", s.SiphonCanSide, -2f, 2f);
+                s.SiphonHoseBothHands = ini.GetBool("Station", "SiphonHoseBothHands", s.SiphonHoseBothHands);
                 s.SiphonSpoutEdit = ini.GetBool("Station", "SiphonSpoutEdit", s.SiphonSpoutEdit);
                 s.SiphonSpoutStep = ini.GetFloat("Station", "SiphonSpoutStep", s.SiphonSpoutStep, 0.001f, 0.1f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);

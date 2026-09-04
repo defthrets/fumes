@@ -634,7 +634,20 @@ namespace Fumes.Station
                 // bone, and the spout end is measured off the can he is actually holding.
                 var spout = CanSpout(me);
 
-                _siphonLine.Update(me.Bones[FreeHand].Position, spout);
+                // THROUGH BOTH HANDS. One hand holds the end at the car and the other feeds it
+                // down to the can, which is how a person actually holds a length of hose -- and
+                // it gives the run a bend, so it stops reading as a straight line from an
+                // armpit to the floor.
+                if (_cfg.SiphonHoseBothHands)
+                {
+                    _siphonLine.Update(me.Bones[FreeHand].Position,
+                                       me.Bones[OtherHand].Position, spout);
+                }
+                else
+                {
+                    _siphonLine.Update(me.Bones[FreeHand].Position, spout);
+                }
+
                 SpoutEditor(me, spout);
             }
 
@@ -1040,7 +1053,9 @@ namespace Fumes.Station
                 Draw.Text(line, 0.5f, 0.098f, 0.36f,
                           Color.FromArgb(240, 250, 200, 110), 4, true);
 
-                Draw.Text(_spoutSaved ? "saved to Fumes.ini" : "arrows move it, space/ctrl raise it, ENTER saves",
+                Draw.Text(_spoutSaved
+                              ? "saved and locked"
+                              : "arrows move it, space/ctrl raise it, ENTER saves and locks",
                           0.5f, 0.128f, 0.26f,
                           Color.FromArgb(200, 200, 200, 205), 4, true);
 
@@ -1052,6 +1067,15 @@ namespace Fumes.Station
                                               _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture))
                              && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutUp",
                                               _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture));
+
+                    // SAVED AND LOCKED, in one press. "Put it there and leave it" is one
+                    // intention, so it is one button -- and an editor that stays on after you
+                    // are done is a readout and a marker on screen every time you siphon.
+                    if (ok)
+                    {
+                        IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutEdit", "false");
+                        _cfg.SiphonSpoutEdit = false;
+                    }
 
                     _spoutSaved = ok;
 
@@ -1436,6 +1460,9 @@ namespace Fumes.Station
                 return _cfg.SiphonHoseRightHand ? Bone.PHRightHand : Bone.PHLeftHand;
             }
         }
+
+        /// <summary>The hand the hose does NOT start in -- it passes through this one.</summary>
+        private Bone OtherHand => FreeHand == Bone.PHRightHand ? Bone.PHLeftHand : Bone.PHRightHand;
 
         /// <summary>A stand-in tank so the pump display can show the CAN filling.</summary>
         private readonly Tank _canGlass = new Tank { Capacity = 20f, Litres = 0f };
