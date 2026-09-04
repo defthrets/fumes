@@ -431,9 +431,11 @@ namespace Fumes.Core
         /// pose clip actually moves, and this clip moves the right one. That is not a guess --
         /// it is what had the can up in the air.
         ///
-        /// Flip it if the hose ends up in the hand that is hanging still.
+        /// The right hand was the guess and it was wrong: the clip drives the right ARM, but
+        /// the hand it leaves at the car is the one reaching for the filler, and the hose has to
+        /// come from the other one -- it runs to a can on the floor, not to the cap.
         /// </summary>
-        public bool SiphonHoseRightHand = true;
+        public bool SiphonHoseRightHand;
 
         /// <summary>
         /// The clip he crouches in, played full-body underneath the arm.
