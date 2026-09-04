@@ -65,6 +65,19 @@ namespace Fumes.Station
         private float _price = 1f;
 
         /// <summary>
+        /// The station's own price, before the grade multiplier.
+        ///
+        /// Kept apart because the two are settled at different MOMENTS. The station's price is
+        /// known when you pick the nozzle up; the grade is not known until you point it at
+        /// something, since it is the vehicle that decides whether this is diesel. Multiplying
+        /// in place at the pump would leave nothing to recompute from when a truck turns up.
+        /// </summary>
+        private float _basePrice = 1f;
+
+        /// <summary>What is going in right now. Resolved per vehicle, not per station.</summary>
+        private FuelGrade _grade = FuelGrade.Regular;
+
+        /// <summary>
         /// The brand and the place, kept APART rather than as one joined title.
         ///
         /// The display sets them in two different fonts -- the brand in signwriter's
@@ -472,7 +485,7 @@ namespace Fumes.Station
             _canGlass.Litres = _canLitres;
 
             _meter.Draw(_stationBrand, _stationPlace, _dispensed, _price, _owed,
-                        !_cfg.ChargeMoney, _canGlass);
+                        !_cfg.ChargeMoney, _canGlass, _grade);
 
             Prompt(Control.Context, "Stop   can " +
                                     _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
@@ -814,6 +827,11 @@ namespace Fumes.Station
             _canLitres = litres;
             _stage = Stage.FillingCan;
 
+            // Back to the bought grade. A truck hovered a moment ago would otherwise leave the
+            // diesel price on the can.
+            _grade = _cfg.Grade;
+            _price = _basePrice * _cfg.PriceFor(_grade);
+
             Log.Info("Filling the can at " + _stationName + " ($" +
                      _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L), " +
                      litres.ToString("0.0", CultureInfo.InvariantCulture) + " L in it.");
@@ -829,7 +847,12 @@ namespace Fumes.Station
             // machine.
             _anchorLocal = LocalAnchor(pump, me.Position);
 
-            _price = _stations.PriceAt(pump.Position, out var forecourt) * _cfg.PriceFor(_cfg.Grade);
+            _basePrice = _stations.PriceAt(pump.Position, out var forecourt);
+
+            // The selected grade until a vehicle says otherwise -- which is also the right
+            // answer for a jerry can, since a can holds whatever you bought.
+            _grade = _cfg.Grade;
+            _price = _basePrice * _cfg.PriceFor(_grade);
 
             _stationBrand = forecourt == null ? "PUMP" : forecourt.Brand;
             _stationPlace = forecourt == null ? "" : forecourt.Name;
@@ -999,7 +1022,17 @@ namespace Fumes.Station
 
             if (choice == 1)
             {
-                Prompt(Control.Context, "Fill the " + vehicle.LocalizedName +
+                // RESOLVED BEFORE THE PROMPT, so the price you are quoted is the price you
+                // pay. Doing it after the button would quote unleaded and charge diesel.
+                _grade = Diesel.GradeFor(_cfg, vehicle, _cfg.Grade);
+                _price = _basePrice * _cfg.PriceFor(_grade);
+
+                // Named only when it is worth naming. REGULAR on every prompt is a word that
+                // never changes and so stops being read; DIESEL and PREMIUM are the ones that
+                // cost differently and are the reason to look.
+                var grade = _grade == FuelGrade.Regular ? "" : "   " + Diesel.Name(_grade);
+
+                Prompt(Control.Context, "Fill the " + vehicle.LocalizedName + grade +
                                         "   $" + _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L");
 
                 if (!Pressed()) return;
@@ -1212,7 +1245,7 @@ namespace Fumes.Station
             if (wanted > 0f)
             {
                 _targetTank.Add(wanted);
-                _targetTank.Grade = _cfg.Grade;
+                _targetTank.Grade = _grade;
 
                 _dispensed += wanted;
                 _owed += wanted * _price;
@@ -1222,7 +1255,7 @@ namespace Fumes.Station
             _tanks.Touch(_target, _targetTank, true);
 
             _meter.Draw(_stationBrand, _stationPlace, _dispensed, _price, _owed,
-                        !_cfg.ChargeMoney, _targetTank);
+                        !_cfg.ChargeMoney, _targetTank, _grade);
             _gauge.Update(_target, _targetTank, true);
 
             Prompt(Control.Context, "Stop");

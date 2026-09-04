@@ -22,7 +22,22 @@ namespace Fumes.Core
     {
         Regular,
         Plus,
-        Premium
+        Premium,
+
+        /// <summary>
+        /// NOT A GRADE, and it sits in this enum anyway.
+        ///
+        /// Diesel is a different fuel, not a better petrol -- you choose between the first
+        /// three and you do not choose this one, the vehicle does. It lives here because the
+        /// three things a fuel type has to do in this mod are exactly the three things a grade
+        /// already does: set a price, set an economy, and persist in the tank. A parallel enum
+        /// would double every one of those and buy nothing.
+        ///
+        /// LAST in the list on purpose. Menu.Choice cycles Enum.GetValues, so anything added
+        /// here would become selectable; the Grade row is given the three petrol values
+        /// explicitly instead, and this stays off the end where nothing iterates into it.
+        /// </summary>
+        Diesel
     }
 
     internal enum Units
@@ -312,6 +327,39 @@ namespace Fumes.Core
         /// </summary>
         public FuelGrade Grade = FuelGrade.Regular;
 
+        /// <summary>
+        /// Diesel vehicles take diesel, and the pump says so.
+        ///
+        /// Off, everything runs on the grade you picked and trucks fill up with premium
+        /// unleaded like everyone else.
+        /// </summary>
+        public bool DieselVehicles = true;
+
+        /// <summary>
+        /// Vehicle classes that are diesel wholesale, and the models that break the rule.
+        ///
+        /// Emergency is deliberately NOT in the class list: the Fire Truck and Ambulance are
+        /// diesel and the eight police cars beside them are not, so the two are named instead
+        /// of the eight. Service IS in it, because the only petrol vehicle filed there is the
+        /// Taxi. Utility likewise, minus the battery carts and the mower.
+        ///
+        /// Matched by joaat hash, so these are MODEL names -- phantom, firetruk -- and not the
+        /// showroom names the game shows you.
+        /// </summary>
+        public string DieselClasses = "Commercial, Industrial, Utility, Service, Military";
+        public string DieselModels = "firetruk, ambulance";
+        public string PetrolModels = "taxi, caddy, caddy2, caddy3, airtug, mower";
+
+        /// <summary>
+        /// What diesel costs and what it returns.
+        ///
+        /// Dearer at the pump and further down the road, which is the shape of it at an
+        /// Australian servo and also the more interesting trade -- the same one Premium makes,
+        /// only harder.
+        /// </summary>
+        public float DieselPrice = 1.06f;
+        public float DieselEconomy = 0.82f;
+
         /// <summary>What Plus and Premium cost, as a multiple of the regular price.</summary>
         public float PlusPrice = 1.12f;
         public float PremiumPrice = 1.25f;
@@ -331,6 +379,7 @@ namespace Fumes.Core
         {
             if (grade == FuelGrade.Plus) return PlusPrice;
             if (grade == FuelGrade.Premium) return PremiumPrice;
+            if (grade == FuelGrade.Diesel) return DieselPrice;
             return 1f;
         }
 
@@ -338,6 +387,7 @@ namespace Fumes.Core
         {
             if (grade == FuelGrade.Plus) return PlusEconomy;
             if (grade == FuelGrade.Premium) return PremiumEconomy;
+            if (grade == FuelGrade.Diesel) return DieselEconomy;
             return 1f;
         }
 
@@ -979,6 +1029,12 @@ namespace Fumes.Core
                 s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.Grade = ParseEnum(ini.GetString("Station", "Grade", "Regular"), s.Grade);
+                s.DieselVehicles = ini.GetBool("Station", "DieselVehicles", s.DieselVehicles);
+                s.DieselClasses = ini.GetString("Station", "DieselClasses", s.DieselClasses);
+                s.DieselModels = ini.GetString("Station", "DieselModels", s.DieselModels);
+                s.PetrolModels = ini.GetString("Station", "PetrolModels", s.PetrolModels);
+                s.DieselPrice = ini.GetFloat("Station", "DieselPrice", s.DieselPrice, 0.1f, 5f);
+                s.DieselEconomy = ini.GetFloat("Station", "DieselEconomy", s.DieselEconomy, 0.1f, 3f);
                 s.PlusPrice = ini.GetFloat("Station", "PlusPrice", s.PlusPrice, 0.1f, 5f);
                 s.PremiumPrice = ini.GetFloat("Station", "PremiumPrice", s.PremiumPrice, 0.1f, 5f);
                 s.PlusEconomy = ini.GetFloat("Station", "PlusEconomy", s.PlusEconomy, 0.5f, 2f);

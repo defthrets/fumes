@@ -63,9 +63,13 @@ namespace Fumes.Fuel
                 var driving = thirst * km / 100f;
                 var idling = _cfg.IdleLitresPerHour * dt / 3600f;
 
-                // THE GRADE IN THE TANK, not the one selected. See Tank.Grade.
+                // THE GRADE IN THE TANK, not the one selected. See Tank.Grade -- except for
+                // diesel, which comes from the VEHICLE, because a diesel truck cannot be
+                // holding anything else whatever its tank was last written with. Reading the
+                // stored grade literally would run every truck you have not yet filled on
+                // petrol economy, including the one you have owned since the start.
                 var litres = (driving * Load(v) + idling) * MapScale * _cfg.ConsumptionMultiplier
-                             * _cfg.EconomyFor(tank.Grade);
+                             * _cfg.EconomyFor(Diesel.GradeFor(_cfg, v, tank.Grade));
 
                 // A wrecked engine is an inefficient one. Health runs 0..1000 and anything
                 // under about half is smoking.

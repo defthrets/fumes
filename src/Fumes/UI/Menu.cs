@@ -207,10 +207,28 @@ namespace Fumes.UI
             return item;
         }
 
+        /// <summary>The three you can actually buy. Diesel is not one of them; see FuelGrade.</summary>
+        private static readonly FuelGrade[] PetrolGrades =
+        {
+            FuelGrade.Regular, FuelGrade.Plus, FuelGrade.Premium
+        };
+
         private static Item Choice<T>(string label, Func<T> get, Action<T> set,
                                       string section, string key, string hint)
         {
-            var values = Enum.GetValues(typeof(T));
+            return Choice(label, get, set, section, key, hint, Enum.GetValues(typeof(T)));
+        }
+
+        /// <summary>
+        /// The same row over an EXPLICIT set of values rather than the whole enum.
+        ///
+        /// FuelGrade is the reason it exists: it carries Diesel, and Diesel is not a choice --
+        /// the vehicle decides it. Cycling every value would offer a setting that gets silently
+        /// overridden the moment it is used, which is worse than not offering it at all.
+        /// </summary>
+        private static Item Choice<T>(string label, Func<T> get, Action<T> set,
+                                      string section, string key, string hint, Array values)
+        {
 
             var item = new Item
             {
@@ -310,7 +328,9 @@ namespace Fumes.UI
                                      "Before each station's own variance."));
             station.Items.Add(Choice("Grade", () => _cfg.Grade, v => _cfg.Grade = v,
                                      "Station", "Grade",
-                                     "Premium costs a quarter more and goes a tenth further."));
+                                     "Premium costs a quarter more and goes a tenth further. " +
+                                     "Diesel vehicles take diesel whatever this says.",
+                                     PetrolGrades));
             station.Items.Add(Toggle("Take the money", () => _cfg.ChargeMoney,
                                      v => _cfg.ChargeMoney = v, "Station", "ChargeMoney",
                                      "Off fills for nothing."));

@@ -100,7 +100,7 @@ namespace Fumes.UI
         }
 
         public void Draw(string brand, string place, float litres, float pricePerLitre,
-                         float owed, bool free, Tank tank)
+                         float owed, bool free, Tank tank, FuelGrade grade)
         {
             try
             {
@@ -129,7 +129,7 @@ namespace Fumes.UI
                 // clear panel over it and the drop has somewhere to fall toward.
                 Drip(left + W - 0.034f, Top + 0.036f, !full);
 
-                Numbers(left, litres, pricePerLitre, owed, free);
+                Numbers(left, litres, pricePerLitre, owed, free, grade);
 
                 var tankX = left + TankX;
                 TankGlass(tankX, Top + TankY, fraction, full);
@@ -338,7 +338,8 @@ namespace Fumes.UI
         /// many of them there are -- a right-aligned money column is the reason a total ticking
         /// from 9.90 to 10.05 does not jump sideways as it gains a digit.
         /// </summary>
-        private void Numbers(float left, float litres, float pricePerLitre, float owed, bool free)
+        private void Numbers(float left, float litres, float pricePerLitre, float owed, bool free,
+                             FuelGrade grade)
         {
             var lx = left + ColLeft;
             var rx = left + ColRight;
@@ -360,6 +361,21 @@ namespace Fumes.UI
 
             Hud.Text("PRICE", lx, Top + 0.112f, 0.25f, label, Plain);
             Hud.Text(unit, rx, Top + 0.109f, 0.30f, Color.FromArgb(215, 215, 215, 218),
+                     Plain, false, true);
+
+            // GRADE, last, because it is the one line here that is not a running number -- it
+            // is settled before a drop moves and does not change while you watch it.
+            //
+            // Diesel gets its own colour and the three petrol grades share one. Three shades
+            // for three grades would be a code nobody has been taught; one shade for the fuel
+            // that is a DIFFERENT FUEL reads without explaining itself, and it is the one you
+            // actually want to catch when you have a truck on the hose.
+            var diesel = grade == FuelGrade.Diesel;
+
+            Hud.Text("GRADE", lx, Top + 0.135f, 0.25f, label, Plain);
+            Hud.Text(Fumes.Fuel.Diesel.Name(grade), rx, Top + 0.132f, 0.30f,
+                     diesel ? Color.FromArgb(235, 225, 180, 70)
+                            : Color.FromArgb(215, 215, 215, 218),
                      Plain, false, true);
         }
 
