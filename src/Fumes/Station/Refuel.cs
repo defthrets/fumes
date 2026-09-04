@@ -432,6 +432,7 @@ namespace Fumes.Station
             catch { _wasStealthy = false; }
 
             _crouched = false;
+            _burstFrom = Game.GameTime;
 
             _spilled = 0f;
             _poolWidth = 0f;
@@ -793,10 +794,53 @@ namespace Fumes.Station
                 // instead of a native that cannot be checked.
                 Pose(me, _cfg.SiphonAnimDict, _cfg.SiphonAnimClip,
                      _cfg.SiphonAnimPhase, _cfg.SiphonAnimFlag);
+
+                Burst(me);
             }
             catch (Exception ex)
             {
                 Log.Once("siphon-pose", "Could not pose the siphon: " + ex.Message);
+            }
+        }
+
+        private int _burstFrom;
+
+        /// <summary>
+        /// Runs the pose in bursts -- a few seconds of work, a few seconds of nothing.
+        ///
+        /// FROZEN RATHER THAN STOPPED, which is the whole difference between a pause and a
+        /// restart. Stopping the task drops his arm to his side and starting it again lifts it
+        /// back, so a burst would read as him giving up and having another go every few
+        /// seconds. Setting the animation's SPEED to zero leaves him exactly where the motion
+        /// had got to, and setting it back to one carries on from there.
+        ///
+        /// The mod already had this: it is the same freeze the pump pose uses to hold a
+        /// handshake at 18 per cent, only switched on and off on a clock instead of held.
+        ///
+        /// Meaningless when the pose is a still to begin with, so a configured phase wins.
+        /// </summary>
+        private void Burst(Ped me)
+        {
+            if (!_cfg.SiphonBurst) return;
+            if (_cfg.SiphonAnimPhase >= 0f) return;
+
+            var on = _cfg.SiphonBurstOn;
+            var off = _cfg.SiphonBurstOff;
+
+            if (on <= 0.01f || off <= 0.01f) return;
+
+            try
+            {
+                var cycle = on + off;
+                var t = ((Game.GameTime - _burstFrom) / 1000f) % cycle;
+
+                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle,
+                              _cfg.SiphonAnimDict, _cfg.SiphonAnimClip,
+                              t < on ? 1f : 0f);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("burst", "Could not pace the siphon animation: " + ex.Message);
             }
         }
 

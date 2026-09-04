@@ -365,6 +365,21 @@ namespace Fumes.Core
         public string SiphonAnimClip = "mp_player_int_wank_02";
 
         /// <summary>
+        /// Work in bursts rather than steadily: a few seconds of motion, a few seconds still.
+        ///
+        /// FROZEN between bursts, not stopped, which is the difference between a pause and a
+        /// restart. Stopping the task drops his arm to his side and starting it again lifts it
+        /// back, so the bursts would read as him giving up and having another go. Speed zero
+        /// leaves him exactly where the motion had got to and one carries on from there.
+        ///
+        /// It is the same freeze the pump pose uses to hold a handshake at 18 per cent, only
+        /// switched on and off on a clock instead of held.
+        /// </summary>
+        public bool SiphonBurst = true;
+        public float SiphonBurstOn = 2f;
+        public float SiphonBurstOff = 3f;
+
+        /// <summary>
         /// NOT FROZEN. Negative means let it run, and the flag below loops it, so the arm keeps
         /// working for as long as the siphon does instead of holding one frame.
         ///
@@ -1342,6 +1357,9 @@ namespace Fumes.Core
                 s.SiphonAnimClip = ini.GetString("Station", "SiphonAnimClip", s.SiphonAnimClip);
                 s.SiphonAnimPhase = ini.GetFloat("Station", "SiphonAnimPhase", s.SiphonAnimPhase, -1f, 1f);
                 s.SiphonAnimFlag = ini.GetInt("Station", "SiphonAnimFlag", s.SiphonAnimFlag, 0, 255);
+                s.SiphonBurst = ini.GetBool("Station", "SiphonBurst", s.SiphonBurst);
+                s.SiphonBurstOn = ini.GetFloat("Station", "SiphonBurstOn", s.SiphonBurstOn, 0.1f, 30f);
+                s.SiphonBurstOff = ini.GetFloat("Station", "SiphonBurstOff", s.SiphonBurstOff, 0.1f, 30f);
                 s.SiphonSpoutForward = ini.GetFloat("Station", "SiphonSpoutForward", s.SiphonSpoutForward, -0.5f, 0.5f);
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonSpoutSide = ini.GetFloat("Station", "SiphonSpoutSide", s.SiphonSpoutSide, -0.5f, 0.5f);
