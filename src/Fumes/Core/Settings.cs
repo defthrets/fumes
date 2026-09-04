@@ -327,29 +327,30 @@ namespace Fumes.Core
         /// the one the game plays for someone carrying a one-handed weapon -- right arm keeps
         /// hold of the object, left arm does the pushing, which is the exact shape wanted here.
         ///
-        /// A DIALOGUE GESTURE, and the reasons it is the right kind of clip are the reasons the
-        /// two before it were not. The door sweep bent the elbow and read as checking a watch.
-        /// The workbench load was a two-handed job, so both arms came up. A gesture is ONE arm,
-        /// it is slight by design, and it was built to be laid over whatever the body is
-        /// already doing -- talking peds play these while walking, sitting, driving -- which is
-        /// precisely what flag 50 asks of a clip.
+        /// A HAND THAT IS HOLDING SOMETHING, which rules out every gesture: a gesture is a
+        /// presented hand and a presented hand is open. He is meant to be gripping a hose, so
+        /// the clip has to be one where the left hand is closed around an object.
         ///
-        /// gesture_hand_left and gesture_hand_right are an explicit pair in the standing set,
-        /// and the in-car sets carry ONLY the left one -- a driver's right hand is on the
-        /// wheel -- which is what confirms the name means the hand and not a direction.
+        /// mp_weapon_drop drop_lh is the online "drop weapon" motion for something held in the
+        /// LEFT hand -- drop_bh beside it is the both-hands version, which is what confirms
+        /// the suffix. The item is held out in front and then let go of, so the hand is closed
+        /// for as long as the item is in it: freeze it before the release and it is a closed
+        /// left hand, extended, one arm, and nothing else moving.
         ///
-        /// Others worth a look, same dictionary:
-        ///   gesture_why_left      palm up, a touch higher
-        ///   gesture_hand_right    the mirror, should left turn out to mean right
+        /// The phase is what makes it work and what breaks it. Early is a grip; late is an open
+        /// hand and a dropped item. If the fingers are open, the number is too high.
+        ///
+        /// Also closed, should this one sit wrong:
+        ///   laddersbase  base_left_hand_up    a grip on a rung -- closed, but at head height
         /// </summary>
-        public string SiphonAnimDict = "gestures@m@standing@casual";
-        public string SiphonAnimClip = "gesture_hand_left";
+        public string SiphonAnimDict = "mp_weapon_drop";
+        public string SiphonAnimClip = "drop_lh";
 
         /// <summary>
-        /// Where in the gesture to freeze. A gesture goes out and comes back, so the reach is
-        /// in the middle. See FillAnimPhase.
+        /// Where in the drop to freeze. BEFORE the release: the hand opens partway through, so
+        /// this is early on purpose. See FillAnimPhase.
         /// </summary>
-        public float SiphonAnimPhase = 0.40f;
+        public float SiphonAnimPhase = 0.15f;
         public int SiphonAnimFlag = 50;
 
         /// <summary>
