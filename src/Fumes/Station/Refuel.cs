@@ -421,7 +421,8 @@ namespace Fumes.Station
 
             _crouched = false;
             _crouchChecked = false;
-            _crouchAskedAt = Game.GameTime;
+            _crouchAskedAt = 0;
+            _crouchTries = 0;
 
             _spilled = 0f;
             _poolWidth = 0f;
@@ -950,45 +951,49 @@ namespace Fumes.Station
         }
 
         /// <summary>
-        /// Puts him in the crouch, once the game has what it needs to do it.
+        /// Puts him in the crouch by PRESSING THE BUTTON, the way the player would.
         ///
-        /// THE STANCE HAS AN ASSET, and that is what was missing. SET_PED_STEALTH_MOVEMENT
-        /// names a move set -- DEFAULT_ACTION -- and the game will not enter a stance whose
-        /// clips are not streamed in. Called without the request the native is accepted, returns
-        /// nothing, and does nothing, which is indistinguishable from working until you look at
-        /// him. Requested every frame until it lands, for the same reason anim dicts are: one
-        /// request dropped under streaming load is never made again.
+        /// SET_PED_STEALTH_MOVEMENT is the obvious native and it does not work on the player.
+        /// It is a ped instruction, and the player's stance is owned by the player's control
+        /// state -- so on anyone else it works and on him it is accepted, returns nothing, and
+        /// changes nothing. The stealth-asset request was a real omission and fixing it changed
+        /// nothing, which is what said the native was not the problem.
         ///
-        /// Set every frame after that, because stealth is a stance the game drops on its own --
-        /// a bump, a melee swing, a control the player touches.
+        /// Duck is a TOGGLE, not a hold. Feeding it every frame would flip the stance sixty
+        /// times a second, so this presses once and then watches: IsInStealthMode says whether
+        /// it took, and if it did not, it tries again after a beat. A few attempts, then it
+        /// gives up and says so rather than fighting the game forever.
         ///
-        /// And CHECKED, which this can do where the animations could not: IsInStealthMode reads
-        /// back the actual stance, so "did it work" has a real answer rather than an assumption.
+        /// The same toggle is why standing back up is a press too, not a false.
         /// </summary>
         private void Crouch(Ped me)
         {
             try
             {
-                if (!Function.Call<bool>(Hash.HAS_STEALTH_MODE_ASSET_LOADED, "DEFAULT_ACTION"))
+                if (me.IsInStealthMode) { _crouched = true; return; }
+
+                // Given up on.
+                if (_crouchTries > _cfg.SiphonCrouchTries)
                 {
-                    Function.Call(Hash.REQUEST_STEALTH_MODE_ASSET, "DEFAULT_ACTION");
+                    if (!_crouchChecked)
+                    {
+                        _crouchChecked = true;
+                        Log.Warn("SiphonCrouch: he will not crouch after " + _cfg.SiphonCrouchTries +
+                                 " presses of the duck control. Something is holding him upright " +
+                                 "-- most likely what he is carrying. Set SiphonCrouch = false " +
+                                 "in the ini if it stays that way.");
+                    }
                     return;
                 }
 
-                Function.Call(Hash.SET_PED_STEALTH_MOVEMENT, me.Handle, true, "DEFAULT_ACTION");
-                _crouched = true;
+                // One press, then a beat to let the game act on it. A toggle spammed every
+                // frame is a man standing up and sitting down sixty times a second.
+                if (Game.GameTime < _crouchAskedAt) return;
 
-                if (!_crouchChecked && Game.GameTime - _crouchAskedAt > 1000)
-                {
-                    _crouchChecked = true;
+                Game.SetControlValueNormalized(Control.Duck, 1f);
 
-                    if (!me.IsInStealthMode)
-                    {
-                        Log.Warn("SiphonCrouch: he will not go into the stealth stance. Something " +
-                                 "else is holding him upright -- turn SiphonCrouch off in the ini " +
-                                 "if it stays that way.");
-                    }
-                }
+                _crouchAskedAt = Game.GameTime + 350;
+                _crouchTries++;
             }
             catch (Exception ex)
             {
@@ -1004,9 +1009,11 @@ namespace Fumes.Station
 
             try
             {
-                if (me != null && me.Exists())
+                // A toggle both ways. Only pressed if the stance is not already the one he
+                // started in, or this stands him up out of a crouch he chose himself.
+                if (me != null && me.Exists() && me.IsInStealthMode != _wasStealthy)
                 {
-                    Function.Call(Hash.SET_PED_STEALTH_MOVEMENT, me.Handle, _wasStealthy, "DEFAULT_ACTION");
+                    Game.SetControlValueNormalized(Control.Duck, 1f);
                 }
             }
             catch (Exception ex)
@@ -2087,6 +2094,7 @@ namespace Fumes.Station
         private bool _crouched;
         private bool _crouchChecked;
         private int _crouchAskedAt;
+        private int _crouchTries;
 
         /// <summary>
         /// Holds a ped at one frame of a clip, for as long as it is called.

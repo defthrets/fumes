@@ -331,26 +331,27 @@ namespace Fumes.Core
         /// presented hand and a presented hand is open. He is meant to be gripping a hose, so
         /// the clip has to be one where the left hand is closed around an object.
         ///
-        /// mp_weapon_drop drop_lh is the online "drop weapon" motion for something held in the
-        /// LEFT hand -- drop_bh beside it is the both-hands version, which is what confirms
-        /// the suffix. The item is held out in front and then let go of, so the hand is closed
-        /// for as long as the item is in it: freeze it before the release and it is a closed
-        /// left hand, extended, one arm, and nothing else moving.
+        /// laddersbase base_left_hand_up is a man gripping a rung above him: the left hand
+        /// CLOSED around something, and the arm at full extension rather than the half-reach a
+        /// drop gives you. mp_weapon_drop drop_lh had the closed hand but never straightened
+        /// the elbow, because you do not hold a thing out at arm's length to let go of it.
         ///
-        /// The phase is what makes it work and what breaks it. Early is a grip; late is an open
-        /// hand and a dropped item. If the fingers are open, the number is too high.
+        /// Its height is the thing to watch and also why it suits this: a rung is grabbed above
+        /// head height standing, and crouched that same reach lands about where a fuel filler
+        /// is. The pose and the crouch were picked together.
         ///
-        /// Also closed, should this one sit wrong:
-        ///   laddersbase  base_left_hand_up    a grip on a rung -- closed, but at head height
+        /// Others, all closed-handed:
+        ///   mp_weapon_drop  drop_lh              shorter reach, hand opens if the phase runs on
+        ///   ladders         climb_up_settle_left_hand
         /// </summary>
-        public string SiphonAnimDict = "mp_weapon_drop";
-        public string SiphonAnimClip = "drop_lh";
+        public string SiphonAnimDict = "laddersbase";
+        public string SiphonAnimClip = "base_left_hand_up";
 
         /// <summary>
-        /// Where in the drop to freeze. BEFORE the release: the hand opens partway through, so
-        /// this is early on purpose. See FillAnimPhase.
+        /// Where in the grip to freeze. A base clip barely moves, so this is near the start and
+        /// the arm is at its extension throughout. See FillAnimPhase.
         /// </summary>
-        public float SiphonAnimPhase = 0.15f;
+        public float SiphonAnimPhase = 0.10f;
         public int SiphonAnimFlag = 50;
 
         /// <summary>
@@ -378,6 +379,15 @@ namespace Fumes.Core
         /// creeping up on a car does not stand up because he finished stealing from it.
         /// </summary>
         public bool SiphonCrouch = true;
+
+        /// <summary>
+        /// How many presses of the duck control to spend before accepting he will not crouch.
+        ///
+        /// There is a real chance he cannot -- a man holding a jerry can may simply not be
+        /// allowed the stance -- and a mod that keeps pressing a button forever is worse than
+        /// one that says so in the log and gets on with it.
+        /// </summary>
+        public int SiphonCrouchTries = 6;
 
         /// <summary>
         /// A full can does not stop the siphon -- the overflow goes on the ground.
@@ -1215,6 +1225,7 @@ namespace Fumes.Core
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);
                 s.SiphonCrouch = ini.GetBool("Station", "SiphonCrouch", s.SiphonCrouch);
+                s.SiphonCrouchTries = ini.GetInt("Station", "SiphonCrouchTries", s.SiphonCrouchTries, 1, 60);
                 s.SiphonOverflow = ini.GetBool("Station", "SiphonOverflow", s.SiphonOverflow);
                 s.SiphonPool = ini.GetBool("Station", "SiphonPool", s.SiphonPool);
                 s.SiphonPoolWidth = ini.GetFloat("Station", "SiphonPoolWidth", s.SiphonPoolWidth, 0.05f, 3f);
