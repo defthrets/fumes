@@ -593,7 +593,7 @@ namespace Fumes.Core
         /// is the darkest of the eight. Not black -- a rope carries its own texture and no
         /// native tints one -- but dark, and round beats black at this distance.
         /// </summary>
-        public HoseMode SiphonHose = HoseMode.Tube;
+        public HoseMode SiphonHose = HoseMode.Line;
 
         public int SiphonHoseRed, SiphonHoseGreen, SiphonHoseBlue;
         public int SiphonHoseSheen;
@@ -779,7 +779,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Tube;
+        public HoseMode Hose = HoseMode.Line;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
