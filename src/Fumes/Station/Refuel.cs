@@ -1243,7 +1243,21 @@ namespace Fumes.Station
         private const int PhRightHand = 28422;
         private const int PhLeftHand = 60309;
 
-        private Bone FreeHand => _cfg.LeftHand ? Bone.PHRightHand : Bone.PHLeftHand;
+        /// <summary>
+        /// The hand the hose ends in.
+        ///
+        /// With the can on the floor both hands are free, so this is the setting rather than
+        /// "whichever one is not carrying anything". With the can held, the carrying hand is
+        /// still ruled out -- a hose and a jerry can in one fist is one thing too many.
+        /// </summary>
+        private Bone FreeHand
+        {
+            get
+            {
+                if (_cfg.SiphonCanInHand) return _cfg.LeftHand ? Bone.PHRightHand : Bone.PHLeftHand;
+                return _cfg.SiphonHoseRightHand ? Bone.PHRightHand : Bone.PHLeftHand;
+            }
+        }
 
         /// <summary>A stand-in tank so the pump display can show the CAN filling.</summary>
         private readonly Tank _canGlass = new Tank { Capacity = 20f, Litres = 0f };

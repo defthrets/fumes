@@ -321,10 +321,16 @@ namespace Fumes.Core
         public bool Siphon = true;
 
         /// <summary>
-        /// He holds the can in his free hand while siphoning, rather than standing it on the
-        /// floor. Off puts it back on the ground beside him.
+        /// OFF: the can stands on the floor beside him and his hands are empty.
+        ///
+        /// Holding it is what put his right arm up. The can is a weapon, so the arm carrying it
+        /// goes wherever the pose clip sends it, and this clip sends one arm up -- the arm the
+        /// can happened to be in. Putting the can down does not lower that arm as a side
+        /// effect; it lowers it because there is nothing left to hold up.
+        ///
+        /// ON: he keeps hold of it and the game supplies its own carrying animation.
         /// </summary>
-        public bool SiphonCanInHand = true;
+        public bool SiphonCanInHand;
 
         /// <summary>
         /// The pose he holds while siphoning: the LEFT arm out at the filler, can in the right.
@@ -401,6 +407,19 @@ namespace Fumes.Core
         /// creeping up on a car does not stand up because he finished stealing from it.
         /// </summary>
         public bool SiphonCrouch = true;
+
+        /// <summary>
+        /// The hose end sits in his RIGHT hand rather than his left.
+        ///
+        /// FreeHand used to answer this on its own -- the hose went in whichever hand was not
+        /// carrying the can. With the can on the floor both hands are free and that definition
+        /// has nothing left to decide, so it becomes a choice: the hose belongs in the hand the
+        /// pose clip actually moves, and this clip moves the right one. That is not a guess --
+        /// it is what had the can up in the air.
+        ///
+        /// Flip it if the hose ends up in the hand that is hanging still.
+        /// </summary>
+        public bool SiphonHoseRightHand = true;
 
         /// <summary>
         /// The clip he crouches in, played full-body underneath the arm.
@@ -1274,6 +1293,7 @@ namespace Fumes.Core
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
                 s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
+                s.SiphonHoseRightHand = ini.GetBool("Station", "SiphonHoseRightHand", s.SiphonHoseRightHand);
                 s.SiphonAnimDict = ini.GetString("Station", "SiphonAnimDict", s.SiphonAnimDict);
                 s.SiphonAnimClip = ini.GetString("Station", "SiphonAnimClip", s.SiphonAnimClip);
                 s.SiphonAnimPhase = ini.GetFloat("Station", "SiphonAnimPhase", s.SiphonAnimPhase, -1f, 1f);
