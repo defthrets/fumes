@@ -532,12 +532,24 @@ namespace Fumes.Station
             FillPose(me);
             FaceThe(me, filler);
 
-            // The line, every frame, from the filler down to the can on the floor. Same rope as
+            // The line, every frame, from HIS HAND down to the neck of the can. Same rope as
             // the pump hose and the same dark paint, because it is the same kind of object and
             // two different-looking hoses in one mod is one too many.
+            //
+            // The hand rather than the filler cap, because that is what he is doing: the cap end
+            // is the end he is HOLDING, and a line that started at the car instead left the hose
+            // running to a point in mid-air beside his hand.
+            //
+            // HandPosition is the nozzle's, reused rather than reimplemented -- it already reads
+            // the prop-holding bone and already honours the LeftHand setting, and a second copy
+            // of that would be a second thing to remember when that setting changes.
+            //
+            // GetOffsetPosition, not Position plus Z, so the far end stays on the neck when the
+            // can is stood at an angle on a sloped forecourt.
             if (_canOnGround != null && _canOnGround.Exists())
             {
-                _siphonLine.Update(filler, _canOnGround.Position + new Vector3(0f, 0f, 0.28f));
+                _siphonLine.Update(_nozzle.HandPosition(),
+                                   _canOnGround.GetOffsetPosition(new Vector3(0f, 0f, _canTop)));
             }
 
             var room = _cfg.JerryCanLitres - _canLitres;
@@ -597,6 +609,18 @@ namespace Fumes.Station
 
                     _canOnGround.IsPositionFrozen = true;
                     Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _canOnGround.Handle);
+
+                    // The top of the bounding box, which on all three cans is the neck.
+                    try
+                    {
+                        Vector3 low, high;
+                        _canOnGround.Model.GetDimensions(out low, out high);
+                        if (high.Z > 0.02f) _canTop = high.Z;
+                    }
+                    catch
+                    {
+                        // The default is close enough for prop_jerrycan_01a.
+                    }
 
                     // Turned to face him, so the handle is not pointing into the car.
                     _canOnGround.Heading = me.Heading + 90f;
@@ -787,6 +811,16 @@ namespace Fumes.Station
 
         /// <summary>The can on the ground, and the line from it to the filler, while siphoning.</summary>
         private Prop _canOnGround;
+
+        /// <summary>
+        /// How far up the can its neck is, in the can's own space.
+        ///
+        /// Measured from the model rather than guessed, because the three can props are not the
+        /// same size and a fixed offset that sits on the neck of one floats above another. Read
+        /// once when the can is put down: the bounding box of a model cannot change, and asking
+        /// the streamer for it every frame of a siphon would be sixty pointless calls a second.
+        /// </summary>
+        private float _canTop = 0.28f;
         private readonly Hose _siphonLine;
 
         /// <summary>Jerry can props, in the order they are tried.</summary>
