@@ -773,6 +773,42 @@ namespace Fumes.UI
         // ==================================================================
 
         /// <summary>Everything the panel draws, faded and slid by how open it is.</summary>
+        private readonly Icon _logo = new Icon("logo.png");
+
+        /// <summary>How tall the wordmark sits in the title bar. The width follows from it.</summary>
+        private const float LogoH = 0.034f;
+
+        /// <summary>
+        /// The FUMES wordmark, or the word itself if the file is not there.
+        ///
+        /// A PICTURE BECAUSE IT HAS TO BE. The game has four usable fonts and none is a
+        /// blackletter -- the nearest is the signwriter's script this used to draw, which is a
+        /// different idea altogether. A wordmark that has to be fraktur cannot be text.
+        ///
+        /// WIDTH FROM HEIGHT, through the screen's shape. Sprites are laid out in a fixed
+        /// 1280x720 canvas whatever the monitor is, so equal fractions of width and height are
+        /// not equal distances -- a logo sized by matching numbers comes out a third too wide
+        /// on 21:9. Height is what has to fit the bar, so height is what is chosen and width is
+        /// what is worked out.
+        ///
+        /// The fallback is not decoration. data\icons is a folder, and a folder is the thing a
+        /// packaging step forgets; a missing file should cost the logo, not the title.
+        /// </summary>
+        private void Wordmark(float left)
+        {
+            var y = PanelTop + TitleH / 2f;
+
+            if (_logo.Missing || _logo.Aspect <= 0.01f)
+            {
+                Draw.Text("Fumes", left + 0.012f, PanelTop + 0.004f, 0.62f, A(Amber), Script);
+                return;
+            }
+
+            var w = LogoH / (_aspect * _logo.Aspect);
+
+            _logo.DrawSized(left + 0.012f + w / 2f, y, w, LogoH, A(Amber));
+        }
+
         private Color A(Color c)
         {
             var a = (int)(c.A * _reveal);
@@ -798,7 +834,7 @@ namespace Fumes.UI
             Draw.Bar(left, PanelTop, PanelW, TitleH, A(Head));
             Draw.Bar(left, PanelTop + TitleH - 0.0022f, PanelW, 0.0022f, A(Amber));
 
-            Draw.Text("Fumes", left + 0.012f, PanelTop + 0.004f, 0.62f, A(Amber), Script);
+            Wordmark(left);
 
             Tabs(left);
 
