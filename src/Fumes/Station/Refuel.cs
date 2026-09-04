@@ -702,12 +702,22 @@ namespace Fumes.Station
             {
                 if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true);
 
-                // Up to the cap, a little proud of it, so the arm reaches to the hose end
-                // rather than into the bodywork.
-                var reach = filler + new Vector3(0f, 0f, 0.10f);
-
-                Function.Call(Hash.SET_IK_TARGET, me.Handle, _cfg.SiphonIkPart, 0, 0,
-                              reach.X, reach.Y, reach.Z, 0, 400, 400);
+                // AN ANIMATION, NOT IK, and that is a correction rather than a preference.
+                //
+                // IK was the obvious way to put one arm somewhere: name the part, name the
+                // point, done. It is also unverifiable from here -- the arm index is a bare
+                // number the API does not name, and a carrying animation is entitled to
+                // override arm IK anyway, so a call that does nothing looks exactly like a call
+                // that worked.
+                //
+                // The pump pose has been doing this correctly all along: mp_common givetake1_a
+                // frozen at 18 per cent is an arm held out at the filler. That dictionary has
+                // four clips, and givetake1_a / givetake1_b are the two SIDES of an exchange --
+                // one hands over, one receives -- so the pair is the same reach on either arm.
+                // Taking the other one gets the left arm out with a clip that is known to work,
+                // instead of a native that cannot be checked.
+                Pose(me, _cfg.SiphonAnimDict, _cfg.SiphonAnimClip,
+                     _cfg.SiphonAnimPhase, _cfg.SiphonAnimFlag);
             }
             catch (Exception ex)
             {
@@ -730,7 +740,8 @@ namespace Fumes.Station
                 if (!_cfg.SiphonCanInHand)
                 {
                     return _canOnGround != null && _canOnGround.Exists()
-                        ? _canOnGround.GetOffsetPosition(new Vector3(0f, 0f, _canTop))
+                        ? _canOnGround.GetOffsetPosition(new Vector3(0f, _cfg.SiphonSpoutForward,
+                                                                     _canTop + _cfg.SiphonSpoutUp))
                         : me.Position;
                 }
 
@@ -741,7 +752,10 @@ namespace Fumes.Station
                     Vector3 low, high;
                     held.Model.GetDimensions(out low, out high);
 
-                    return held.GetOffsetPosition(new Vector3(0f, 0f, high.Z > 0.02f ? high.Z : _canTop));
+                    var top = high.Z > 0.02f ? high.Z : _canTop;
+
+                    return held.GetOffsetPosition(new Vector3(0f, _cfg.SiphonSpoutForward,
+                                                              top + _cfg.SiphonSpoutUp));
                 }
             }
             catch (Exception ex)
@@ -1873,7 +1887,23 @@ namespace Fumes.Station
         /// </summary>
         private void FillPose(Ped me)
         {
-            if (string.IsNullOrEmpty(_cfg.FillAnimDict) || string.IsNullOrEmpty(_cfg.FillAnimClip)) return;
+            Pose(me, _cfg.FillAnimDict, _cfg.FillAnimClip, _cfg.FillAnimPhase, _cfg.FillAnimFlag);
+        }
+
+        /// <summary>Which clip is currently held, so the right one gets stopped.</summary>
+        private string _posedDict, _posedClip;
+
+        /// <summary>
+        /// Holds a ped at one frame of a clip, for as long as it is called.
+        ///
+        /// Was FillPose, and is now shared, because the siphon wants the same trick with a
+        /// different clip: an arm out at the filler. Same machinery rather than a second copy,
+        /// since the awkward parts -- request the dict every frame, freeze the speed, re-set the
+        /// time every frame -- are awkward for the same reasons either way.
+        /// </summary>
+        private void Pose(Ped me, string dict, string clip, float phase, int flag)
+        {
+            if (string.IsNullOrEmpty(dict) || string.IsNullOrEmpty(clip)) return;
 
             if (_poseImpossible) return;
 
@@ -1882,33 +1912,38 @@ namespace Fumes.Station
                 // Checked rather than assumed: a dict name that is not in the game makes
                 // REQUEST_ANIM_DICT wait forever, so without this a typo in the ini is a pose
                 // that never appears and never explains itself.
-                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, _cfg.FillAnimDict))
+                if (!Function.Call<bool>(Hash.DOES_ANIM_DICT_EXIST, dict))
                 {
                     _poseImpossible = true;
-                    Log.Warn("[Nozzle] FillAnimDict '" + _cfg.FillAnimDict + "' is not an " +
-                             "animation dictionary this game has. He will hold the nozzle " +
-                             "still instead.");
+                    Log.Warn("'" + dict + "' is not an animation dictionary this game has. " +
+                             "He will hold still instead.");
                     return;
                 }
 
-                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, _cfg.FillAnimDict))
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
                 {
                     // Requested every frame until it arrives. A single request that gets dropped
                     // under streaming pressure is never made again.
-                    Function.Call(Hash.REQUEST_ANIM_DICT, _cfg.FillAnimDict);
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
                     return;
                 }
 
-                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle,
-                                         _cfg.FillAnimDict, _cfg.FillAnimClip, 3))
+                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, dict, clip, 3))
                 {
-                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, _cfg.FillAnimDict, _cfg.FillAnimClip,
-                                  4f, -4f, -1, _cfg.FillAnimFlag, 0f, false, false, false);
+                    // A DIFFERENT clip may be held from a moment ago -- he can go from the pump
+                    // pose straight into the siphon pose. Stop that one first, or two upper-body
+                    // tasks fight and the newer one loses.
+                    if (_posing && _posedClip != clip) StopFillPose();
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
+                                  4f, -4f, -1, flag, 0f, false, false, false);
                 }
 
                 _posing = true;
+                _posedDict = dict;
+                _posedClip = clip;
 
-                if (_cfg.FillAnimPhase < 0f) return;
+                if (phase < 0f) return;
 
                 // HELD, NOT PLAYED, and held EVERY FRAME rather than once.
                 //
@@ -1916,16 +1951,14 @@ namespace Fumes.Station
                 // gives an arm that pumps and then drops back to his side. Stopping it at the
                 // reach turns the movement into a pose. Speed zero freezes it and the time is
                 // re-set each frame because the task keeps its own clock: set once, it creeps.
-                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle,
-                              _cfg.FillAnimDict, _cfg.FillAnimClip, 0f);
+                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle, dict, clip, 0f);
 
-                Function.Call(Hash.SET_ENTITY_ANIM_CURRENT_TIME, me.Handle,
-                              _cfg.FillAnimDict, _cfg.FillAnimClip, _cfg.FillAnimPhase);
+                Function.Call(Hash.SET_ENTITY_ANIM_CURRENT_TIME, me.Handle, dict, clip, phase);
             }
             catch (Exception ex)
             {
-                Log.Once("fillpose", "Could not play the filling animation: " + ex.Message +
-                                     " - he will hold the nozzle still instead.");
+                Log.Once("fillpose", "Could not play '" + clip + "': " + ex.Message +
+                                     " - he will hold still instead.");
             }
         }
 
@@ -2105,7 +2138,9 @@ namespace Fumes.Station
                 var me = Player();
                 if (me == null) return;
 
-                Function.Call(Hash.STOP_ANIM_TASK, me.Handle, _cfg.FillAnimDict, _cfg.FillAnimClip, -4f);
+                if (string.IsNullOrEmpty(_posedClip)) return;
+
+                Function.Call(Hash.STOP_ANIM_TASK, me.Handle, _posedDict, _posedClip, -4f);
             }
             catch (Exception ex)
             {

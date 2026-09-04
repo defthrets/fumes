@@ -314,37 +314,70 @@ namespace Fumes.Core
         public bool SiphonCanInHand = true;
 
         /// <summary>
-        /// Which IK part the free arm is, for reaching up to the filler.
+        /// The pose he holds while siphoning: an arm out at the filler, can in the other hand.
         ///
-        /// 1 is the left arm. A number rather than a name because the game takes a number and
-        /// nothing in the API names them -- if the arm that lifts turns out to be the wrong
-        /// one, this is the line to change rather than a rebuild.
+        /// mp_common holds exactly four clips -- givetake1_a, givetake1_b, givetake2_a and
+        /// givetake2_b. The _a and _b of a pair are the two SIDES of an exchange, one handing
+        /// over and one receiving, so they are the same reach on opposite arms. The pump pose
+        /// uses givetake1_a; this takes the other side of it to get the other arm.
+        ///
+        /// Which of the four reads best is a thing to look at rather than reason about, and
+        /// there are only four, so it is a setting -- cycle it and watch, no rebuild.
         /// </summary>
-        public int SiphonIkPart = 1;
+        public string SiphonAnimDict = "mp_common";
+        public string SiphonAnimClip = "givetake1_b";
+
+        /// <summary>Same freeze and the same flags as the pump pose. See FillAnimPhase.</summary>
+        public float SiphonAnimPhase = 0.18f;
+        public int SiphonAnimFlag = 50;
+
+        /// <summary>
+        /// Where on the can the line actually meets it, from the middle of the top.
+        ///
+        /// The top of the bounding box is the top of the can, which is not the same thing as
+        /// the spout: the neck sits toward one end, so a line to the centre of the lid enters
+        /// the can through its shoulder. Forward moves it along the can, up lifts it clear of
+        /// the lid so the last inch of hose is not buried in the model.
+        /// </summary>
+        public float SiphonSpoutForward = 0.06f;
+        public float SiphonSpoutUp = 0.01f;
 
         /// <summary>
         /// The siphon line's own paint, separate from the pump hose's.
         ///
-        /// PAINTED AND PURE BLACK, where the pump hose is the game's own rope. A rope cannot be
-        /// tinted -- there is no native for it, which is why making the pump hose black meant
-        /// drawing it instead, and why that took several goes to stop looking like planks.
+        /// THE GAME'S OWN ROPE, same as the pump hose, and the dark rope type rather than a
+        /// drawn ribbon.
         ///
-        /// Black is the one colour where none of that can happen. The ribbon is shaded across
-        /// its width to suggest a round tube, and that shading is what read as flat panels; at
-        /// zero with no sheen every band computes to the same zero, so the shading contributes
-        /// nothing and the strip is flat by construction rather than by a threshold.
+        /// Painted at pure black did solve the banding -- every band computes to the same zero,
+        /// so the cross-width shading contributes nothing. It solved the banding by making the
+        /// thing genuinely flat, which is the problem underneath it: a flat black strip that
+        /// turns to face the camera is a flat black strip, and at arm's length, where a siphon
+        /// line is, there is nothing to hide it. The pump hose is metres away and got away with
+        /// it. This one is not.
+        ///
+        /// So: a real rope, which is round because it is geometry, and rope type 4 because that
+        /// is the darkest of the eight. Not black -- a rope carries its own texture and no
+        /// native tints one -- but dark, and round beats black at this distance.
         /// </summary>
-        public HoseMode SiphonHose = HoseMode.Painted;
+        public HoseMode SiphonHose = HoseMode.Auto;
 
         public int SiphonHoseRed, SiphonHoseGreen, SiphonHoseBlue;
         public int SiphonHoseSheen;
 
-        /// <summary>Thinner and straighter than a forecourt hose. It is a length of tube.</summary>
+        /// <summary>
+        /// Only read when SiphonHose is Painted. The rope has its own thickness.
+        /// </summary>
         public float SiphonHoseThickness = 0.030f;
         public float SiphonHoseSag = 1.05f;
 
-        /// <summary>The thinnest rope, since the drawn ribbon is what you actually see.</summary>
-        public int SiphonHoseRopeType = 5;
+        /// <summary>
+        /// The darkest of the eight rope types -- the same one the pump hose settled on.
+        ///
+        /// Not 5 any more: 5 was the thinnest, chosen to hide UNDER a drawn ribbon. With the
+        /// ribbon gone the rope is what you see, so it wants to be the one that looks right
+        /// rather than the one that disappears.
+        /// </summary>
+        public int SiphonHoseRopeType = 4;
 
         /// <summary>
         /// He can throw a punch or a kick without stopping what he is doing with the can.
@@ -1083,7 +1116,12 @@ namespace Fumes.Core
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
                 s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
-                s.SiphonIkPart = ini.GetInt("Station", "SiphonIkPart", s.SiphonIkPart, 0, 8);
+                s.SiphonAnimDict = ini.GetString("Station", "SiphonAnimDict", s.SiphonAnimDict);
+                s.SiphonAnimClip = ini.GetString("Station", "SiphonAnimClip", s.SiphonAnimClip);
+                s.SiphonAnimPhase = ini.GetFloat("Station", "SiphonAnimPhase", s.SiphonAnimPhase, -1f, 1f);
+                s.SiphonAnimFlag = ini.GetInt("Station", "SiphonAnimFlag", s.SiphonAnimFlag, 0, 255);
+                s.SiphonSpoutForward = ini.GetFloat("Station", "SiphonSpoutForward", s.SiphonSpoutForward, -0.5f, 0.5f);
+                s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonHose = ParseEnum(ini.GetString("Station", "SiphonHose", "Painted"), s.SiphonHose);
                 s.SiphonHoseRed = ini.GetInt("Station", "SiphonHoseRed", s.SiphonHoseRed, 0, 255);
                 s.SiphonHoseGreen = ini.GetInt("Station", "SiphonHoseGreen", s.SiphonHoseGreen, 0, 255);
