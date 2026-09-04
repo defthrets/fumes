@@ -77,7 +77,8 @@ namespace Fumes.Station
         {
             try
             {
-                v.Model.GetDimensions(out var min, out var max);
+                Vector3 min, max;
+                if (!Models.Box(v.Model, out min, out max)) return default(Vector3);
 
                 var length = max.Y - min.Y;
 

@@ -755,8 +755,10 @@ namespace Fumes.Station
                     try
                     {
                         Vector3 low, high;
-                        _canOnGround.Model.GetDimensions(out low, out high);
-                        if (high.Z > 0.02f) _canTop = high.Z;
+                        if (Models.Box(_canOnGround.Model, out low, out high) && high.Z > 0.02f)
+                        {
+                            _canTop = high.Z;
+                        }
                     }
                     catch
                     {
@@ -933,7 +935,7 @@ namespace Fumes.Station
                 if (held != null && held.Exists())
                 {
                     Vector3 low, high;
-                    held.Model.GetDimensions(out low, out high);
+                    Models.Box(held.Model, out low, out high);
 
                     var top = high.Z > 0.02f ? high.Z : _canTop;
 
@@ -1712,7 +1714,8 @@ namespace Fumes.Station
 
             try
             {
-                pump.Model.GetDimensions(out var min, out var max);
+                Vector3 min, max;
+                if (!Models.Box(pump.Model, out min, out max)) return _cfg.HoseAnchorZ;
 
                 var height = max.Z - min.Z;
                 if (height < 0.3f) return _cfg.HoseAnchorZ;   // not a pump-shaped thing

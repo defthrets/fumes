@@ -551,8 +551,8 @@ namespace Fumes.Core
         /// the can through its shoulder. Forward moves it along the can, up lifts it clear of
         /// the lid so the last inch of hose is not buried in the model.
         /// </summary>
-        public float SiphonSpoutForward = 0.13f;
-        public float SiphonSpoutUp = 0.01f;
+        public float SiphonSpoutForward = 0.040f;
+        public float SiphonSpoutUp = -0.070f;
 
         /// <summary>
         /// Where the can is stood, relative to him: in front, and a touch to one side.
@@ -575,7 +575,7 @@ namespace Fumes.Core
         public bool SiphonHoseBothHands = true;
 
         /// <summary>Across the can. The third axis, because two was not enough to land on a neck.</summary>
-        public float SiphonSpoutSide;
+        public float SiphonSpoutSide = 0.120f;
 
         /// <summary>
         /// Nudge the spout live while siphoning, with the arrow keys.
@@ -585,7 +585,15 @@ namespace Fumes.Core
         /// bounding boxes beats moving it and looking -- so move it and look, then press Enter
         /// and it writes itself into the ini.
         /// </summary>
-        public bool SiphonSpoutEdit = true;
+        /// <summary>
+        /// OFF, because the joint is where it should be now.
+        ///
+        /// These three numbers were not reasoned out, they were moved by hand in the game until
+        /// the hose met the neck, and then written back by the editor that moved them. Six
+        /// rounds of arithmetic against a bounding box never got there; one minute of nudging
+        /// did. Set this true to move it again.
+        /// </summary>
+        public bool SiphonSpoutEdit;
 
         /// <summary>How far one press moves it, in metres.</summary>
         public float SiphonSpoutStep = 0.01f;

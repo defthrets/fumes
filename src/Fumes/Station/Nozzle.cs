@@ -191,7 +191,11 @@ namespace Fumes.Station
 
             try
             {
-                _prop.Model.GetDimensions(out var min, out var max);
+                // FULLY QUALIFIED, because this class already has a Models -- the list of
+                // nozzle props it tries. Two things called Models in one file is one too many
+                // and the compiler picks the nearer one.
+                Vector3 min, max;
+                if (!Fumes.Core.Models.Box(_prop.Model, out min, out max)) return Vector3.Zero;
 
                 var size = max - min;
                 var centre = (min + max) * 0.5f;

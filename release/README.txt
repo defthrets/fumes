@@ -23,23 +23,36 @@ REQUIREMENTS
 ============
 
   Script Hook V           (Alexander Blade, for your edition)
-  ScriptHookVDotNetEnhanced   v1.1.0.6 or later
-      https://www.gta5-mods.com/tools/script-hook-v-net-enhanced
+  ScriptHookVDotNet 3     any of them - see below
 
 Nothing else. No NativeUI, no LemonUI, no iFruitAddon.
 
-READ THE SECOND LINE CAREFULLY, because the way it is usually written is what
-stops people installing this.
+WHICH SCRIPTHOOKVDOTNET
+=======================
 
-Fumes needs ScriptHookVDotNet 3 with an ASSEMBLY VERSION of 3.9.0.0. That is not
-a number you can go and download: there is no release called "3.9". The build
-that has it is the ENHANCED FORK, whose releases are numbered v1.1.x - so people
-go looking for a 3.9, find nothing, install the newest thing that says 3, and the
-mod does not load. The dll inside says 3.9.0.0; the download that contains it
-says 1.1.0.6. Both numbers are correct and they are not the same number.
+Any ScriptHookVDotNet 3 from 3.6.0 onwards, including the nightlies and including
+the Enhanced fork. Pick whichever suits your game:
 
-The fork is also the one that runs on BOTH editions, Legacy and Enhanced, which
-is why Fumes is a single build for both.
+  GTA V LEGACY    the regular ScriptHookVDotNet 3, or a nightly, or the fork
+      https://github.com/scripthookvdotnet/scripthookvdotnet/releases
+
+  GTA V ENHANCED  the Enhanced fork - it is the one that runs on Enhanced at all
+      https://www.gta5-mods.com/tools/script-hook-v-net-enhanced
+
+This used to say the fork and only the fork, and that was true when it was
+written. Fumes called one method - Model.GetDimensions - that arrived after 3.6.0,
+and that one method was enough: SHVDN is not strong-named, so the mod LOADS under
+any of these builds quite happily and then throws the first time a line runs that
+the installed build cannot do. Which is worse than not loading, because it fails
+in five unrelated places at five unrelated moments and none of them mention a
+version.
+
+It now goes through the native underneath instead. Every API it calls is checked
+against 3.6.0 stable, a 3.7.0 nightly and the 3.9.0 fork by tools/check_api.py, in
+the repository, which is run before a release.
+
+One honest caveat: that is an API check, not a play-test. Every method it uses
+exists in all three builds; it has been played on the fork.
 
 IF IT IS NOT LOADING
 ====================
@@ -51,8 +64,10 @@ There is no error and no crash, it simply is not there. Check, in this order:
    not a Fumes one. If it IS mentioned with an exception, that is the answer.
 
 2. The version of ScriptHookVDotNet3.dll. Right-click it, Properties, Details.
-   It must read 3.9.0.0. Anything lower is the wrong build, whatever the
-   download was called.
+   3.6.0.0 or higher is fine. Below that, update it.
+
+   On GTA V ENHANCED it must be the Enhanced fork whatever the number says -
+   nothing else runs on that edition at all.
 
 3. That ScriptHookVDotNet.asi, ScriptHookVDotNet2.dll and ScriptHookVDotNet3.dll
    all came from the SAME download. Mixing an old asi with a new dll fails
