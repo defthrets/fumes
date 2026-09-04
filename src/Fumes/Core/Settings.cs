@@ -343,6 +343,27 @@ namespace Fumes.Core
         public int SiphonAnimFlag = 50;
 
         /// <summary>
+        /// He can walk about and crouch while siphoning, instead of being planted.
+        ///
+        /// Costs nothing to allow, which is worth saying: the pose is flag 50, and 50 is
+        /// 32 + 16 + 2 -- allow-player-control, upper-body-only, hold-last-frame. The animation
+        /// has permitted walking the whole time. The only thing standing still was HoldStill.
+        ///
+        /// Sprint and jump stay off. A man walking with a siphon hose is fine; a man sprinting
+        /// with one has left it behind.
+        /// </summary>
+        public bool SiphonWalk = true;
+
+        /// <summary>
+        /// How far from the filler he can get before the hose comes out, in metres.
+        ///
+        /// This is the leash, and it replaces the reach test the other stages use. Standing
+        /// still, "can he touch the cap" is the same question as "is he still doing this";
+        /// walking, they come apart, and the second one is the one that matters.
+        /// </summary>
+        public float SiphonLeash = 1f;
+
+        /// <summary>
         /// Where on the can the line actually meets it, from the middle of the top.
         ///
         /// The top of the bounding box is the top of the can, which is not the same thing as
@@ -350,7 +371,7 @@ namespace Fumes.Core
         /// the can through its shoulder. Forward moves it along the can, up lifts it clear of
         /// the lid so the last inch of hose is not buried in the model.
         /// </summary>
-        public float SiphonSpoutForward = 0.06f;
+        public float SiphonSpoutForward = 0.13f;
         public float SiphonSpoutUp = 0.01f;
 
         /// <summary>
@@ -1133,6 +1154,8 @@ namespace Fumes.Core
                 s.SiphonAnimFlag = ini.GetInt("Station", "SiphonAnimFlag", s.SiphonAnimFlag, 0, 255);
                 s.SiphonSpoutForward = ini.GetFloat("Station", "SiphonSpoutForward", s.SiphonSpoutForward, -0.5f, 0.5f);
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
+                s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);
+                s.SiphonLeash = ini.GetFloat("Station", "SiphonLeash", s.SiphonLeash, 0.3f, 10f);
                 s.SiphonHose = ParseEnum(ini.GetString("Station", "SiphonHose", "Painted"), s.SiphonHose);
                 s.SiphonHoseRed = ini.GetInt("Station", "SiphonHoseRed", s.SiphonHoseRed, 0, 255);
                 s.SiphonHoseGreen = ini.GetInt("Station", "SiphonHoseGreen", s.SiphonHoseGreen, 0, 255);

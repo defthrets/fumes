@@ -522,13 +522,26 @@ namespace Fumes.Station
 
             var filler = Filler.On(_target, out var exact);
 
-            if (!Filler.WithinReach(filler, me.Position, _cfg.CapReach + 0.6f, exact))
+            // THE LEASH, not the reach test the other stages use. Standing still, "can he
+            // touch the cap" and "is he still doing this" are the same question. Walking, they
+            // come apart, and it is the second one that ends a siphon.
+            if (me.Position.DistanceTo(filler) > _cfg.SiphonLeash)
             {
                 StopSiphon(me, "you moved away");
                 return;
             }
 
-            HoldStill(me);
+            if (_cfg.SiphonWalk)
+            {
+                // Everything except a sprint and a jump. Walking with a hose in the tank is
+                // fine; sprinting with one means he has left it behind.
+                Game.DisableControlThisFrame(Control.Sprint);
+                Game.DisableControlThisFrame(Control.Jump);
+            }
+            else
+            {
+                HoldStill(me);
+            }
 
             var swinging = Swinging();
 
@@ -540,7 +553,10 @@ namespace Fumes.Station
             {
                 Swung(me);
                 SiphonPose(me, filler);
-                FaceThe(me, filler);
+
+                // Not turned to face anything while he is free to walk -- a forced heading
+                // fights the direction he is actually going, and the argument is visible.
+                if (!_cfg.SiphonWalk) FaceThe(me, filler);
 
                 // The line runs from the FREE hand, raised at the filler, down to the spout of
                 // the can in the other one. Same rope and the same dark paint as the pump hose,
