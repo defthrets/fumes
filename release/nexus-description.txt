@@ -1,0 +1,62 @@
+<b>FUMES 0.1.3</b>
+Persistent vehicle fuel for GTA V, with a refuel you walk through.
+by spitmux
+
+
+<b>WHAT IT IS</b>
+
+Every vanilla and online vehicle carries a real fuel tank. It empties as you drive and it is still empty when you come back to that car tomorrow.
+
+Refuelling is not a menu. Get out, walk to the pump, take the nozzle off it — it goes in your hand and the hose comes with you. Walk round to wherever that model's filler actually is, fill up, then walk the nozzle back and hang it on the pump. Walk too far and the hose pulls it out of your hands.
+
+Runs on <b>both editions</b>, Legacy and Enhanced, from one build.
+
+<b>SHIFT+F</b> opens the settings menu, or <b>LB + D-pad Down</b> on a controller.
+
+
+<b>REQUIREMENTS</b>
+
+<ul>
+<li>Script Hook V, for your edition</li>
+<li>ScriptHookVDotNet 3 — <b>any build from 3.6.0</b>, including the nightlies and the Enhanced fork</li>
+</ul>
+
+On <b>GTA V Enhanced</b> it has to be the Enhanced fork, because nothing else runs on that edition at all: <a href="https://www.gta5-mods.com/tools/script-hook-v-net-enhanced">ScriptHookVDotNet Enhanced</a>
+
+Nothing else. No NativeUI, no LemonUI, no iFruitAddon.
+
+
+<b>INSTALLING</b>
+
+Copy the <b>scripts</b> folder from this zip into your GTA V folder, so you end up with:
+
+<ul>
+<li>Grand Theft Auto V\scripts\Fumes.dll</li>
+<li>Grand Theft Auto V\scripts\Fumes.ini</li>
+<li>Grand Theft Auto V\scripts\Fumes\stations.json</li>
+<li>Grand Theft Auto V\scripts\Fumes\icons\*.png</li>
+</ul>
+
+The icons folder is not optional decoration — without it the HUD still works but has no pictures in it.
+
+To uninstall, delete those. Nothing is written anywhere else, and nothing in the game's own files is touched.
+
+
+<b>CHANGELOG — 0.1.3</b>
+
+<ul>
+<li><b>Runs on any ScriptHookVDotNet 3 from 3.6.0 now</b>, not just the Enhanced fork. It called one method that only newer builds have, in five different places — so on older builds it loaded fine and then failed later, in five unrelated spots, never saying why. It goes through the native underneath now.</li>
+<li><b>Siphon fuel out of any car.</b> Walk up to a filler with a jerry can and draw fuel the other way. He crouches, stands the can down in front of him, and runs a hose from his hand to its spout.</li>
+<li><b>A full can does not stop it.</b> The hose has no idea, so a pool of petrol grows at your feet. It is the game's own petrol, which means it ignites.</li>
+<li><b>A grade card at the pump</b> showing what each grade costs <i>at that station</i> and what it returns.</li>
+<li><b>Diesel.</b> Trucks, buses, tractors and the fire engine take it. Costs more per litre, goes further.</li>
+<li><b>Fuel grades</b> — Regular, Plus, Premium. The grade lives in the tank, so a car you filled with premium is still running on premium.</li>
+<li><b>Controller support</b> for the settings menu and the grade card.</li>
+<li><b>Traffic pulls into forecourts</b> when it is low and already nearby.</li>
+<li><b>You can throw a punch mid-siphon.</b></li>
+<li><b>A chime when you dip into reserve.</b> Once per dip.</li>
+<li>The gauge sloshes with speed, throws to one side when you stop hard, and hides when the game's HUD does.</li>
+<li>Fixed: help text was losing a space at every line break, which welded button icons onto the word behind them.</li>
+<li>Fixed: story-mission cars are full again, without DLC cars going back to being full.</li>
+<li><b>207 settings</b> in the ini, up from 118, every one commented with why it is there.</li>
+</ul>
