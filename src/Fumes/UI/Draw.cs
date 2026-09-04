@@ -193,25 +193,46 @@ namespace Fumes.UI
         }
 
         /// <summary>Splits on spaces into pieces no longer than the limit. Never splits a ~tag~.</summary>
+        /// <summary>
+        /// Splits a string into text components without changing a character of it.
+        ///
+        /// THE PIECES ARE PUT BACK TOGETHER WITH NOTHING BETWEEN THEM. The game concatenates
+        /// text components directly, so anything this drops at a boundary is dropped from the
+        /// sentence -- and the version that split on spaces and rejoined with " " dropped
+        /// exactly one space at every boundary, because the space that separated the last word
+        /// of one chunk from the first word of the next belonged to neither.
+        ///
+        /// Harmless in prose. Ruinous here, because the boundary lands wherever the string
+        /// happens to be long enough, and when it landed straight after a ~INPUT_...~ tag it
+        /// welded the button glyph onto the word behind it -- which is how the siphon line came
+        /// out as a button and no text at all.
+        ///
+        /// So the cut walks BACK to a space and keeps it, rather than splitting on spaces and
+        /// rebuilding them. Backing off to a space is still what keeps a cut from landing
+        /// inside a ~TAG~, since a tag never contains one.
+        /// </summary>
         private static System.Collections.Generic.List<string> Chunks(string text, int limit)
         {
             var pieces = new System.Collections.Generic.List<string>();
-            var current = "";
+            var at = 0;
 
-            foreach (var word in text.Split(' '))
+            while (at < text.Length)
             {
-                var candidate = current.Length == 0 ? word : current + " " + word;
+                if (text.Length - at <= limit) { pieces.Add(text.Substring(at)); break; }
 
-                if (candidate.Length <= limit) { current = candidate; continue; }
+                // Backwards from the end of the window, over the window only.
+                var space = text.LastIndexOf(' ', at + limit - 1, limit);
 
-                if (current.Length > 0) pieces.Add(current);
+                // The space stays on the END of this chunk. No space to back off to means a
+                // single run longer than a whole component, which can only be cut where the
+                // window ends -- the one case where a tag can still be split, and there is
+                // nothing to be done about it.
+                var end = space > at ? space + 1 : at + limit;
 
-                // A single word longer than the limit can only be cut, but at least it is cut
-                // here and not through the middle of the sentence.
-                current = word.Length <= limit ? word : word.Substring(0, limit);
+                pieces.Add(text.Substring(at, end - at));
+                at = end;
             }
 
-            if (current.Length > 0) pieces.Add(current);
             return pieces;
         }
 

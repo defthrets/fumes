@@ -405,7 +405,7 @@ namespace Fumes.Station
             if (inCan >= _cfg.JerryCanLitres - 0.05f) return;   // can already full
             if (tank.Litres <= 0.05f) return;                   // nothing to take
 
-            Prompt(Control.ContextSecondary, "Siphon from the " + vehicle.LocalizedName);
+            Prompt(Control.ContextSecondary, "Siphon it out");
 
             if (!SecondaryPressed()) return;
 
