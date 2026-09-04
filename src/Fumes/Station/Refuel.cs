@@ -28,7 +28,15 @@ namespace Fumes.Station
         FillingCan,
 
         /// <summary>Drawing fuel out of somebody's tank into the can.</summary>
-        Siphoning
+        Siphoning,
+
+        /// <summary>
+        /// The grade card is up and nothing is flowing yet.
+        ///
+        /// Between taking the nozzle and fuel moving, because that is where the decision
+        /// belongs: after you have chosen the car, before you have bought anything.
+        /// </summary>
+        Choosing
     }
 
     /// <summary>
@@ -130,6 +138,7 @@ namespace Fumes.Station
             _buttons = buttons;
             _nozzle = new Nozzle(cfg);
             _siphonLine = new Hose(cfg, true);
+            _grades = new Grades(cfg);
             _hose = new Hose(cfg);
             _hazard = new Hazard(cfg);
             _sound = new FillSound(cfg);
@@ -185,6 +194,7 @@ namespace Fumes.Station
                 case Stage.Pouring: Pouring(me, dt); break;
                 case Stage.FillingCan: FillingCan(me, dt); break;
                 case Stage.Siphoning: Siphoning(me, dt); break;
+                case Stage.Choosing: Choosing(me); break;
             }
 
             // AFTER the switch and driven by the stage rather than by calls inside it.
@@ -1133,6 +1143,97 @@ namespace Fumes.Station
             }
         }
 
+        /// <summary>
+        /// Starts the fill proper: squares him up and says so in the log.
+        ///
+        /// Pulled out of Carrying because there are TWO ways in now -- straight through when
+        /// there is no grade to choose, and out the far side of the card when there is. Left
+        /// inline it would have had to be copied, and a copy is a thing that gets fixed once.
+        /// </summary>
+        private void Begin(Ped me)
+        {
+            _stage = Stage.Filling;
+
+            // TURNED ON THE SPOT, once, as filling begins.
+            //
+            // FaceThe has been called every frame of the fill all along and he stayed put,
+            // because SET_PED_DESIRED_HEADING is a nudge for the LOCOMOTION system to resolve
+            // -- and he is standing still with the movement controls disabled and an animation
+            // on him, so there is no locomotion left to resolve it. A desired heading with
+            // nothing to walk it round is just a number nobody reads.
+            //
+            // Setting the heading itself does not go through any of that. It is abrupt by
+            // nature, which is the trade: he is already roughly facing the car by the time he
+            // can reach the filler, so the correction is small, and a small snap on a button
+            // press reads as him squaring up to the job.
+            try
+            {
+                bool exact;
+                Turn(me, Filler.On(_target, out exact));
+            }
+            catch
+            {
+                // He fills from wherever he is standing.
+            }
+
+            Log.Info("Filling " + _target.LocalizedName + " (" +
+                     _targetTank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + "/" +
+                     _targetTank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L) with " +
+                     Fumes.Fuel.Diesel.Name(_grade) + " at $" +
+                     _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L.");
+        }
+
+        // ==================================================================
+        // Choosing a grade
+        // ==================================================================
+
+        private readonly Grades _grades;
+
+        /// <summary>
+        /// Holds the nozzle still while the card is up, and acts on what it returns.
+        ///
+        /// The hose is still drawn and the nozzle still held, so this reads as a pause in the
+        /// middle of refuelling rather than a menu that happens to be about fuel. Backing out
+        /// returns to Carrying with the nozzle in hand, not to standing about empty-handed --
+        /// cancelling a grade is not cancelling the whole errand.
+        /// </summary>
+        private void Choosing(Ped me)
+        {
+            if (_target == null || !_target.Exists() || _targetTank == null)
+            {
+                _grades.Close();
+                _stage = Stage.Carrying;
+                return;
+            }
+
+            LockHands();
+            HoldStill(me);
+
+            var anchor = _pump != null && _pump.Exists()
+                ? _pump.GetOffsetPosition(_anchorLocal)
+                : me.Position;
+
+            _hose.Update(anchor, _nozzle.HoseEnd());
+
+            switch (_grades.Update())
+            {
+                case Grades.Result.Chosen:
+                    _grade = _grades.Picked;
+                    _price = _basePrice * _cfg.PriceFor(_grade);
+
+                    // REMEMBERED, so the next fill starts on it. A grade you pick at every
+                    // pump is a habit, and a habit the mod forgets is a chore.
+                    _cfg.Grade = _grade;
+
+                    Begin(me);
+                    break;
+
+                case Grades.Result.Dropped:
+                    _stage = Stage.Carrying;
+                    break;
+            }
+        }
+
         // ==================================================================
         // What does not fit in the can
         // ==================================================================
@@ -1750,25 +1851,17 @@ namespace Fumes.Station
 
                 _target = vehicle;
                 _targetTank = tank;
-                _stage = Stage.Filling;
 
-                // TURNED ON THE SPOT, once, as filling begins.
-                //
-                // FaceThe has been called every frame of the fill all along and he stayed put,
-                // because SET_PED_DESIRED_HEADING is a nudge for the LOCOMOTION system to
-                // resolve -- and he is standing still with the movement controls disabled and an
-                // animation on him, so there is no locomotion left to resolve it. A desired
-                // heading with nothing to walk it round is just a number nobody reads.
-                //
-                // Setting the heading itself does not go through any of that. It is abrupt by
-                // nature, which is the trade: he is already roughly facing the car by the time
-                // he can reach the filler, so the correction is small, and a small snap on a
-                // button press reads as him squaring up to the job.
-                Turn(me, filler);
+                // THE CARD, unless there is nothing to decide. A diesel vehicle takes diesel;
+                // asking which of three petrols it wants is a button press to be told no.
+                if (_cfg.GradeMenu && _grade != FuelGrade.Diesel)
+                {
+                    _grades.Show(_basePrice, _stationBrand);
+                    _stage = Stage.Choosing;
+                    return;
+                }
 
-                Log.Info("Filling " + vehicle.LocalizedName + " (" +
-                         tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + "/" +
-                         tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L).");
+                Begin(me);
                 return;
             }
 

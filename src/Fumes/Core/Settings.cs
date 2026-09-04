@@ -703,6 +703,19 @@ namespace Fumes.Core
         public float DieselPrice = 1.06f;
         public float DieselEconomy = 0.82f;
 
+        /// <summary>
+        /// Pick the grade at the pump, on a card, instead of only in the settings menu.
+        ///
+        /// A PANEL RATHER THAN A PROMPT, because the choice has numbers attached: what each one
+        /// costs here and what it returns. Cycling a word on a help-text line would fit on
+        /// screen and would ask you to remember the numbers while you pressed a button to find
+        /// them. And the price is the forecourt's, so it is different at every station.
+        ///
+        /// Never shown for a diesel vehicle. There is nothing to decide, and a card offering
+        /// three petrols to a truck is a button press to be told no.
+        /// </summary>
+        public bool GradeMenu = true;
+
         /// <summary>What Plus and Premium cost, as a multiple of the regular price.</summary>
         public float PlusPrice = 1.12f;
         public float PremiumPrice = 1.25f;
@@ -1435,6 +1448,7 @@ namespace Fumes.Core
                 s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.Grade = ParseEnum(ini.GetString("Station", "Grade", "Regular"), s.Grade);
+                s.GradeMenu = ini.GetBool("Station", "GradeMenu", s.GradeMenu);
                 s.DieselVehicles = ini.GetBool("Station", "DieselVehicles", s.DieselVehicles);
                 s.DieselClasses = ini.GetString("Station", "DieselClasses", s.DieselClasses);
                 s.DieselModels = ini.GetString("Station", "DieselModels", s.DieselModels);
