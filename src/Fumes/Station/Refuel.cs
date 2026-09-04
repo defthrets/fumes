@@ -418,7 +418,15 @@ namespace Fumes.Station
             // the crouch this mod put on him and then "restore" it.
             try { _wasStealthy = me.IsInStealthMode; }
             catch { _wasStealthy = false; }
+
             _crouched = false;
+            _crouchChecked = false;
+            _crouchAskedAt = Game.GameTime;
+
+            _spilled = 0f;
+            _poolWidth = 0f;
+            _poolDecals = 0;
+            _poolAt = Vector3.Zero;
 
             PutCanDown(me);
 
@@ -575,29 +583,44 @@ namespace Fumes.Station
             }
 
             var room = _cfg.JerryCanLitres - _canLitres;
-            if (room <= 0.02f) { StopSiphon(me, "the can is full"); return; }
+            var full = room <= 0.02f;
+
+            // FULL IS NOT A REASON TO STOP any more -- the hose does not know the can is full.
+            // It keeps coming, and what does not fit goes on the floor.
+            if (full && !_cfg.SiphonOverflow) { StopSiphon(me, "the can is full"); return; }
 
             if (_targetTank.Litres <= 0.02f) { StopSiphon(me, "the tank is dry"); return; }
 
             // Nothing moves while he is swinging. He is not siphoning, he is fighting.
             var wanted = swinging ? 0f : _cfg.SiphonLitresPerSecond * dt;
-            if (wanted > room) wanted = room;
+            if (!full && wanted > room) wanted = room;
             if (wanted > _targetTank.Litres) wanted = _targetTank.Litres;
 
             if (wanted > 0f)
             {
                 _targetTank.Burn(wanted);
-                _canLitres += wanted;
 
-                SetCanFuel(me, _canLitres);
+                if (full)
+                {
+                    _spilled += wanted;
+                    Spill(me, dt);
+                }
+                else
+                {
+                    _canLitres += wanted;
+                    SetCanFuel(me, _canLitres);
+                }
+
                 _tanks.Touch(_target, _targetTank, false);
             }
 
             _gauge.Update(_target, _targetTank, true);
 
-            Prompt(Control.Context, "Stop   can " +
-                                    _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
-                                    _cfg.JerryCanLitres.ToString("0.#", CultureInfo.InvariantCulture) + " L");
+            Prompt(Control.Context, full
+                ? "Stop   can FULL   " + _spilled.ToString("0.0", CultureInfo.InvariantCulture) +
+                  " L on the ground"
+                : "Stop   can " + _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
+                  _cfg.JerryCanLitres.ToString("0.#", CultureInfo.InvariantCulture) + " L");
 
             if (Pressed()) StopSiphon(me, null);
         }
@@ -724,14 +747,7 @@ namespace Fumes.Station
             {
                 if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true);
 
-                // Down, every frame it is on. Stealth is a stance the game will drop on its
-                // own -- a bump, a swing, a control the player touches -- so this is a request
-                // for THIS frame rather than a state set once and trusted.
-                if (_cfg.SiphonCrouch)
-                {
-                    Function.Call(Hash.SET_PED_STEALTH_MOVEMENT, me.Handle, true, "DEFAULT_ACTION");
-                    _crouched = true;
-                }
+                if (_cfg.SiphonCrouch) Crouch(me);
 
                 // AN ANIMATION, NOT IK, and that is a correction rather than a preference.
                 //
@@ -864,6 +880,122 @@ namespace Fumes.Station
             catch { /* the pose reselects it next frame anyway */ }
         }
 
+        // ==================================================================
+        // What does not fit in the can
+        // ==================================================================
+
+        private float _spilled;
+        private float _poolWidth;
+        private int _poolDecals;
+        private int _poolNextAt;
+        private Vector3 _poolAt;
+
+        /// <summary>
+        /// Grows a pool of petrol under the can once it stops being able to hold any more.
+        ///
+        /// A DECAL CANNOT BE RESIZED once it is down, so a pool that grows is successive decals
+        /// at the same spot, each a little wider than the last. That is also why this runs on a
+        /// timer rather than every frame: sixty decals a second is the whole decal budget spent
+        /// inside a second, and that budget is shared with every scuff, skid mark and bullet
+        /// hole already on the street.
+        ///
+        /// If he walks away from the puddle he starts another one, which is not a special case
+        /// -- it is what a can pouring onto the ground does while somebody carries it.
+        ///
+        /// These are the game's OWN petrol decals, the same ones a jerry can leaves. They
+        /// ignite. That is less a feature this adds than one it declines to take away.
+        /// </summary>
+        private void Spill(Ped me, float dt)
+        {
+            if (!_cfg.SiphonPool) return;
+            if (_poolDecals >= _cfg.SiphonPoolMaxDecals) return;
+            if (Game.GameTime < _poolNextAt) return;
+
+            _poolNextAt = Game.GameTime + (int)(_cfg.SiphonPoolEverySeconds * 1000f);
+
+            try
+            {
+                // Under the CAN rather than under him: it is the can that is overflowing, and
+                // the difference is an arm's length.
+                var over = CanSpout(me);
+                var at = new Vector3(over.X, over.Y, me.Position.Z - 0.9f);
+
+                // Far enough from the last one to be a new puddle rather than the same one.
+                if (_poolAt == Vector3.Zero || at.DistanceTo(_poolAt) > _cfg.SiphonPoolStep)
+                {
+                    _poolAt = at;
+                    _poolWidth = _cfg.SiphonPoolWidth;
+                }
+                else if (_poolWidth < _cfg.SiphonPoolMaxWidth)
+                {
+                    _poolWidth += _cfg.SiphonPoolGrowth;
+                    if (_poolWidth > _cfg.SiphonPoolMaxWidth) _poolWidth = _cfg.SiphonPoolMaxWidth;
+                }
+                else
+                {
+                    // As big as it gets. More decals on top of it cost budget and change
+                    // nothing anybody can see.
+                    return;
+                }
+
+                Function.Call(Hash.ADD_PETROL_DECAL, _poolAt.X, _poolAt.Y, _poolAt.Z,
+                              0.1f, _poolWidth, 1f);
+
+                _poolDecals++;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spill", "Could not put petrol on the ground: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Puts him in the crouch, once the game has what it needs to do it.
+        ///
+        /// THE STANCE HAS AN ASSET, and that is what was missing. SET_PED_STEALTH_MOVEMENT
+        /// names a move set -- DEFAULT_ACTION -- and the game will not enter a stance whose
+        /// clips are not streamed in. Called without the request the native is accepted, returns
+        /// nothing, and does nothing, which is indistinguishable from working until you look at
+        /// him. Requested every frame until it lands, for the same reason anim dicts are: one
+        /// request dropped under streaming load is never made again.
+        ///
+        /// Set every frame after that, because stealth is a stance the game drops on its own --
+        /// a bump, a melee swing, a control the player touches.
+        ///
+        /// And CHECKED, which this can do where the animations could not: IsInStealthMode reads
+        /// back the actual stance, so "did it work" has a real answer rather than an assumption.
+        /// </summary>
+        private void Crouch(Ped me)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_STEALTH_MODE_ASSET_LOADED, "DEFAULT_ACTION"))
+                {
+                    Function.Call(Hash.REQUEST_STEALTH_MODE_ASSET, "DEFAULT_ACTION");
+                    return;
+                }
+
+                Function.Call(Hash.SET_PED_STEALTH_MOVEMENT, me.Handle, true, "DEFAULT_ACTION");
+                _crouched = true;
+
+                if (!_crouchChecked && Game.GameTime - _crouchAskedAt > 1000)
+                {
+                    _crouchChecked = true;
+
+                    if (!me.IsInStealthMode)
+                    {
+                        Log.Warn("SiphonCrouch: he will not go into the stealth stance. Something " +
+                                 "else is holding him upright -- turn SiphonCrouch off in the ini " +
+                                 "if it stays that way.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("crouch", "Could not crouch him: " + ex.Message);
+            }
+        }
+
         /// <summary>Puts his stance back to whatever it was before the siphon.</summary>
         private void StandUp(Ped me)
         {
@@ -885,6 +1017,12 @@ namespace Fumes.Station
 
         private void StopSiphon(Ped me, string why)
         {
+            if (_spilled > 0.05f)
+            {
+                Log.Info("Spilled " + _spilled.ToString("0.0", CultureInfo.InvariantCulture) +
+                         " L on the ground over " + _poolDecals + " decals.");
+            }
+
             StandUp(me);
             Swung(me);
             PickCanUp(me);
@@ -1947,6 +2085,8 @@ namespace Fumes.Station
         /// <summary>Whether he was already crouched when the siphon began, so it can be put back.</summary>
         private bool _wasStealthy;
         private bool _crouched;
+        private bool _crouchChecked;
+        private int _crouchAskedAt;
 
         /// <summary>
         /// Holds a ped at one frame of a clip, for as long as it is called.

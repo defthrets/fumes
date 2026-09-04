@@ -380,6 +380,40 @@ namespace Fumes.Core
         public bool SiphonCrouch = true;
 
         /// <summary>
+        /// A full can does not stop the siphon -- the overflow goes on the ground.
+        ///
+        /// The hose has no idea the can is full. It keeps coming, and what does not fit lands
+        /// at his feet, which is both the honest behaviour and a reason to watch the meter.
+        /// Off restores the old stop-when-full.
+        /// </summary>
+        public bool SiphonOverflow = true;
+
+        /// <summary>
+        /// Draw the spill as a growing pool of petrol.
+        ///
+        /// The game's OWN petrol decals, the same ones a jerry can leaves behind -- which means
+        /// they ignite. That is less a feature this adds than one it declines to remove.
+        /// </summary>
+        public bool SiphonPool = true;
+
+        /// <summary>
+        /// How the pool grows. A decal cannot be resized once it is down, so growth is
+        /// successive decals at one spot, each wider than the last.
+        ///
+        /// The interval and the decal cap are both budget: sixty a second would spend the whole
+        /// decal allowance in a second, and that allowance is shared with every scuff, skid and
+        /// bullet hole already on the street.
+        /// </summary>
+        public float SiphonPoolWidth = 0.35f;
+        public float SiphonPoolGrowth = 0.07f;
+        public float SiphonPoolMaxWidth = 2.2f;
+        public float SiphonPoolEverySeconds = 0.30f;
+        public int SiphonPoolMaxDecals = 60;
+
+        /// <summary>How far he has to move for it to become a second puddle, in metres.</summary>
+        public float SiphonPoolStep = 0.5f;
+
+        /// <summary>
         /// How far from the filler he can get before the hose comes out, in metres.
         ///
         /// This is the leash, and it replaces the reach test the other stages use. Standing
@@ -1181,6 +1215,14 @@ namespace Fumes.Core
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);
                 s.SiphonCrouch = ini.GetBool("Station", "SiphonCrouch", s.SiphonCrouch);
+                s.SiphonOverflow = ini.GetBool("Station", "SiphonOverflow", s.SiphonOverflow);
+                s.SiphonPool = ini.GetBool("Station", "SiphonPool", s.SiphonPool);
+                s.SiphonPoolWidth = ini.GetFloat("Station", "SiphonPoolWidth", s.SiphonPoolWidth, 0.05f, 3f);
+                s.SiphonPoolGrowth = ini.GetFloat("Station", "SiphonPoolGrowth", s.SiphonPoolGrowth, 0.005f, 1f);
+                s.SiphonPoolMaxWidth = ini.GetFloat("Station", "SiphonPoolMaxWidth", s.SiphonPoolMaxWidth, 0.1f, 8f);
+                s.SiphonPoolEverySeconds = ini.GetFloat("Station", "SiphonPoolEverySeconds", s.SiphonPoolEverySeconds, 0.05f, 5f);
+                s.SiphonPoolMaxDecals = ini.GetInt("Station", "SiphonPoolMaxDecals", s.SiphonPoolMaxDecals, 1, 400);
+                s.SiphonPoolStep = ini.GetFloat("Station", "SiphonPoolStep", s.SiphonPoolStep, 0.1f, 5f);
                 s.SiphonLeash = ini.GetFloat("Station", "SiphonLeash", s.SiphonLeash, 0.3f, 10f);
                 s.SiphonHose = ParseEnum(ini.GetString("Station", "SiphonHose", "Painted"), s.SiphonHose);
                 s.SiphonHoseRed = ini.GetInt("Station", "SiphonHoseRed", s.SiphonHoseRed, 0, 255);
