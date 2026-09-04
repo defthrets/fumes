@@ -50,11 +50,32 @@ namespace Fumes.Station
         /// <summary>Most segments the hose is drawn in, however many vertices the rope has.</summary>
         private const int MaxSegments = 14;
 
-        public Hose(Settings cfg)
+        /// <summary>
+        /// Whether this is the siphon line rather than the pump hose.
+        ///
+        /// They are the same object doing the same job and they still want different paint: the
+        /// pump hose is the game's own rope, which carries its own texture and looks right, and
+        /// the siphon line is a length of black tube somebody keeps in a boot. One flag rather
+        /// than a second class, because everything about the geometry is identical -- only the
+        /// numbers differ.
+        /// </summary>
+        private readonly bool _siphon;
+
+        public Hose(Settings cfg, bool siphon = false)
         {
             _cfg = cfg;
-            _mode = cfg.Hose;
+            _siphon = siphon;
+            _mode = siphon ? cfg.SiphonHose : cfg.Hose;
         }
+
+        // Which set of numbers this hose draws itself with.
+        private int Red => _siphon ? _cfg.SiphonHoseRed : _cfg.HoseRed;
+        private int Green => _siphon ? _cfg.SiphonHoseGreen : _cfg.HoseGreen;
+        private int Blue => _siphon ? _cfg.SiphonHoseBlue : _cfg.HoseBlue;
+        private int Sheen => _siphon ? _cfg.SiphonHoseSheen : _cfg.HoseSheen;
+        private float Thickness => _siphon ? _cfg.SiphonHoseThickness : _cfg.HoseThickness;
+        private float Sag => _siphon ? _cfg.SiphonHoseSag : _cfg.HoseSag;
+        private int RopeType => _siphon ? _cfg.SiphonHoseRopeType : _cfg.HoseRopeType;
 
         public bool Live => _rope != null && _rope.Exists();
 
@@ -182,7 +203,7 @@ namespace Fumes.Station
             try
             {
                 var span = from.DistanceTo(to);
-                var initial = Clamp(span * _cfg.HoseSag, 1.5f, _cfg.HoseMaxMetres);
+                var initial = Clamp(span * Sag, 1.5f, _cfg.HoseMaxMetres);
 
                 // ADD_ROPE(x, y, z, rotX, rotY, rotZ, maxLength, ropeType, initLength,
                 //          minLength, windingSpeed, p11, p12, rigid, p14, breakWhenShot, unkPtr)
@@ -194,13 +215,13 @@ namespace Fumes.Station
                 // WRITTEN DOWN FIRST. ADD_ROPE with a type past the end of the game's rope
                 // table does not throw, it ends the process -- so the only way to learn which
                 // types those are is to record the attempt somewhere that outlives the attempt.
-                RopeProbe.Arm(_cfg.HoseRopeType);
+                RopeProbe.Arm(RopeType);
 
                 var handle = Function.Call<int>(Hash.ADD_ROPE,
                     from.X, from.Y, from.Z,
                     0f, 0f, 0f,
                     _cfg.HoseMaxMetres * 1.6f,
-                    _cfg.HoseRopeType,
+                    RopeType,
                     initial,
                     0.5f,
                     1f,
@@ -221,10 +242,10 @@ namespace Fumes.Station
                 _gaveUpOnRopeAt = 0;
                 _spawnedAt = Game.GameTime;
 
-                Log.Once("hose-mode", "Hose: rope type " + _cfg.HoseRopeType + ", " + _mode +
-                                      ", drawn at " + _cfg.HoseRed + "," + _cfg.HoseGreen + "," +
-                                      _cfg.HoseBlue + " with sheen " + _cfg.HoseSheen +
-                                      ", ribbon " + _cfg.HoseThickness.ToString("0.000") + "m.");
+                Log.Once(_siphon ? "hose-mode-siphon" : "hose-mode", (_siphon ? "Siphon line: rope type " : "Hose: rope type ") + RopeType + ", " + _mode +
+                                      ", drawn at " + Red + "," + Green + "," +
+                                      Blue + " with sheen " + Sheen +
+                                      ", ribbon " + Thickness.ToString("0.000") + "m.");
 
                 Log.Debug("Hose out: rope " + handle + ", " + _rope.VertexCount + " vertices.");
                 return true;
@@ -258,7 +279,7 @@ namespace Fumes.Station
                 }
 
                 var span = from.DistanceTo(to);
-                _rope.Length = Clamp(span * _cfg.HoseSag, 1.2f, _cfg.HoseMaxMetres * 1.5f);
+                _rope.Length = Clamp(span * Sag, 1.2f, _cfg.HoseMaxMetres * 1.5f);
 
                 _rope.PinVertex(0, from);
                 _rope.PinVertex(count - 1, to);
@@ -288,7 +309,7 @@ namespace Fumes.Station
                 if (span < 0.05f) return;
 
                 // Slack from the same figure the rope uses, so both hoses hang alike.
-                var sag = Clamp(span * (_cfg.HoseSag - 1f) * 1.6f, 0.08f, 1.4f);
+                var sag = Clamp(span * (Sag - 1f) * 1.6f, 0.08f, 1.4f);
 
                 var points = new Vector3[segments + 1];
                 for (var i = 0; i <= segments; i++)
@@ -329,7 +350,7 @@ namespace Fumes.Station
         {
             if (points == null || points.Length < 2) return;
 
-            var radius = _cfg.HoseThickness * 0.5f;
+            var radius = Thickness * 0.5f;
             if (radius < 0.002f) radius = 0.002f;
 
             Vector3 eye;
@@ -418,12 +439,12 @@ namespace Fumes.Station
             var tone = 0.40f + 0.60f * round;
             var sheen = (float)Math.Pow(round, 9) * 0.85f;
 
-            var lift = Clamp255(_cfg.HoseSheen);
+            var lift = Clamp255(Sheen);
 
             return Color.FromArgb(255,
-                                  Shade(_cfg.HoseRed, tone, sheen, lift),
-                                  Shade(_cfg.HoseGreen, tone, sheen, lift),
-                                  Shade(_cfg.HoseBlue, tone, sheen, lift));
+                                  Shade(Red, tone, sheen, lift),
+                                  Shade(Green, tone, sheen, lift),
+                                  Shade(Blue, tone, sheen, lift));
         }
 
         /// <summary>

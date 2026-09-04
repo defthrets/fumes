@@ -129,7 +129,7 @@ namespace Fumes.Station
             _meter = meter;
             _buttons = buttons;
             _nozzle = new Nozzle(cfg);
-            _siphonLine = new Hose(cfg);
+            _siphonLine = new Hose(cfg, true);
             _hose = new Hose(cfg);
             _hazard = new Hazard(cfg);
             _sound = new FillSound(cfg);

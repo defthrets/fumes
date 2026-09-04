@@ -323,6 +323,30 @@ namespace Fumes.Core
         public int SiphonIkPart = 1;
 
         /// <summary>
+        /// The siphon line's own paint, separate from the pump hose's.
+        ///
+        /// PAINTED AND PURE BLACK, where the pump hose is the game's own rope. A rope cannot be
+        /// tinted -- there is no native for it, which is why making the pump hose black meant
+        /// drawing it instead, and why that took several goes to stop looking like planks.
+        ///
+        /// Black is the one colour where none of that can happen. The ribbon is shaded across
+        /// its width to suggest a round tube, and that shading is what read as flat panels; at
+        /// zero with no sheen every band computes to the same zero, so the shading contributes
+        /// nothing and the strip is flat by construction rather than by a threshold.
+        /// </summary>
+        public HoseMode SiphonHose = HoseMode.Painted;
+
+        public int SiphonHoseRed, SiphonHoseGreen, SiphonHoseBlue;
+        public int SiphonHoseSheen;
+
+        /// <summary>Thinner and straighter than a forecourt hose. It is a length of tube.</summary>
+        public float SiphonHoseThickness = 0.030f;
+        public float SiphonHoseSag = 1.05f;
+
+        /// <summary>The thinnest rope, since the drawn ribbon is what you actually see.</summary>
+        public int SiphonHoseRopeType = 5;
+
+        /// <summary>
         /// He can throw a punch or a kick without stopping what he is doing with the can.
         ///
         /// Only while the CAN is in play -- siphoning or pouring. Not at the pump, where the
@@ -1060,6 +1084,14 @@ namespace Fumes.Core
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
                 s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
                 s.SiphonIkPart = ini.GetInt("Station", "SiphonIkPart", s.SiphonIkPart, 0, 8);
+                s.SiphonHose = ParseEnum(ini.GetString("Station", "SiphonHose", "Painted"), s.SiphonHose);
+                s.SiphonHoseRed = ini.GetInt("Station", "SiphonHoseRed", s.SiphonHoseRed, 0, 255);
+                s.SiphonHoseGreen = ini.GetInt("Station", "SiphonHoseGreen", s.SiphonHoseGreen, 0, 255);
+                s.SiphonHoseBlue = ini.GetInt("Station", "SiphonHoseBlue", s.SiphonHoseBlue, 0, 255);
+                s.SiphonHoseSheen = ini.GetInt("Station", "SiphonHoseSheen", s.SiphonHoseSheen, 0, 255);
+                s.SiphonHoseThickness = ini.GetFloat("Station", "SiphonHoseThickness", s.SiphonHoseThickness, 0.002f, 0.5f);
+                s.SiphonHoseSag = ini.GetFloat("Station", "SiphonHoseSag", s.SiphonHoseSag, 1f, 3f);
+                s.SiphonHoseRopeType = ini.GetInt("Station", "SiphonHoseRopeType", s.SiphonHoseRopeType, 0, 7);
                 s.KickWhileFilling = ini.GetBool("Station", "KickWhileFilling", s.KickWhileFilling);
                 s.KickSeconds = ini.GetFloat("Station", "KickSeconds", s.KickSeconds, 0.2f, 6f);
                 s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
