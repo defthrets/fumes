@@ -529,27 +529,27 @@ namespace Fumes.Station
             }
 
             HoldStill(me);
-            FillPose(me);
-            FaceThe(me, filler);
 
-            // The line, every frame, from HIS HAND down to the neck of the can. Same rope as
-            // the pump hose and the same dark paint, because it is the same kind of object and
-            // two different-looking hoses in one mod is one too many.
-            //
-            // The hand rather than the filler cap, because that is what he is doing: the cap end
-            // is the end he is HOLDING, and a line that started at the car instead left the hose
-            // running to a point in mid-air beside his hand.
-            //
-            // HandPosition is the nozzle's, reused rather than reimplemented -- it already reads
-            // the prop-holding bone and already honours the LeftHand setting, and a second copy
-            // of that would be a second thing to remember when that setting changes.
-            //
-            // GetOffsetPosition, not Position plus Z, so the far end stays on the neck when the
-            // can is stood at an angle on a sloped forecourt.
-            if (_canOnGround != null && _canOnGround.Exists())
+            var swinging = Swinging();
+
+            if (swinging)
             {
-                _siphonLine.Update(_nozzle.HandPosition(),
-                                   _canOnGround.GetOffsetPosition(new Vector3(0f, 0f, _canTop)));
+                Swing(me);
+            }
+            else
+            {
+                Swung(me);
+                SiphonPose(me, filler);
+                FaceThe(me, filler);
+
+                // The line runs from the FREE hand, raised at the filler, down to the spout of
+                // the can in the other one. Same rope and the same dark paint as the pump hose,
+                // because it is the same kind of object and two different-looking hoses is one
+                // too many.
+                //
+                // Both ends move with him, and neither is a fixed offset: the hand end is a
+                // bone, and the spout end is measured off the can he is actually holding.
+                _siphonLine.Update(me.Bones[FreeHand].Position, CanSpout(me));
             }
 
             var room = _cfg.JerryCanLitres - _canLitres;
@@ -557,7 +557,8 @@ namespace Fumes.Station
 
             if (_targetTank.Litres <= 0.02f) { StopSiphon(me, "the tank is dry"); return; }
 
-            var wanted = _cfg.SiphonLitresPerSecond * dt;
+            // Nothing moves while he is swinging. He is not siphoning, he is fighting.
+            var wanted = swinging ? 0f : _cfg.SiphonLitresPerSecond * dt;
             if (wanted > room) wanted = room;
             if (wanted > _targetTank.Litres) wanted = _targetTank.Litres;
 
@@ -590,6 +591,12 @@ namespace Fumes.Station
         /// </summary>
         private void PutCanDown(Ped me)
         {
+            // HE JUST KEEPS HOLDING IT. The can is a weapon, so leaving it selected gets the
+            // game's own carrying animation for free -- the right hand is already solved, by
+            // the people who made the model, and no prop, no bone offset and no rotation has to
+            // be guessed at to put a can in a fist.
+            if (_cfg.SiphonCanInHand) return;
+
             try
             {
                 var at = me.Position + me.RightVector * 0.55f - me.ForwardVector * 0.15f;
@@ -607,22 +614,8 @@ namespace Fumes.Station
 
                     if (_canOnGround == null || !_canOnGround.Exists()) continue;
 
-                    if (_cfg.SiphonCanInHand)
-                    {
-                        // The free hand. The other one is on the hose, and the fill animation is
-                        // upper-body, so the can rides along with whatever that arm is doing.
-                        var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, OffHandBone);
-
-                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _canOnGround.Handle, me.Handle, bone,
-                                      _cfg.SiphonCanOffsetX, _cfg.SiphonCanOffsetY, _cfg.SiphonCanOffsetZ,
-                                      _cfg.SiphonCanRotX, _cfg.SiphonCanRotY, _cfg.SiphonCanRotZ,
-                                      false, false, false, false, 2, true);
-                    }
-                    else
-                    {
-                        _canOnGround.IsPositionFrozen = true;
-                        Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _canOnGround.Handle);
-                    }
+                    _canOnGround.IsPositionFrozen = true;
+                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _canOnGround.Handle);
 
                     // The top of the bounding box, which on all three cans is the neck.
                     try
@@ -636,9 +629,8 @@ namespace Fumes.Station
                         // The default is close enough for prop_jerrycan_01a.
                     }
 
-                    // Turned to face him, so the handle is not pointing into the car. Only
-                    // meaningful on the floor -- a held can takes its heading from the hand.
-                    if (!_cfg.SiphonCanInHand) _canOnGround.Heading = me.Heading + 90f;
+                    // Turned to face him, so the handle is not pointing into the car.
+                    _canOnGround.Heading = me.Heading + 90f;
 
                     Log.Once("can-prop", "Siphon can prop: " + name + ".");
                     break;
@@ -657,6 +649,9 @@ namespace Fumes.Station
         private void PickCanUp(Ped me)
         {
             _siphonLine.Retract();
+
+            // Nothing was ever put down.
+            if (_cfg.SiphonCanInHand) return;
 
             try
             {
@@ -681,8 +676,152 @@ namespace Fumes.Station
             catch { /* he can pick it himself */ }
         }
 
+        /// <summary>
+        /// Him siphoning: the can in the hand that carries it, the other hand up at the filler.
+        ///
+        /// NO POSE ANIMATION FOR THE CAN AT ALL, which is the point. The can is a weapon, so
+        /// leaving it selected gets the game's own carrying animation -- the one it plays any
+        /// time you walk around with a jerry can -- and that hand is then solved by the people
+        /// who built the model. The version this replaces hid the can, spawned a prop, and
+        /// attached it to a bone with six numbers that had to be guessed at.
+        ///
+        /// The free arm is IK rather than an animation because no clip exists of a man holding a
+        /// can in one hand and reaching up with the other, and IK composes with whatever the
+        /// carrying animation is doing instead of fighting it. Re-issued every frame: an IK
+        /// target is a request for THIS frame, not a state that sticks.
+        ///
+        /// LockHands with it, and that one is not cosmetic -- he is holding a petrol can with
+        /// live ammunition in it, and the attack button on a petrol can lays a trail of fuel
+        /// across the forecourt he is standing on.
+        /// </summary>
+        private void SiphonPose(Ped me, Vector3 filler)
+        {
+            LockHands();
+
+            try
+            {
+                if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true);
+
+                // Up to the cap, a little proud of it, so the arm reaches to the hose end
+                // rather than into the bodywork.
+                var reach = filler + new Vector3(0f, 0f, 0.10f);
+
+                Function.Call(Hash.SET_IK_TARGET, me.Handle, _cfg.SiphonIkPart, 0, 0,
+                              reach.X, reach.Y, reach.Z, 0, 400, 400);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("siphon-pose", "Could not pose the siphon: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The top of the can he is holding, or of the one on the floor.
+        ///
+        /// Measured off the entity rather than assumed, because the can he is holding is the
+        /// WEAPON model and the one on the floor is a scene prop, and they are not the same
+        /// size. CurrentWeaponObject is the held one as a real entity, which is what makes the
+        /// spout reachable at all.
+        /// </summary>
+        private Vector3 CanSpout(Ped me)
+        {
+            try
+            {
+                if (!_cfg.SiphonCanInHand)
+                {
+                    return _canOnGround != null && _canOnGround.Exists()
+                        ? _canOnGround.GetOffsetPosition(new Vector3(0f, 0f, _canTop))
+                        : me.Position;
+                }
+
+                var held = me.Weapons.CurrentWeaponObject;
+
+                if (held != null && held.Exists())
+                {
+                    Vector3 low, high;
+                    held.Model.GetDimensions(out low, out high);
+
+                    return held.GetOffsetPosition(new Vector3(0f, 0f, high.Z > 0.02f ? high.Z : _canTop));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-spout", "Could not find the can spout: " + ex.Message);
+            }
+
+            // The carrying hand, which is where the can is even when it cannot be measured.
+            try { return me.Bones[_cfg.LeftHand ? Bone.PHLeftHand : Bone.PHRightHand].Position; }
+            catch { return me.Position; }
+        }
+
+        // ==================================================================
+        // Swinging while holding the can
+        // ==================================================================
+
+        private int _kickUntil;
+        private bool _swinging;
+
+        /// <summary>
+        /// Whether he is mid-swing, and starts one if the button has just gone down.
+        ///
+        /// THE ATTACK BUTTON STAYS DISABLED THROUGHOUT, and that is what makes this safe rather
+        /// than clever. LockHands disables it because the thing in his hand is a petrol can with
+        /// live ammunition, and the trigger on a petrol can lays a trail of fuel across the
+        /// forecourt. IsControlJustPressed reads a control even while it is disabled -- so the
+        /// press is seen, the can never fires, and the press is free to mean something else.
+        ///
+        /// Short-circuiting the four checks is fine here, unlike the edge-detector this looks
+        /// like: the game tracks just-pressed itself, so an unevaluated check has no state left
+        /// stale by not running.
+        /// </summary>
+        private bool Swinging()
+        {
+            if (!_cfg.KickWhileFilling) return false;
+            if (Game.GameTime < _kickUntil) return true;
+
+            var hit = Game.IsControlJustPressed(Control.Attack)
+                      || Game.IsControlJustPressed(Control.MeleeAttackLight)
+                      || Game.IsControlJustPressed(Control.MeleeAttackHeavy)
+                      || Game.IsControlJustPressed(Control.MeleeAttackAlternate);
+
+            if (!hit) return false;
+
+            _kickUntil = Game.GameTime + (int)(_cfg.KickSeconds * 1000f);
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the can out of his hands for the swing, and takes the hose off screen with it.
+        ///
+        /// Unarmed because you cannot kick while holding a jerry can -- the game gives you the
+        /// can's own attack instead, which is the fuel trail this exists to avoid. Selecting
+        /// rather than removing, so the fuel in the can survives the punch.
+        /// </summary>
+        private void Swing(Ped me)
+        {
+            if (_swinging) return;
+            _swinging = true;
+
+            try { me.Weapons.Select(WeaponHash.Unarmed, true); }
+            catch { /* he swings with it, or he does not swing */ }
+
+            // The line would otherwise stretch between his two empty hands.
+            _siphonLine.Retract();
+        }
+
+        /// <summary>Puts the can back the moment the window closes.</summary>
+        private void Swung(Ped me)
+        {
+            if (!_swinging) return;
+            _swinging = false;
+
+            try { if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true); }
+            catch { /* the pose reselects it next frame anyway */ }
+        }
+
         private void StopSiphon(Ped me, string why)
         {
+            Swung(me);
             PickCanUp(me);
             StopFillPose();
 
@@ -785,13 +924,26 @@ namespace Fumes.Station
             }
 
             HoldStill(me);
-            PourPose(me);
-            FaceThe(me, filler);
+
+            var swinging = Swinging();
+
+            if (swinging)
+            {
+                StopPourPose();
+                Swing(me);
+            }
+            else
+            {
+                Swung(me);
+                PourPose(me);
+                FaceThe(me, filler);
+            }
 
             var room = _targetTank.Capacity - _targetTank.Litres;
             if (room <= 0.02f) { StopPouring(me, null); return; }
 
-            var wanted = _cfg.JerryCanLitresPerSecond * dt;
+            // As with the siphon: nothing pours while he is swinging.
+            var wanted = swinging ? 0f : _cfg.JerryCanLitresPerSecond * dt;
             if (wanted > room) wanted = room;
             if (wanted > _canLitres) wanted = _canLitres;
 
@@ -857,31 +1009,27 @@ namespace Fumes.Station
         /// prop_jerrycan_01a has its origin in the middle and is built to stand on a floor, so
         /// it leads when the can is being put down.
         /// </summary>
-        private static readonly string[] HeldCans =
-        {
-            "w_am_jerrycan",
-            "prop_jerrycan_01a",
-            "prop_ld_jerrycan_01"
-        };
-
-        private static readonly string[] GroundCans =
+        /// <summary>
+        /// Jerry can props for the version that stands one on the floor. Only that version needs
+        /// a prop at all: when he keeps hold of it, the can is his WEAPON and the game supplies
+        /// both the model and the animation for carrying it.
+        /// </summary>
+        private static readonly string[] CanProps =
         {
             "prop_jerrycan_01a",
             "prop_ld_jerrycan_01",
             "w_am_jerrycan"
         };
 
-        private string[] CanProps => _cfg.SiphonCanInHand ? HeldCans : GroundCans;
-
         /// <summary>
-        /// The hand that is NOT holding the hose. See Nozzle, which owns the other one -- these
-        /// are the PH_ prop-holding bones, not the skeleton hands, so a prop attached to one
-        /// sits where a weapon would.
+        /// The hand that is NOT holding the can. See Nozzle, which owns the other one -- these
+        /// are the PH_ prop-holding bones, not the skeleton hands, so the hose ends where a
+        /// held object would sit rather than at the wrist.
         /// </summary>
         private const int PhRightHand = 28422;
         private const int PhLeftHand = 60309;
 
-        private int OffHandBone => _cfg.LeftHand ? PhRightHand : PhLeftHand;
+        private Bone FreeHand => _cfg.LeftHand ? Bone.PHRightHand : Bone.PHLeftHand;
 
         /// <summary>A stand-in tank so the pump display can show the CAN filling.</summary>
         private readonly Tank _canGlass = new Tank { Capacity = 20f, Litres = 0f };

@@ -314,17 +314,30 @@ namespace Fumes.Core
         public bool SiphonCanInHand = true;
 
         /// <summary>
-        /// Where the can sits in that hand, and how it is turned.
+        /// Which IK part the free arm is, for reaching up to the filler.
         ///
-        /// Zero on every axis because the held can uses w_am_jerrycan -- the game's OWN carried
-        /// can, whose origin is its grip, built to hang off a hand bone at no offset at all.
-        /// The ground can is a different model for the same reason: prop_jerrycan_01a has its
-        /// origin in the middle and is built to stand on a floor.
-        ///
-        /// Here to be nudged if a replacement model needs it, the way NozzleOffset is.
+        /// 1 is the left arm. A number rather than a name because the game takes a number and
+        /// nothing in the API names them -- if the arm that lifts turns out to be the wrong
+        /// one, this is the line to change rather than a rebuild.
         /// </summary>
-        public float SiphonCanOffsetX, SiphonCanOffsetY, SiphonCanOffsetZ;
-        public float SiphonCanRotX, SiphonCanRotY, SiphonCanRotZ;
+        public int SiphonIkPart = 1;
+
+        /// <summary>
+        /// He can throw a punch or a kick without stopping what he is doing with the can.
+        ///
+        /// Only while the CAN is in play -- siphoning or pouring. Not at the pump, where the
+        /// same button on a running nozzle is a different problem entirely.
+        /// </summary>
+        public bool KickWhileFilling = true;
+
+        /// <summary>
+        /// How long the pose stays out of the way once he swings, in seconds.
+        ///
+        /// A window rather than a check for "is he still swinging", because the melee state is
+        /// not readable the frame the button goes down -- and a pose reapplied on that frame
+        /// cancels the swing before it starts, which is exactly what used to happen.
+        /// </summary>
+        public float KickSeconds = 1.5f;
 
         /// <summary>
         /// How fast it siphons, in litres a second.
@@ -1046,12 +1059,9 @@ namespace Fumes.Core
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
                 s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
-                s.SiphonCanOffsetX = ini.GetFloat("Station", "SiphonCanOffsetX", s.SiphonCanOffsetX, -1f, 1f);
-                s.SiphonCanOffsetY = ini.GetFloat("Station", "SiphonCanOffsetY", s.SiphonCanOffsetY, -1f, 1f);
-                s.SiphonCanOffsetZ = ini.GetFloat("Station", "SiphonCanOffsetZ", s.SiphonCanOffsetZ, -1f, 1f);
-                s.SiphonCanRotX = ini.GetFloat("Station", "SiphonCanRotX", s.SiphonCanRotX, -360f, 360f);
-                s.SiphonCanRotY = ini.GetFloat("Station", "SiphonCanRotY", s.SiphonCanRotY, -360f, 360f);
-                s.SiphonCanRotZ = ini.GetFloat("Station", "SiphonCanRotZ", s.SiphonCanRotZ, -360f, 360f);
+                s.SiphonIkPart = ini.GetInt("Station", "SiphonIkPart", s.SiphonIkPart, 0, 8);
+                s.KickWhileFilling = ini.GetBool("Station", "KickWhileFilling", s.KickWhileFilling);
+                s.KickSeconds = ini.GetFloat("Station", "KickSeconds", s.KickSeconds, 0.2f, 6f);
                 s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.Grade = ParseEnum(ini.GetString("Station", "Grade", "Regular"), s.Grade);
