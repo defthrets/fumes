@@ -314,21 +314,32 @@ namespace Fumes.Core
         public bool SiphonCanInHand = true;
 
         /// <summary>
-        /// The pose he holds while siphoning: an arm out at the filler, can in the other hand.
+        /// The pose he holds while siphoning: the LEFT arm out at the filler, can in the right.
         ///
-        /// mp_common holds exactly four clips -- givetake1_a, givetake1_b, givetake2_a and
-        /// givetake2_b. The _a and _b of a pair are the two SIDES of an exchange, one handing
-        /// over and one receiving, so they are the same reach on opposite arms. The pump pose
-        /// uses givetake1_a; this takes the other side of it to get the other arm.
+        /// HANDEDNESS IS IN THE CLIP NAME HERE, which is the whole reason for this dictionary.
+        /// The first attempt used mp_common givetake1_b on the reasoning that the _a and _b of
+        /// a pair are the two sides of an exchange and therefore mirrored. They are the two
+        /// sides -- one hands over, one receives -- and both do it with the right hand, because
+        /// that is how people hand things over. Roles, not mirrors.
         ///
-        /// Which of the four reads best is a thing to look at rather than reason about, and
-        /// there are only four, so it is a setting -- cycle it and watch, no rebuild.
+        /// doors@1handed holds l_hand_sweep and r_hand_sweep: the same push on either arm, said
+        /// out loud in the name rather than inferred from a role. And the 1handed variant is
+        /// the one the game plays for someone carrying a one-handed weapon -- right arm keeps
+        /// hold of the object, left arm does the pushing, which is the exact shape wanted here.
+        ///
+        /// Others worth a look if this one sits wrong, all left-armed:
+        ///   doors@unarmed  l_hand_sweep          the same clip without the weapon carry
+        ///   doors@         door_sweep_l_hand_medium
+        ///   laddersbase    base_left_hand_up     reaches UP rather than out
         /// </summary>
-        public string SiphonAnimDict = "mp_common";
-        public string SiphonAnimClip = "givetake1_b";
+        public string SiphonAnimDict = "doors@1handed";
+        public string SiphonAnimClip = "l_hand_sweep";
 
-        /// <summary>Same freeze and the same flags as the pump pose. See FillAnimPhase.</summary>
-        public float SiphonAnimPhase = 0.18f;
+        /// <summary>
+        /// Where in the sweep to freeze. Later than the pump pose, because a door push starts
+        /// with the arm back and this wants it at full stretch. See FillAnimPhase.
+        /// </summary>
+        public float SiphonAnimPhase = 0.45f;
         public int SiphonAnimFlag = 50;
 
         /// <summary>
