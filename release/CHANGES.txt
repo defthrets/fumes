@@ -1,6 +1,79 @@
 FUMES -- changes
 
 
+0.1.3
+=====
+
+  * SIPHON FUEL OUT OF ANY CAR. Walk up to a filler holding a jerry can and the
+    second prompt draws fuel the other way -- out of their tank and into your can.
+    He crouches, stands the can on the floor in front of him, and runs a hose from
+    his hand down to its spout. Fill the can at a pump too, on the same button.
+
+  * When the can is full it does not stop. The hose has no idea, so it keeps
+    coming and a pool of petrol grows at your feet. It is the game's own petrol,
+    which means it is the game's own petrol -- stand in it with a lit anything and
+    find out.
+
+  * You can throw a punch mid-siphon. The attack button stays disabled the whole
+    time, because the thing in his hand is a petrol can with live ammunition and
+    the trigger on one lays a trail of fuel across the forecourt. The press is
+    read anyway and turned into an unarmed swing instead.
+
+  * DIESEL. Trucks, buses, tractors and the fire engine take diesel, the pump
+    display says so while it goes in, and it costs more and goes further. The game
+    has no diesel flag on a vehicle -- there is no native that answers it -- so it
+    is worked out from the vehicle class and corrected by name. Both override
+    lists are in the ini: Service holds every bus AND the taxi, Utility holds
+    tractors alongside the battery-powered Caddy, and Emergency has the fire truck
+    next to eight petrol police cars.
+
+  * Fuel grades. Regular, Plus and Premium, with the price and the economy both
+    following. The grade lives IN THE TANK rather than in the setting, so a car
+    you filled with premium last week is still running on premium -- otherwise
+    flipping a menu row would change the mileage of every car you own, backwards
+    through time.
+
+  * Traffic pulls into forecourts. A low NPC already near a station drives in,
+    sits at the pumps and drives off again. Deliberately NOT "low car goes looking
+    for a station": stations are a median six hundred metres apart, the mod
+    simulates a hundred and twenty, and a car sent that far despawns on the way
+    every time. Keeping it alive would mean marking it a mission entity, and those
+    are never reclaimed -- every low NPC would sit in the vehicle pool for the rest
+    of the session.
+
+  * A chime when you dip into reserve. Once per dip, not once per second.
+
+  * The gauge moves with the car. The fuel sloshes faster and higher the quicker
+    you go, throws to one side when you stop hard, and idles slowly at a standstill.
+
+  * The gauge hides when the game's HUD does. Radar off, gauge off.
+
+  * The pump icon moved outside the bar, onto a plate the width of the bar's own
+    outline, matched to the height of the health and armour bars beside it.
+
+  * Fixed: help text was losing a space at every line break. Long prompts are fed
+    to the game in pieces and the game joins them with nothing between, so the
+    space separating two pieces belonged to neither and vanished. Invisible in a
+    sentence; not invisible when the break landed straight after a button icon and
+    welded it to the word behind it. That is why the siphon prompt showed a button
+    and no text.
+
+  * Fixed: story-mission cars are full again, without DLC cars going back to being
+    full. Those are two different kinds of script-owned vehicle and only one of
+    them appears while a mission is actually running, which is the only thing that
+    separates them.
+
+  * Cars you left running catch up on the fuel they should have burned while you
+    were away, rather than only burning it while loaded.
+
+  * Settings menu: icons, pages, and a live positioner for the gauge.
+
+  * Fumes says its hotkey on start-up, like everything else does.
+
+  * 205 settings in the ini now, up from 118, every one of them commented with why
+    it is there and what happens if you change it.
+
+
 0.1.2
 =====
 

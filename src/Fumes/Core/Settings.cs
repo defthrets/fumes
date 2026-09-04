@@ -160,6 +160,20 @@ namespace Fumes.Core
         public Keys MenuKey = Keys.F;
         public MenuModifier MenuModifier = MenuModifier.Shift;
 
+        /// <summary>
+        /// The menu opens on a controller too: LB held, then D-pad Down.
+        ///
+        /// A COMBINATION for the same reason the keyboard uses Shift+F rather than F. A single
+        /// pad button is one press from something the game already does, and a controller has
+        /// no button left over -- every one is spoken for on foot. LB and D-pad Down do nothing
+        /// together in single player, which is the whole test.
+        ///
+        /// Inside the menu the pad works without any of this: D-pad moves, A accepts, B saves
+        /// and closes, LB and RB change page. Those are frontend controls, which the game maps
+        /// to the keyboard AND the pad, so one reading serves both.
+        /// </summary>
+        public bool MenuPad = true;
+
         // ---- what burns fuel --------------------------------------------------
         /// <summary>
         /// Multiplies the whole burn model.
@@ -1330,6 +1344,7 @@ namespace Fumes.Core
                 s.Enabled = ini.GetBool("General", "Enabled", s.Enabled);
                 s.AnnounceOnLoad = ini.GetBool("General", "AnnounceOnLoad", s.AnnounceOnLoad);
                 s.MenuKey = ini.GetKey("General", "MenuKey", s.MenuKey);
+                s.MenuPad = ini.GetBool("General", "MenuPad", s.MenuPad);
                 s.MenuModifier = ParseEnum(ini.GetString("General", "MenuModifier", "Shift"), s.MenuModifier);
                 s.LogLevel = ParseEnum(ini.GetString("General", "LogLevel", "Info"), s.LogLevel);
 

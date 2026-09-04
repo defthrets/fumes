@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 using GTA;
+using GTA.Native;
 
 // Both namespaces have a Control and only one of them is a game control.
 using Control = GTA.Control;
@@ -259,7 +260,7 @@ namespace Fumes.UI
         {
             var hud = Add("HUD", "icon_hud.png");
             hud.Items.Add(Action_("Move and size the gauge", () => Placing = true,
-                                  "Arrows move it, Shift+arrows resize, Enter keeps it."));
+                                  "Arrows or DPAD move it, Shift or RB resizes, Enter or A keeps it."));
             hud.Items.Add(Toggle("Show the gauge", () => _cfg.ShowGauge, v => _cfg.ShowGauge = v,
                                  "HUD", "ShowGauge", "The bar beside the minimap."));
             hud.Items.Add(Toggle("Hide with the game's HUD", () => _cfg.GaugeFollowsHud,
@@ -398,7 +399,14 @@ namespace Fumes.UI
 
         public void Update()
         {
-            if (Edge(_cfg.MenuKey, ref _openKey) && Modifier())
+            // BOTH READ, THEN DECIDED. Folding these into one || would short-circuit the
+            // second, and both carry their own "was it down last frame" -- the one that did not
+            // run keeps a stale answer and swallows the next press on that device. This
+            // codebase has already had that bug once, from exactly this shape.
+            var byKey = Edge(_cfg.MenuKey, ref _openKey) && Modifier();
+            var byPad = PadOpen();
+
+            if (byKey || byPad)
             {
                 if (Placing)
                 {
@@ -496,6 +504,28 @@ namespace Fumes.UI
             if (Math.Abs(target - value) < 0.002f) value = target;
         }
 
+        private bool _padCombo;
+
+        /// <summary>
+        /// The pad's way in: LB held, then D-pad Down.
+        ///
+        /// A COMBINATION, for the same reason the keyboard uses Shift+F rather than F. A single
+        /// pad button is one press away from something the game already does, and there is no
+        /// button left over on a controller -- every one of them is spoken for on foot.
+        ///
+        /// LB and D-pad Down do nothing together in single player, which is the whole test.
+        /// </summary>
+        private bool PadOpen()
+        {
+            if (!_cfg.MenuPad) return false;
+
+            var down = Pad(Control.FrontendLb) && Pad(Control.FrontendDown);
+            var edge = down && !_padCombo;
+
+            _padCombo = down;
+            return edge;
+        }
+
         private bool Modifier()
         {
             try
@@ -542,7 +572,9 @@ namespace Fumes.UI
         {
             var page = _pages[_page];
 
-            if (Edge(Keys.Tab, ref _tab))
+            // RB pages forward on a pad, the same as Tab. LB pages back, which Tab cannot
+            // do -- a keyboard has Shift for that and a pad has a whole second shoulder button.
+            if (Edge(Keys.Tab, Control.FrontendRb, ref _tab))
             {
                 _page = (_page + 1) % _pages.Count;
                 _row = 0;
@@ -550,8 +582,8 @@ namespace Fumes.UI
                 return;
             }
 
-            if (Edge(Keys.Up, ref _up)) _row--;
-            if (Edge(Keys.Down, ref _down)) _row++;
+            if (Edge(Keys.Up, Control.FrontendUp, ref _up)) _row--;
+            if (Edge(Keys.Down, Control.FrontendDown, ref _down)) _row++;
 
             if (_row < 0) _row = page.Items.Count - 1;
             if (_row >= page.Items.Count) _row = 0;
@@ -563,10 +595,10 @@ namespace Fumes.UI
 
             var item = page.Items[_row];
 
-            if (Edge(Keys.Left, ref _left) && item.Nudge != null) Touch(item, -1);
-            if (Edge(Keys.Right, ref _right) && item.Nudge != null) Touch(item, 1);
+            if (Edge(Keys.Left, Control.FrontendLeft, ref _left) && item.Nudge != null) Touch(item, -1);
+            if (Edge(Keys.Right, Control.FrontendRight, ref _right) && item.Nudge != null) Touch(item, 1);
 
-            if (Edge(Keys.Return, ref _enter))
+            if (Edge(Keys.Return, Control.FrontendAccept, ref _enter))
             {
                 if (item.Press != null)
                 {
@@ -575,7 +607,7 @@ namespace Fumes.UI
                 }
             }
 
-            if (Edge(Keys.Back, ref _back)) Close();
+            if (Edge(Keys.Back, Control.FrontendCancel, ref _back)) Close();
         }
 
         private void Touch(Item item, int direction)
@@ -639,13 +671,15 @@ namespace Fumes.UI
             var fine = 0.0004f;
             var fast = 0.0035f;
 
-            var shift = Held(Keys.ShiftKey);
-            var step = Held(Keys.ControlKey) ? fine : fast;
+            // RB is the pad's shift here and LT its ctrl: resize instead of move, and step
+            // finely. A pad has no modifier keys, so two shoulder buttons stand in for them.
+            var shift = Held(Keys.ShiftKey) || Pad(Control.FrontendRb);
+            var step = Held(Keys.ControlKey) || Pad(Control.FrontendLt) ? fine : fast;
 
-            if (Edge(Keys.Left, ref _left)) { if (shift) _cfg.GaugeWidth -= step; else _cfg.GaugeX -= step; }
-            if (Edge(Keys.Right, ref _right)) { if (shift) _cfg.GaugeWidth += step; else _cfg.GaugeX += step; }
-            if (Edge(Keys.Up, ref _up)) { if (shift) _cfg.GaugeHeight -= step * 2f; else _cfg.GaugeY -= step; }
-            if (Edge(Keys.Down, ref _down)) { if (shift) _cfg.GaugeHeight += step * 2f; else _cfg.GaugeY += step; }
+            if (Edge(Keys.Left, Control.FrontendLeft, ref _left)) { if (shift) _cfg.GaugeWidth -= step; else _cfg.GaugeX -= step; }
+            if (Edge(Keys.Right, Control.FrontendRight, ref _right)) { if (shift) _cfg.GaugeWidth += step; else _cfg.GaugeX += step; }
+            if (Edge(Keys.Up, Control.FrontendUp, ref _up)) { if (shift) _cfg.GaugeHeight -= step * 2f; else _cfg.GaugeY -= step; }
+            if (Edge(Keys.Down, Control.FrontendDown, ref _down)) { if (shift) _cfg.GaugeHeight += step * 2f; else _cfg.GaugeY += step; }
 
             _cfg.GaugeX = Clamp(_cfg.GaugeX, 0f, 0.98f);
             _cfg.GaugeY = Clamp(_cfg.GaugeY, 0f, 0.99f);
@@ -656,8 +690,8 @@ namespace Fumes.UI
             // whenever Return produced an edge the Back edge was never evaluated -- and Edge is
             // what UPDATES the remembered key state. Backspace held through that frame would
             // stay recorded as up, and register a fresh press the next time it was looked at.
-            var accept = Edge(Keys.Return, ref _enter);
-            var cancel = Edge(Keys.Back, ref _back);
+            var accept = Edge(Keys.Return, Control.FrontendAccept, ref _enter);
+            var cancel = Edge(Keys.Back, Control.FrontendCancel, ref _back);
 
             if (accept || cancel)
             {
@@ -728,7 +762,9 @@ namespace Fumes.UI
                 w + "x" + h,
                 left, top + 0.046f, 0.28f, Dim, Plain, true);
 
-            Draw.Text("ARROWS move    SHIFT+ARROWS resize    CTRL fine    ENTER done",
+            Draw.Text(OnKeyboard()
+                          ? "ARROWS move    SHIFT+ARROWS resize    CTRL fine    ENTER done"
+                          : "DPAD move    RB+DPAD resize    LT fine    A done",
                       left, top + 0.066f, 0.26f, Dim, Plain, true);
         }
 
@@ -808,7 +844,7 @@ namespace Fumes.UI
                 {
                     if (selected)
                     {
-                        Draw.Text("ENTER", left + PanelW - 0.010f, y + 0.0044f, 0.295f,
+                        Draw.Text(OnKeyboard() ? "ENTER" : "A", left + PanelW - 0.010f, y + 0.0044f, 0.295f,
                                   A(Amber), Plain, false, true);
                     }
 
@@ -858,7 +894,9 @@ namespace Fumes.UI
             Draw.Text(string.IsNullOrEmpty(hint) ? "" : hint,
                       left + 0.012f, foot + 0.008f, 0.26f, A(Dim), Plain);
 
-            Draw.Text("TAB page    ARROWS change    BACKSPACE save & close",
+            Draw.Text(OnKeyboard()
+                          ? "TAB page    ARROWS change    BACKSPACE save & close"
+                          : "LB RB page    DPAD change    B save & close",
                       left + 0.012f, foot + 0.024f, 0.24f,
                       A(Color.FromArgb(120, 150, 150, 156)), Plain);
         }
@@ -960,6 +998,44 @@ namespace Fumes.UI
         {
             try { return Game.IsKeyPressed(key); }
             catch { return false; }
+        }
+
+        /// <summary>
+        /// A pad button, read even though the menu has just disabled half the pad.
+        ///
+        /// IsControlPressed reports a disabled control and IsEnabledControlPressed does not,
+        /// which is the difference that matters here: the menu deafens the game so its own
+        /// keys do not also fire a punch, and reading through the enabled check would deafen
+        /// the menu along with it.
+        /// </summary>
+        private static bool Pad(Control control)
+        {
+            try { return Game.IsControlPressed(control); }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// One edge from a key OR a pad button, sharing one piece of state.
+        ///
+        /// Sharing it is the point. Two separate edge detectors on one action means the one
+        /// you did not press keeps its own stale "was down", and the next real press on the
+        /// other device is swallowed -- which is the bug this codebase already had once, when
+        /// two Edge calls were joined with a short-circuiting OR and the second never ran.
+        /// Read both, then decide.
+        /// </summary>
+        private static bool Edge(Keys key, Control pad, ref bool wasDown)
+        {
+            var down = Held(key) || Pad(pad);
+            var edge = down && !wasDown;
+            wasDown = down;
+            return edge;
+        }
+
+        /// <summary>Whether the player is on a keyboard, for showing the right button names.</summary>
+        private static bool OnKeyboard()
+        {
+            try { return Function.Call<bool>(Hash.IS_USING_KEYBOARD_AND_MOUSE, 2); }
+            catch { return true; }
         }
 
         private static bool Edge(Keys key, ref bool wasDown)

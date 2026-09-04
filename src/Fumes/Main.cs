@@ -192,8 +192,27 @@ namespace Fumes
         /// press the wrong key -- and the only thing worse than no hotkey in the greeting is a
         /// wrong one, because they will believe it and conclude the menu is broken.
         /// </summary>
+        /// <summary>
+        /// What to tell them to press, in the language of the thing in their hands.
+        ///
+        /// A greeting that says Shift+F to somebody holding a controller is a greeting that
+        /// says the mod has no menu. The game already knows which device is in use, so it is
+        /// asked rather than assumed.
+        /// </summary>
         private string MenuKeyName()
         {
+            try
+            {
+                if (_cfg.MenuPad && !Function.Call<bool>(Hash.IS_USING_KEYBOARD_AND_MOUSE, 2))
+                {
+                    return "LB + DPad Down";
+                }
+            }
+            catch
+            {
+                // Fall through to the keyboard name.
+            }
+
             var key = _cfg.MenuKey.ToString();
 
             switch (_cfg.MenuModifier)
