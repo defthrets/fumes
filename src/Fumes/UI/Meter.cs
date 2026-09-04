@@ -173,122 +173,14 @@ namespace Fumes.UI
         /// </summary>
         private void Border(float left, float top, bool full)
         {
-            const float thick = 0.0022f;
-            const float chaseSeconds = 2.8f;
-            const float halo = 0.10f;       // how much of the ring each light lifts
-
+            // THE CHASE ITSELF NOW LIVES IN Draw, because the grade card wanted the same frame
+            // and it sits directly in front of this one. Two copies of a running light are two
+            // places for it to drift out of step. What stays here is the only part that is
+            // this panel's own: green when the tank is full, gold while it is filling.
             var dim = full ? Color.FromArgb(165, 42, 112, 58) : Color.FromArgb(165, 108, 72, 24);
             var lit = full ? Color.FromArgb(255, 165, 250, 180) : Color.FromArgb(255, 255, 220, 140);
 
-            // THE UNLIT FRAME IS FOUR SOLID RECTANGLES, drawn first and in one piece.
-            //
-            // It used to be the same ring of segments as the light, every one of them drawn
-            // whether it was lit or not -- and a ring of abutting rectangles does not abut
-            // once each edge is rounded to whole pixels. The frame came out as a row of gold
-            // blocks with gaps between them, which reads as a broken border rather than a dim
-            // one. Now the frame is continuous by construction and the ring only ever draws
-            // the part that is actually glowing.
-            Hud.Bar(left, top, W, thick, dim);
-            Hud.Bar(left, top + H - thick, W, thick, dim);
-            Hud.Bar(left, top, thick, H, dim);
-            Hud.Bar(left + W - thick, top, thick, H, dim);
-
-            var aspect = Aspect();
-            var wide = W * aspect;          // top and bottom, in height-equivalent units
-            var perimeter = 2f * (wide + H);
-            if (perimeter <= 0.0001f) return;
-
-            var step = perimeter / BorderSegments;
-            var chase = (Environment.TickCount % (int)(chaseSeconds * 1000)) / (chaseSeconds * 1000f);
-
-            for (var i = 0; i < BorderSegments; i++)
-            {
-                var u = (float)i / BorderSegments;
-
-                // Two lights, opposite each other. One reads as a stray pixel; two read as a
-                // sign that is meant to be doing this.
-                var glow = Math.Max(Ring(u, chase, halo), Ring(u, (chase + 0.5f) % 1f, halo));
-                if (glow <= 0.02f) continue;
-
-                var colour = Blend(dim, lit, glow * glow);
-                var d = u * perimeter;
-
-                // Each piece is drawn a shade longer than its spacing, so neighbours overlap
-                // rather than leaving a hairline of frame showing between them.
-                //
-                // AND EVERY PIECE IS CLAMPED TO ITS OWN EDGE. That overlap is the reason: the
-                // last segment before a corner starts almost at the corner and is 15% longer
-                // than the gap it has left, so it ran out past the end of the frame -- a gold
-                // spur sticking off the top right, and another off the bottom left, four times
-                // every circuit. The frame looked broken rather than lit.
-                var run = step * 1.15f;
-
-                if (d < wide)
-                {
-                    // Top, left to right.
-                    var x = left + (d / wide) * W;
-                    var len = Math.Min(run / aspect, left + W - x);
-                    if (len > 0f) Hud.Bar(x, top, len, thick, colour);
-                }
-                else if (d < wide + H)
-                {
-                    // Right, top to bottom.
-                    var y = top + (d - wide);
-                    var len = Math.Min(run, top + H - y);
-                    if (len > 0f) Hud.Bar(left + W - thick, y, thick, len, colour);
-                }
-                else if (d < 2f * wide + H)
-                {
-                    // Bottom, right to left.
-                    var x = left + W - ((d - wide - H) / wide) * W;
-                    var from = Math.Max(left, x - run / aspect);
-                    if (x > from) Hud.Bar(from, top + H - thick, x - from, thick, colour);
-                }
-                else
-                {
-                    // Left, bottom to top.
-                    var y = top + H - (d - 2f * wide - H);
-                    var from = Math.Max(top, y - run);
-                    if (y > from) Hud.Bar(left, from, thick, y - from, colour);
-                }
-            }
-        }
-
-        /// <summary>How lit a point on the ring is, given where the chase is. Wraps at the seam.</summary>
-        private static float Ring(float u, float chase, float halo)
-        {
-            var d = Math.Abs(u - chase);
-            if (d > 0.5f) d = 1f - d;
-
-            var g = 1f - d / halo;
-            return g < 0f ? 0f : g;
-        }
-
-        private static Color Blend(Color a, Color b, float t)
-        {
-            if (t <= 0f) return a;
-            if (t >= 1f) return b;
-
-            return Color.FromArgb(
-                (int)(a.A + (b.A - a.A) * t),
-                (int)(a.R + (b.R - a.R) * t),
-                (int)(a.G + (b.G - a.G) * t),
-                (int)(a.B + (b.B - a.B) * t));
-        }
-
-        private static float Aspect()
-        {
-            try
-            {
-                var a = GTA.UI.Screen.AspectRatio;
-                if (a > 0.5f && a < 6f) return a;
-            }
-            catch
-            {
-                // Fall through to the safe default.
-            }
-
-            return 1.7778f;
+            Hud.ChaseFrame(left, top, W, H, dim, lit, 2.8f, BorderSegments);
         }
 
         // ==================================================================
@@ -503,7 +395,7 @@ namespace Fumes.UI
             // screen's width and height a fraction of its height, so equal numbers give a
             // bubble as much wider than it is tall as the screen is -- half again on this one,
             // which at three pixels is a dash. The width is divided by the aspect instead.
-            var aspect = Aspect();
+            var aspect = Hud.Aspect();
 
             for (var i = 0; i < Bubbles; i++)
             {

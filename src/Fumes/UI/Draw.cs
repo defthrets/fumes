@@ -37,6 +37,140 @@ namespace Fumes.UI
         }
 
         /// <summary>A rectangle drawn from its top-left, which is how a bar is actually thought about.</summary>
+        /// <summary>The screen's shape, for turning a height into a width that matches it.</summary>
+        public static float Aspect()
+        {
+            try
+            {
+                var a = GTA.UI.Screen.AspectRatio;
+                if (a > 0.5f && a < 6f) return a;
+            }
+            catch
+            {
+                // Fall through to the safe default.
+            }
+
+            return 1.7778f;
+        }
+
+        public static Color Blend(Color a, Color b, float t)
+        {
+            if (t <= 0f) return a;
+            if (t >= 1f) return b;
+
+            return Color.FromArgb(
+                (int)(a.A + (b.A - a.A) * t),
+                (int)(a.R + (b.R - a.R) * t),
+                (int)(a.G + (b.G - a.G) * t),
+                (int)(a.B + (b.B - a.B) * t));
+        }
+
+        /// <summary>How lit a point on the ring is, given where the chase has got to.</summary>
+        private static float Ring(float u, float chase, float halo)
+        {
+            var d = Math.Abs(u - chase);
+            if (d > 0.5f) d = 1f - d;
+
+            var g = 1f - d / halo;
+            return g < 0f ? 0f : g;
+        }
+
+        /// <summary>
+        /// A frame with a light running round it, the way a lit forecourt sign does.
+        ///
+        /// LIVED IN Meter UNTIL THE GRADE CARD WANTED THE SAME THING. It is the pump display's
+        /// signature and the card sits directly in front of it, so the two matching is the
+        /// point rather than a nicety -- and two copies of a chase are two places for it to
+        /// drift out of step.
+        ///
+        /// Built as a ring of short segments rather than four sliding rectangles, which is the
+        /// trick that makes it simple: a travelling highlight drawn as a moving rectangle has
+        /// to be split by hand every time it crosses a corner, and gets the maths wrong at
+        /// exactly the four moments anybody is looking at it. A ring of fixed segments, each
+        /// brightened by how near the chase is, turns corners for free.
+        ///
+        /// Segment lengths are weighted by the screen's ASPECT. Fractions of width and
+        /// fractions of height are not the same distance, so an unweighted ring runs the light
+        /// along the top edge at nearly twice the speed it climbs the sides -- which reads as a
+        /// stutter rather than a circuit.
+        ///
+        /// The unlit frame is four solid rectangles drawn first and in one piece. It used to be
+        /// the same ring of segments, every one drawn whether lit or not, and a ring of
+        /// abutting rectangles does not abut once each edge is rounded to whole pixels: the
+        /// frame came out as a row of gold blocks with gaps, which reads as broken rather than
+        /// dim.
+        /// </summary>
+        public static void ChaseFrame(float left, float top, float w, float h,
+                                      Color dim, Color lit,
+                                      float seconds = 2.8f, int segments = 120,
+                                      float thick = 0.0022f, float halo = 0.10f)
+        {
+            try
+            {
+                Bar(left, top, w, thick, dim);
+                Bar(left, top + h - thick, w, thick, dim);
+                Bar(left, top, thick, h, dim);
+                Bar(left + w - thick, top, thick, h, dim);
+
+                var aspect = Aspect();
+                var wide = w * aspect;          // top and bottom, in height-equivalent units
+                var perimeter = 2f * (wide + h);
+
+                if (perimeter <= 0.0001f || segments < 4) return;
+
+                var step = perimeter / segments;
+                var chase = (Environment.TickCount % (int)(seconds * 1000)) / (seconds * 1000f);
+
+                for (var i = 0; i < segments; i++)
+                {
+                    var u = (float)i / segments;
+
+                    // Two lights, opposite each other. One reads as a stray pixel; two read as
+                    // a sign that is meant to be doing this.
+                    var glow = Math.Max(Ring(u, chase, halo), Ring(u, (chase + 0.5f) % 1f, halo));
+                    if (glow <= 0.02f) continue;
+
+                    var colour = Blend(dim, lit, glow * glow);
+                    var d = u * perimeter;
+
+                    // Each piece is drawn a shade longer than its spacing so neighbours overlap
+                    // rather than leaving a hairline of frame between them -- AND every piece is
+                    // clamped to its own edge, because that overlap is what used to send the
+                    // last segment before a corner spurting out past the end of the frame.
+                    var run = step * 1.15f;
+
+                    if (d < wide)
+                    {
+                        var x = left + (d / wide) * w;
+                        var len = Math.Min(run / aspect, left + w - x);
+                        if (len > 0f) Bar(x, top, len, thick, colour);
+                    }
+                    else if (d < wide + h)
+                    {
+                        var y = top + (d - wide);
+                        var len = Math.Min(run, top + h - y);
+                        if (len > 0f) Bar(left + w - thick, y, thick, len, colour);
+                    }
+                    else if (d < 2f * wide + h)
+                    {
+                        var x = left + w - ((d - wide - h) / wide) * w;
+                        var from = Math.Max(left, x - run / aspect);
+                        if (x > from) Bar(from, top + h - thick, x - from, thick, colour);
+                    }
+                    else
+                    {
+                        var y = top + h - (d - 2f * wide - h);
+                        var from = Math.Max(top, y - run);
+                        if (y > from) Bar(left, from, thick, y - from, colour);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("chase", "Could not draw the frame: " + ex.Message);
+            }
+        }
+
         public static void Bar(float left, float top, float width, float height, Color colour)
         {
             Rect(left + width / 2f, top + height / 2f, width, height, colour);

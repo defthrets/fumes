@@ -57,13 +57,25 @@ namespace Fumes.UI
             return Color.FromArgb(255, 200, 205, 212);
         }
 
-        private const float PanelW = 0.430f;
-        private const float PanelH = 0.230f;
-        private const float PanelY = 0.500f;
+        /// <summary>
+        /// THE SAME RECTANGLE THE PUMP DISPLAY USES, near enough, and in the same place.
+        ///
+        /// The card is shown instead of the meter and the meter appears the moment it closes,
+        /// so putting them anywhere near each other on screen would read as two panels arguing.
+        /// Sharing the footprint makes it one panel that changes what it is showing -- which is
+        /// what it is. Meter sits at 0.5 wide by 0.300 across from 0.700 down; this is a shade
+        /// taller because a row of cards needs more height than a column of numbers.
+        /// </summary>
+        private const float PanelW = 0.320f;
+        private const float PanelH = 0.192f;
+        private const float PanelLeft = 0.5f - PanelW / 2f;
+        private const float PanelTop = 0.678f;
 
-        private const float CardW = 0.126f;
-        private const float CardH = 0.132f;
-        private const float CardGap = 0.010f;
+        private const float Margin = 0.012f;
+        private const float CardGap = 0.006f;
+        private const float CardTop = PanelTop + 0.046f;
+        private const float CardH = 0.104f;
+        private const float CardW = (PanelW - Margin * 2f - CardGap * 2f) / 3f;
 
         /// <summary>Chalet Comprime Cologne, the block font the rest of the mod uses.</summary>
         private const int Plain = 4;
@@ -81,16 +93,6 @@ namespace Fumes.UI
 
         private float _price;
         private string _brand = "PUMP";
-
-        /// <summary>
-        /// The screen's own shape, so a "square" icon is square.
-        ///
-        /// Sprites are laid out in a fixed 1280x720 canvas whatever the monitor is, so a width
-        /// and a height in those units are not the same distance on a 21:9 panel -- an icon
-        /// given equal numbers comes out a third too wide. Read once; a resolution does not
-        /// change between frames.
-        /// </summary>
-        private float _aspect = 16f / 9f;
 
         public FuelGrade Picked { get; private set; }
 
@@ -119,16 +121,6 @@ namespace Fumes.UI
             _reveal = 0f;
             _slide = _at;
             _pulse = 0f;
-
-            try
-            {
-                var res = GTA.UI.Screen.Resolution;
-                if (res.Height > 0) _aspect = res.Width / (float)res.Height;
-            }
-            catch
-            {
-                // 16:9 is the safe assumption and the common one.
-            }
 
             // The edges start held, so a button still down from the press that opened this
             // cannot also choose on the first frame.
@@ -221,94 +213,118 @@ namespace Fumes.UI
 
         private void Panel()
         {
-            var lift = (1f - _reveal) * 0.020f;
-            var y = PanelY + lift;
+            // Slid up into place, so it arrives rather than appears. The same easing the
+            // settings panel uses, for the same reason.
+            var top = PanelTop + (1f - _reveal) * 0.022f;
 
-            var fade = (int)(235 * _reveal);
+            Hud.Bar(PanelLeft, top, PanelW, PanelH, Fade(214, 8, 8, 10));
 
-            Hud.Rect(0.5f, y, PanelW, PanelH, Color.FromArgb((int)(214 * _reveal), 8, 8, 10));
+            Hud.Text(_brand, 0.5f, top + 0.006f, 0.42f, Fade(240, 250, 200, 110), Script, true);
 
-            // A rule under the header rather than a box round everything: the cards below have
-            // their own edges and a second frame around them reads as clutter.
-            Hud.Rect(0.5f, y - PanelH / 2f + 0.048f, PanelW - 0.024f, 0.0015f,
-                     Color.FromArgb((int)(90 * _reveal), 250, 200, 110));
+            Hud.Bar(PanelLeft + Margin, top + 0.038f, PanelW - Margin * 2f, 0.0015f,
+                    Fade(110, 250, 200, 110));
 
-            Hud.Text(_brand, 0.5f, y - PanelH / 2f + 0.010f, 0.46f,
-                     Color.FromArgb(fade, 250, 200, 110), Script, true);
-
-            Hud.Text("CHOOSE A GRADE", 0.5f, y - PanelH / 2f + 0.055f, 0.28f,
-                     Color.FromArgb((int)(190 * _reveal), 200, 200, 205), Plain, true);
-
-            Cards(y);
+            Cards(top);
 
             Hud.Text(OnKeyboard()
-                         ? "ARROWS choose    ENTER fill    BACKSPACE cancel"
-                         : "DPAD choose    A fill    B cancel",
-                     0.5f, y + PanelH / 2f - 0.026f, 0.27f,
-                     Color.FromArgb((int)(180 * _reveal), 195, 195, 200), Plain, true);
+                         ? "ARROWS choose     ENTER fill     BACKSPACE cancel"
+                         : "DPAD choose     A fill     B cancel",
+                     0.5f, top + PanelH - 0.024f, 0.26f,
+                     Fade(180, 195, 195, 200), Plain, true);
+
+            // LAST, so the light runs over the top of everything rather than under it. The
+            // same frame the pump display wears, because this is the same panel a moment
+            // earlier -- see Draw.ChaseFrame.
+            Hud.ChaseFrame(PanelLeft, top, PanelW, PanelH,
+                           Fade(165, 108, 72, 24), Fade(255, 255, 220, 140));
         }
 
-        private void Cards(float panelY)
+        private void Cards(float panelTop)
         {
-            var span = Petrol.Length * CardW + (Petrol.Length - 1) * CardGap;
-            var first = 0.5f - span / 2f + CardW / 2f;
-            var top = panelY - 0.012f;
-
-            // THE HIGHLIGHT IS DRAWN FIRST AND AT THE EASED POSITION, so it slides between
-            // cards instead of jumping. It sits behind them, which is why it is a wash rather
-            // than an outline -- an outline drawn under a card would only show on three sides.
-            var glideX = first + _slide * (CardW + CardGap);
-
-            Hud.Rect(glideX, top, CardW + 0.008f, CardH + 0.008f,
-                     Color.FromArgb((int)(200 * _reveal), 250, 200, 110));
+            var top = panelTop + (CardTop - PanelTop);
 
             for (var i = 0; i < Petrol.Length; i++)
             {
-                Card(Petrol[i], first + i * (CardW + CardGap), top, i == _at);
+                Card(Petrol[i], PanelLeft + Margin + i * (CardW + CardGap), top, i == _at);
             }
+
+            // THE OUTLINE IS DRAWN LAST AND AT THE EASED POSITION, so it slides between cards
+            // instead of jumping -- and over them, so it reads as a frame around the chosen one
+            // rather than a block behind it. Behind was what the first version did and it made
+            // the selection look like a thick gold border with a hole in it.
+            var x = PanelLeft + Margin + _slide * (CardW + CardGap);
+
+            Outline(x, top, CardW, CardH, Fade(255, 250, 200, 110));
         }
 
-        private void Card(FuelGrade grade, float x, float y, bool on)
+        /// <summary>Four thin bars. A rectangle with a hole in it is four rectangles.</summary>
+        private static void Outline(float left, float top, float w, float h, Color colour)
+        {
+            const float t = 0.0016f;
+
+            Hud.Bar(left, top, w, t, colour);
+            Hud.Bar(left, top + h - t, w, t, colour);
+            Hud.Bar(left, top, t, h, colour);
+            Hud.Bar(left + w - t, top, t, h, colour);
+        }
+
+        private void Card(FuelGrade grade, float left, float top, bool on)
         {
             var accent = Accent(grade);
-            var alpha = (int)(255 * _reveal);
 
-            // A HEARTBEAT ON THE CHOSEN CARD, and only on that one. It settles rather than
-            // running forever -- a panel that never stops moving is a panel you cannot read.
-            var beat = on ? (float)Math.Exp(-_pulse * 3.2f) * 0.006f : 0f;
+            // A POP THAT SETTLES. It runs off an exponential from the moment the selection
+            // moved, so it is a knock rather than a pulse -- a card that never stops breathing
+            // is a card you cannot read the price off.
+            var pop = on ? (float)Math.Exp(-_pulse * 4.5f) : 0f;
+            var grow = pop * 0.004f;
 
-            var w = CardW - 0.006f + beat;
-            var h = CardH - 0.006f + beat;
+            var x = left - grow;
+            var y = top - grow;
+            var w = CardW + grow * 2f;
+            var h = CardH + grow * 2f;
 
-            Hud.Rect(x, y, w, h, Color.FromArgb((int)((on ? 250 : 220) * _reveal),
-                                                on ? 20 : 13, on ? 20 : 13, on ? 24 : 16));
+            Hud.Bar(x, y, w, h, on ? Fade(250, 26, 24, 20) : Fade(210, 14, 14, 17));
 
-            // The pump, tinted to the grade. Sized off the file's own aspect so it is not
-            // stretched -- the icon is 1:1.36 and a square would squash it.
-            var iconH = 0.052f;
-            var iconW = iconH / (_aspect * Math.Max(0.2f, _pump.Aspect));
+            // The unselected cards keep a dim edge of their own, or they float on the panel
+            // with nothing to say where one stops and the next starts.
+            if (!on) Outline(x, y, w, h, Fade(70, 120, 120, 128));
 
-            _pump.DrawSized(x, y - 0.030f, iconW, iconH,
-                            Color.FromArgb((int)((on ? 255 : 150) * _reveal),
-                                           accent.R, accent.G, accent.B));
+            var centre = x + w / 2f;
 
-            Hud.Text(Fumes.Fuel.Diesel.Name(grade), x, y + 0.004f, 0.34f,
-                     Color.FromArgb(alpha, accent.R, accent.G, accent.B), Plain, true);
+            // Sized off the file's own shape so the pump is not squashed -- width from height
+            // through the screen's aspect, since a fraction of width and a fraction of height
+            // are not the same distance.
+            var iconH = 0.030f + pop * 0.002f;
+            var iconW = iconH / (Hud.Aspect() * Math.Max(0.2f, _pump.Aspect));
+
+            _pump.DrawSized(centre, y + 0.024f, iconW, iconH,
+                            Fade(on ? 255 : 130, accent.R, accent.G, accent.B));
+
+            Hud.Text(Fumes.Fuel.Diesel.Name(grade), centre, y + 0.040f, 0.30f,
+                     Fade(on ? 255 : 190, accent.R, accent.G, accent.B), Plain, true);
 
             var per = _price * _cfg.PriceFor(grade);
 
             Hud.Text("$" + per.ToString("0.00", CultureInfo.InvariantCulture) + "/L",
-                     x, y + 0.028f, 0.30f,
-                     Color.FromArgb((int)((on ? 250 : 190) * _reveal), 240, 240, 240), Plain, true);
+                     centre, y + 0.059f, 0.30f,
+                     Fade(on ? 250 : 175, 240, 240, 240), Plain, true);
 
             // What it BUYS you, as a percentage rather than a multiplier. 0.90 means nothing at
             // a glance; "10% further" is the reason to pay for it.
-            var economy = _cfg.EconomyFor(grade);
-            var further = (int)Math.Round((1f - economy) * 100f);
+            var further = (int)Math.Round((1f - _cfg.EconomyFor(grade)) * 100f);
 
             Hud.Text(further <= 0 ? "standard" : further + "% further",
-                     x, y + 0.048f, 0.26f,
-                     Color.FromArgb((int)((on ? 210 : 150) * _reveal), 190, 195, 200), Plain, true);
+                     centre, y + 0.078f, 0.25f,
+                     Fade(on ? 215 : 140, 190, 195, 200), Plain, true);
+        }
+
+        /// <summary>A colour dimmed by however far the panel has come in.</summary>
+        private Color Fade(int a, int r, int g, int b)
+        {
+            var alpha = (int)(a * _reveal);
+            if (alpha < 0) alpha = 0;
+            if (alpha > 255) alpha = 255;
+            return Color.FromArgb(alpha, r, g, b);
         }
 
         // ==================================================================
