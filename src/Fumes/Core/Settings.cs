@@ -512,6 +512,22 @@ namespace Fumes.Core
         public float SiphonSpoutForward = 0.13f;
         public float SiphonSpoutUp = 0.01f;
 
+        /// <summary>Across the can. The third axis, because two was not enough to land on a neck.</summary>
+        public float SiphonSpoutSide;
+
+        /// <summary>
+        /// Nudge the spout live while siphoning, with the arrow keys.
+        ///
+        /// Six rounds of "a bit further forward" is what this is for. The offset is three
+        /// numbers against a model whose origin nobody can see, and no amount of reasoning from
+        /// bounding boxes beats moving it and looking -- so move it and look, then press Enter
+        /// and it writes itself into the ini.
+        /// </summary>
+        public bool SiphonSpoutEdit = true;
+
+        /// <summary>How far one press moves it, in metres.</summary>
+        public float SiphonSpoutStep = 0.01f;
+
         /// <summary>
         /// The siphon line's own paint, separate from the pump hose's.
         ///
@@ -1317,6 +1333,9 @@ namespace Fumes.Core
                 s.SiphonAnimFlag = ini.GetInt("Station", "SiphonAnimFlag", s.SiphonAnimFlag, 0, 255);
                 s.SiphonSpoutForward = ini.GetFloat("Station", "SiphonSpoutForward", s.SiphonSpoutForward, -0.5f, 0.5f);
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
+                s.SiphonSpoutSide = ini.GetFloat("Station", "SiphonSpoutSide", s.SiphonSpoutSide, -0.5f, 0.5f);
+                s.SiphonSpoutEdit = ini.GetBool("Station", "SiphonSpoutEdit", s.SiphonSpoutEdit);
+                s.SiphonSpoutStep = ini.GetFloat("Station", "SiphonSpoutStep", s.SiphonSpoutStep, 0.001f, 0.1f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);
                 s.SiphonCrouch = ini.GetBool("Station", "SiphonCrouch", s.SiphonCrouch);
                 s.SiphonCrouchDict = ini.GetString("Station", "SiphonCrouchDict", s.SiphonCrouchDict);

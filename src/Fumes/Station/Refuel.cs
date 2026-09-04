@@ -561,6 +561,12 @@ namespace Fumes.Station
                 // fine; sprinting with one means he has left it behind.
                 Game.DisableControlThisFrame(Control.Sprint);
                 Game.DisableControlThisFrame(Control.Jump);
+
+                // Duck too, while the spout editor is on: it raises the spout, and left enabled
+                // it would ALSO toggle his stance and fight the crouch clip. Disabling it does
+                // not hide the press -- IsControlJustPressed reads a disabled control, which is
+                // the whole reason the editor can borrow keys that already mean something.
+                if (_cfg.SiphonSpoutEdit) Game.DisableControlThisFrame(Control.Duck);
             }
             else
             {
@@ -589,7 +595,10 @@ namespace Fumes.Station
                 //
                 // Both ends move with him, and neither is a fixed offset: the hand end is a
                 // bone, and the spout end is measured off the can he is actually holding.
-                _siphonLine.Update(me.Bones[FreeHand].Position, CanSpout(me));
+                var spout = CanSpout(me);
+
+                _siphonLine.Update(me.Bones[FreeHand].Position, spout);
+                SpoutEditor(me, spout);
             }
 
             var room = _cfg.JerryCanLitres - _canLitres;
@@ -800,7 +809,8 @@ namespace Fumes.Station
                 if (!_cfg.SiphonCanInHand)
                 {
                     return _canOnGround != null && _canOnGround.Exists()
-                        ? _canOnGround.GetOffsetPosition(new Vector3(0f, _cfg.SiphonSpoutForward,
+                        ? _canOnGround.GetOffsetPosition(new Vector3(_cfg.SiphonSpoutSide,
+                                                                     _cfg.SiphonSpoutForward,
                                                                      _canTop + _cfg.SiphonSpoutUp))
                         : me.Position;
                 }
@@ -814,7 +824,8 @@ namespace Fumes.Station
 
                     var top = high.Z > 0.02f ? high.Z : _canTop;
 
-                    return held.GetOffsetPosition(new Vector3(0f, _cfg.SiphonSpoutForward,
+                    return held.GetOffsetPosition(new Vector3(_cfg.SiphonSpoutSide,
+                                                              _cfg.SiphonSpoutForward,
                                                               top + _cfg.SiphonSpoutUp));
                 }
             }
@@ -891,6 +902,84 @@ namespace Fumes.Station
 
             try { if (_cfg.SiphonCanInHand) me.Weapons.Select(WeaponHash.PetrolCan, true); }
             catch { /* the pose reselects it next frame anyway */ }
+        }
+
+        // ==================================================================
+        // Moving the spout while you look at it
+        // ==================================================================
+
+        private bool _spoutSaved;
+
+        /// <summary>
+        /// Nudges where the hose meets the can, live, with the arrow keys.
+        ///
+        /// SIX ROUNDS OF "A BIT FURTHER FORWARD" IS WHY THIS EXISTS. The offset is three numbers
+        /// against a model whose origin nobody can see, and every attempt to reason it out of a
+        /// bounding box has landed somewhere slightly wrong -- because a bounding box knows
+        /// where the can ENDS and not where its neck is. Moving it and looking settles in
+        /// seconds what arithmetic has not settled in six goes.
+        ///
+        /// Written back on Enter rather than continuously: the ini is a file, and rewriting it
+        /// on every arrow press is a lot of disk for a number that is still being chosen.
+        /// </summary>
+        private void SpoutEditor(Ped me, Vector3 at)
+        {
+            if (!_cfg.SiphonSpoutEdit) return;
+
+            try
+            {
+                var step = _cfg.SiphonSpoutStep;
+
+                // Disabled controls read anyway -- the same trick the swing uses -- so the arrows
+                // move the spout without also driving whatever they normally drive.
+                if (Game.IsControlJustPressed(Control.PhoneUp)) _cfg.SiphonSpoutForward += step;
+                if (Game.IsControlJustPressed(Control.PhoneDown)) _cfg.SiphonSpoutForward -= step;
+                if (Game.IsControlJustPressed(Control.PhoneLeft)) _cfg.SiphonSpoutSide -= step;
+                if (Game.IsControlJustPressed(Control.PhoneRight)) _cfg.SiphonSpoutSide += step;
+                if (Game.IsControlJustPressed(Control.Jump)) _cfg.SiphonSpoutUp += step;
+                if (Game.IsControlJustPressed(Control.Duck)) _cfg.SiphonSpoutUp -= step;
+
+                // A marker on the point itself, so you are aiming at something rather than
+                // guessing from where the hose ends.
+                World.DrawMarker(MarkerType.DebugSphere, at, Vector3.Zero, Vector3.Zero,
+                                 new Vector3(0.03f, 0.03f, 0.03f),
+                                 Color.FromArgb(220, 255, 190, 60));
+
+                var line = "SPOUT   fwd " + _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   side " + _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   up " + _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture);
+
+                Draw.Rect(0.5f, 0.115f, 0.34f, 0.055f, Color.FromArgb(190, 8, 8, 10));
+
+                Draw.Text(line, 0.5f, 0.098f, 0.36f,
+                          Color.FromArgb(240, 250, 200, 110), 4, true);
+
+                Draw.Text(_spoutSaved ? "saved to Fumes.ini" : "arrows move it, space/ctrl raise it, ENTER saves",
+                          0.5f, 0.128f, 0.26f,
+                          Color.FromArgb(200, 200, 200, 205), 4, true);
+
+                if (Game.IsControlJustPressed(Control.FrontendAccept))
+                {
+                    var ok = IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutForward",
+                                              _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture))
+                             && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutSide",
+                                              _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture))
+                             && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutUp",
+                                              _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture));
+
+                    _spoutSaved = ok;
+
+                    Log.Info(ok
+                        ? "Spout saved: forward " + _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture) +
+                          ", side " + _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture) +
+                          ", up " + _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture) + "."
+                        : "Could not write the spout offsets to Fumes.ini.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spout-edit", "The spout editor fell over: " + ex.Message);
+            }
         }
 
         // ==================================================================
