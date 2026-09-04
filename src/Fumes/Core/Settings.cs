@@ -448,10 +448,10 @@ namespace Fumes.Core
         /// decal allowance in a second, and that allowance is shared with every scuff, skid and
         /// bullet hole already on the street.
         /// </summary>
-        public float SiphonPoolWidth = 0.35f;
-        public float SiphonPoolGrowth = 0.07f;
-        public float SiphonPoolMaxWidth = 2.2f;
-        public float SiphonPoolEverySeconds = 0.30f;
+        public float SiphonPoolWidth = 0.50f;
+        public float SiphonPoolGrowth = 0.18f;
+        public float SiphonPoolMaxWidth = 4.0f;
+        public float SiphonPoolEverySeconds = 0.20f;
         public int SiphonPoolMaxDecals = 60;
 
         /// <summary>How far he has to move for it to become a second puddle, in metres.</summary>
