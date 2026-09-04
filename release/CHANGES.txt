@@ -4,6 +4,40 @@ FUMES -- changes
 0.1.3
 =====
 
+  * RUNS ON ANY SCRIPTHOOKVDOTNET 3 FROM 3.6.0 NOW, including the nightlies and
+    including the Enhanced fork. It used to need the fork and nothing else.
+
+    The version was never really the problem, which is worth saying because the
+    last release said it was. ScriptHookVDotNet is not strong-named, so the game
+    loads it by name and ignores the version entirely - Fumes was always LOADING
+    on stable. It called one method, Model.GetDimensions, that arrived after
+    3.6.0, in five places: the nozzle, the filler guess, the can going down, the
+    can in hand, the pump anchor. On stable that is not one failure, it is five,
+    each one throwing the first time its own line runs, none at start-up, and none
+    of them mentioning a version. That is worse than not loading.
+
+    It goes through the native underneath now, and natives do not have versions.
+    Every API the mod calls is checked against 3.6.0, a 3.7.0 nightly and the
+    3.9.0 fork by a script in the repository, run before a release. That is an API
+    check rather than a play-test, and the readme says so.
+
+    GTA V Enhanced still needs the Enhanced fork - nothing else runs there at all.
+
+  * A GRADE CARD AT THE PUMP. Point the nozzle at a car and pick your fuel on a
+    panel that shows what each grade costs at THAT station and what it returns -
+    "10% further" rather than a multiplier nobody can price. It wears the pump
+    display's own frame and sits in the same place, so one becomes the other.
+
+    Not shown for a diesel vehicle. There is nothing to decide.
+
+  * CONTROLLER SUPPORT. The settings menu and the grade card both take a pad:
+    D-pad moves, A accepts, B closes, LB and RB change page, and LB + D-pad Down
+    opens the menu. The gauge positioner uses RB to resize and LT to step finely,
+    since a pad has no Shift or Ctrl. Prompts name the buttons of whatever you are
+    actually holding.
+
+  * A proper wordmark on the settings panel, in fraktur.
+
   * SIPHON FUEL OUT OF ANY CAR. Walk up to a filler holding a jerry can and the
     second prompt draws fuel the other way -- out of their tank and into your can.
     He crouches, stands the can on the floor in front of him, and runs a hose from
@@ -70,7 +104,10 @@ FUMES -- changes
 
   * Fumes says its hotkey on start-up, like everything else does.
 
-  * 205 settings in the ini now, up from 118, every one of them commented with why
+  * The hose you see is drawn rather than roped, and both hoses match: same
+    thickness, same flat black, same hang.
+
+  * 207 settings in the ini now, up from 118, every one of them commented with why
     it is there and what happens if you change it.
 
 
