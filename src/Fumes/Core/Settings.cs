@@ -308,6 +308,25 @@ namespace Fumes.Core
         public bool Siphon = true;
 
         /// <summary>
+        /// He holds the can in his free hand while siphoning, rather than standing it on the
+        /// floor. Off puts it back on the ground beside him.
+        /// </summary>
+        public bool SiphonCanInHand = true;
+
+        /// <summary>
+        /// Where the can sits in that hand, and how it is turned.
+        ///
+        /// Zero on every axis because the held can uses w_am_jerrycan -- the game's OWN carried
+        /// can, whose origin is its grip, built to hang off a hand bone at no offset at all.
+        /// The ground can is a different model for the same reason: prop_jerrycan_01a has its
+        /// origin in the middle and is built to stand on a floor.
+        ///
+        /// Here to be nudged if a replacement model needs it, the way NozzleOffset is.
+        /// </summary>
+        public float SiphonCanOffsetX, SiphonCanOffsetY, SiphonCanOffsetZ;
+        public float SiphonCanRotX, SiphonCanRotY, SiphonCanRotZ;
+
+        /// <summary>
         /// How fast it siphons, in litres a second.
         ///
         /// Slower than pouring, which is slower than the pump. A hose and a mouthful of petrol
@@ -1026,6 +1045,13 @@ namespace Fumes.Core
                 s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);
+                s.SiphonCanInHand = ini.GetBool("Station", "SiphonCanInHand", s.SiphonCanInHand);
+                s.SiphonCanOffsetX = ini.GetFloat("Station", "SiphonCanOffsetX", s.SiphonCanOffsetX, -1f, 1f);
+                s.SiphonCanOffsetY = ini.GetFloat("Station", "SiphonCanOffsetY", s.SiphonCanOffsetY, -1f, 1f);
+                s.SiphonCanOffsetZ = ini.GetFloat("Station", "SiphonCanOffsetZ", s.SiphonCanOffsetZ, -1f, 1f);
+                s.SiphonCanRotX = ini.GetFloat("Station", "SiphonCanRotX", s.SiphonCanRotX, -360f, 360f);
+                s.SiphonCanRotY = ini.GetFloat("Station", "SiphonCanRotY", s.SiphonCanRotY, -360f, 360f);
+                s.SiphonCanRotZ = ini.GetFloat("Station", "SiphonCanRotZ", s.SiphonCanRotZ, -360f, 360f);
                 s.SiphonLitresPerSecond = ini.GetFloat("Station", "SiphonLitresPerSecond", s.SiphonLitresPerSecond, 0.05f, 20f);
                 s.PricePerLitre = ini.GetFloat("Station", "PricePerLitre", s.PricePerLitre, 0f, 200f);
                 s.Grade = ParseEnum(ini.GetString("Station", "Grade", "Regular"), s.Grade);

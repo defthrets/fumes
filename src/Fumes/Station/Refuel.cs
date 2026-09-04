@@ -607,8 +607,22 @@ namespace Fumes.Station
 
                     if (_canOnGround == null || !_canOnGround.Exists()) continue;
 
-                    _canOnGround.IsPositionFrozen = true;
-                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _canOnGround.Handle);
+                    if (_cfg.SiphonCanInHand)
+                    {
+                        // The free hand. The other one is on the hose, and the fill animation is
+                        // upper-body, so the can rides along with whatever that arm is doing.
+                        var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, OffHandBone);
+
+                        Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _canOnGround.Handle, me.Handle, bone,
+                                      _cfg.SiphonCanOffsetX, _cfg.SiphonCanOffsetY, _cfg.SiphonCanOffsetZ,
+                                      _cfg.SiphonCanRotX, _cfg.SiphonCanRotY, _cfg.SiphonCanRotZ,
+                                      false, false, false, false, 2, true);
+                    }
+                    else
+                    {
+                        _canOnGround.IsPositionFrozen = true;
+                        Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _canOnGround.Handle);
+                    }
 
                     // The top of the bounding box, which on all three cans is the neck.
                     try
@@ -622,8 +636,9 @@ namespace Fumes.Station
                         // The default is close enough for prop_jerrycan_01a.
                     }
 
-                    // Turned to face him, so the handle is not pointing into the car.
-                    _canOnGround.Heading = me.Heading + 90f;
+                    // Turned to face him, so the handle is not pointing into the car. Only
+                    // meaningful on the floor -- a held can takes its heading from the hand.
+                    if (!_cfg.SiphonCanInHand) _canOnGround.Heading = me.Heading + 90f;
 
                     Log.Once("can-prop", "Siphon can prop: " + name + ".");
                     break;
@@ -645,7 +660,14 @@ namespace Fumes.Station
 
             try
             {
-                if (_canOnGround != null && _canOnGround.Exists()) _canOnGround.Delete();
+                if (_canOnGround != null && _canOnGround.Exists())
+                {
+                    // Detached first. Deleting an attached entity works, but leaving the
+                    // detach to the delete is the kind of thing that is fine until the delete
+                    // is the call that fails.
+                    if (_canOnGround.IsAttached()) _canOnGround.Detach();
+                    _canOnGround.Delete();
+                }
             }
             catch (Exception ex)
             {
@@ -823,13 +845,43 @@ namespace Fumes.Station
         private float _canTop = 0.28f;
         private readonly Hose _siphonLine;
 
-        /// <summary>Jerry can props, in the order they are tried.</summary>
-        private static readonly string[] CanProps =
+        /// <summary>
+        /// Jerry can props, in the order they are tried -- and it is a DIFFERENT order for a can
+        /// that is held than for one standing on the floor, because they are different jobs.
+        ///
+        /// w_am_jerrycan is the game's own carried can. Its origin is the grip, so it hangs off
+        /// a hand bone correctly at no offset and no rotation, which is the whole reason it is
+        /// first when he is holding one -- picking the model built for the job beats tuning
+        /// offsets onto a model that is not.
+        ///
+        /// prop_jerrycan_01a has its origin in the middle and is built to stand on a floor, so
+        /// it leads when the can is being put down.
+        /// </summary>
+        private static readonly string[] HeldCans =
+        {
+            "w_am_jerrycan",
+            "prop_jerrycan_01a",
+            "prop_ld_jerrycan_01"
+        };
+
+        private static readonly string[] GroundCans =
         {
             "prop_jerrycan_01a",
             "prop_ld_jerrycan_01",
             "w_am_jerrycan"
         };
+
+        private string[] CanProps => _cfg.SiphonCanInHand ? HeldCans : GroundCans;
+
+        /// <summary>
+        /// The hand that is NOT holding the hose. See Nozzle, which owns the other one -- these
+        /// are the PH_ prop-holding bones, not the skeleton hands, so a prop attached to one
+        /// sits where a weapon would.
+        /// </summary>
+        private const int PhRightHand = 28422;
+        private const int PhLeftHand = 60309;
+
+        private int OffHandBone => _cfg.LeftHand ? PhRightHand : PhLeftHand;
 
         /// <summary>A stand-in tank so the pump display can show the CAN filling.</summary>
         private readonly Tank _canGlass = new Tank { Capacity = 20f, Litres = 0f };
