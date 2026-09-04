@@ -512,6 +512,17 @@ namespace Fumes.Core
         public float SiphonSpoutForward = 0.13f;
         public float SiphonSpoutUp = 0.01f;
 
+        /// <summary>
+        /// Where the can is stood, relative to him: in front, and a touch to one side.
+        ///
+        /// It used to go beside-and-slightly-behind, from when he stood square to the car and
+        /// the can was just somewhere to set it down. He turns eighty degrees now and works
+        /// across his body, so in front is both where the hose can reach it and where he is
+        /// actually looking.
+        /// </summary>
+        public float SiphonCanForward = 0.50f;
+        public float SiphonCanSide = 0.12f;
+
         /// <summary>Across the can. The third axis, because two was not enough to land on a neck.</summary>
         public float SiphonSpoutSide;
 
@@ -1334,6 +1345,8 @@ namespace Fumes.Core
                 s.SiphonSpoutForward = ini.GetFloat("Station", "SiphonSpoutForward", s.SiphonSpoutForward, -0.5f, 0.5f);
                 s.SiphonSpoutUp = ini.GetFloat("Station", "SiphonSpoutUp", s.SiphonSpoutUp, -0.5f, 0.5f);
                 s.SiphonSpoutSide = ini.GetFloat("Station", "SiphonSpoutSide", s.SiphonSpoutSide, -0.5f, 0.5f);
+                s.SiphonCanForward = ini.GetFloat("Station", "SiphonCanForward", s.SiphonCanForward, -2f, 2f);
+                s.SiphonCanSide = ini.GetFloat("Station", "SiphonCanSide", s.SiphonCanSide, -2f, 2f);
                 s.SiphonSpoutEdit = ini.GetBool("Station", "SiphonSpoutEdit", s.SiphonSpoutEdit);
                 s.SiphonSpoutStep = ini.GetFloat("Station", "SiphonSpoutStep", s.SiphonSpoutStep, 0.001f, 0.1f);
                 s.SiphonWalk = ini.GetBool("Station", "SiphonWalk", s.SiphonWalk);

@@ -663,7 +663,13 @@ namespace Fumes.Station
 
             try
             {
-                var at = me.Position + me.RightVector * 0.55f - me.ForwardVector * 0.15f;
+                // IN FRONT OF HIM, not out to the side. It was beside-and-slightly-behind
+                // back when he stood square to the car and the can was just somewhere to put it
+                // down. He turns 80 degrees now and works across his body, so in front is both
+                // where the hose can reach and where he is looking.
+                var at = me.Position
+                         + me.ForwardVector * _cfg.SiphonCanForward
+                         + me.RightVector * _cfg.SiphonCanSide;
 
                 foreach (var name in CanProps)
                 {
