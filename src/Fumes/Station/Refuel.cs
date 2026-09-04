@@ -470,6 +470,10 @@ namespace Fumes.Station
             _crouched = false;
             _burstFrom = Game.GameTime;
 
+            _spoutWasForward = _cfg.SiphonSpoutForward;
+            _spoutWasSide = _cfg.SiphonSpoutSide;
+            _spoutWasUp = _cfg.SiphonSpoutUp;
+
             _spilled = 0f;
             _poolWidth = 0f;
             _poolDecals = 0;
@@ -1009,6 +1013,9 @@ namespace Fumes.Station
 
         private bool _spoutSaved;
 
+        /// <summary>What the offsets were when this siphon began, to tell a nudge from nothing.</summary>
+        private float _spoutWasForward, _spoutWasSide, _spoutWasUp;
+
         /// <summary>
         /// Nudges where the hose meets the can, live, with the arrow keys.
         ///
@@ -1059,36 +1066,70 @@ namespace Fumes.Station
                           0.5f, 0.128f, 0.26f,
                           Color.FromArgb(200, 200, 200, 205), 4, true);
 
-                if (Game.IsControlJustPressed(Control.FrontendAccept))
-                {
-                    var ok = IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutForward",
-                                              _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture))
-                             && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutSide",
-                                              _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture))
-                             && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutUp",
-                                              _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture));
-
-                    // SAVED AND LOCKED, in one press. "Put it there and leave it" is one
-                    // intention, so it is one button -- and an editor that stays on after you
-                    // are done is a readout and a marker on screen every time you siphon.
-                    if (ok)
-                    {
-                        IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutEdit", "false");
-                        _cfg.SiphonSpoutEdit = false;
-                    }
-
-                    _spoutSaved = ok;
-
-                    Log.Info(ok
-                        ? "Spout saved: forward " + _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture) +
-                          ", side " + _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture) +
-                          ", up " + _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture) + "."
-                        : "Could not write the spout offsets to Fumes.ini.");
-                }
+                // SAVED AND LOCKED, in one press. "Put it there and leave it" is one
+                // intention, so it is one button -- and an editor that stays on afterwards is
+                // a readout and a marker on screen at every siphon.
+                if (Game.IsControlJustPressed(Control.FrontendAccept)) SaveSpout(true);
             }
             catch (Exception ex)
             {
                 Log.Once("spout-edit", "The spout editor fell over: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Writes the three offsets to the ini, and optionally turns the editor off.
+        ///
+        /// CALLED WHEN THE SIPHON ENDS AS WELL AS ON ENTER, which is the point. Every reload
+        /// re-reads the ini, so a nudge that lived only in memory was destroyed by the exact
+        /// key you press to go and look at it -- adjust, reload to see it, adjust again, and
+        /// nothing ever accumulates. Twice that happened before it was noticed.
+        ///
+        /// So stopping the siphon keeps whatever you moved, and ENTER additionally locks it.
+        /// The write only happens if something actually changed: a file rewritten every time
+        /// anyone siphons, to store the numbers it already had, is wear for nothing.
+        /// </summary>
+        private void SaveSpout(bool andLock)
+        {
+            if (!_cfg.SiphonSpoutEdit) return;
+
+            var moved = Math.Abs(_cfg.SiphonSpoutForward - _spoutWasForward) > 0.0005f
+                        || Math.Abs(_cfg.SiphonSpoutSide - _spoutWasSide) > 0.0005f
+                        || Math.Abs(_cfg.SiphonSpoutUp - _spoutWasUp) > 0.0005f;
+
+            if (!moved && !andLock) return;
+
+            try
+            {
+                var ok = IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutForward",
+                                          _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutSide",
+                                          _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutUp",
+                                          _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture));
+
+                if (ok && andLock)
+                {
+                    IniFile.SetValue(Paths.Ini, "Station", "SiphonSpoutEdit", "false");
+                    _cfg.SiphonSpoutEdit = false;
+                }
+
+                _spoutSaved = ok;
+
+                _spoutWasForward = _cfg.SiphonSpoutForward;
+                _spoutWasSide = _cfg.SiphonSpoutSide;
+                _spoutWasUp = _cfg.SiphonSpoutUp;
+
+                Log.Info(ok
+                    ? "Spout saved" + (andLock ? " and locked" : "") + ": forward " +
+                      _cfg.SiphonSpoutForward.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", side " + _cfg.SiphonSpoutSide.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", up " + _cfg.SiphonSpoutUp.ToString("0.000", CultureInfo.InvariantCulture) + "."
+                    : "Could not write the spout offsets to Fumes.ini.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spout-save", "Could not save the spout offsets: " + ex.Message);
             }
         }
 
@@ -1239,6 +1280,9 @@ namespace Fumes.Station
 
         private void StopSiphon(Ped me, string why)
         {
+            // Keeps a nudge that has not been locked yet, so walking away does not lose it.
+            SaveSpout(false);
+
             if (_spilled > 0.05f)
             {
                 Log.Info("Spilled " + _spilled.ToString("0.0", CultureInfo.InvariantCulture) +
