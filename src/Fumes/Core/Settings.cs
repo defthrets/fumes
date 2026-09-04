@@ -50,6 +50,19 @@ namespace Fumes.Core
     internal enum HoseMode
     {
         /// <summary>
+        /// A REAL TUBE. Rings of vertices around the curve, triangles between the rings.
+        ///
+        /// The other drawn mode, Painted, is one flat strip turned to face the camera. It is
+        /// shaded across its width to imply a cylinder, and it never convinces anybody, because
+        /// the eye reads a silhouette before it reads shading and the silhouette of a strip is
+        /// a strip. This has no silhouette problem: it is round because it is round.
+        ///
+        /// Costs polygons -- segments times sides times two triangles, every frame. Back faces
+        /// are skipped, which halves it, and the ring count is a setting.
+        /// </summary>
+        Tube,
+
+        /// <summary>
         /// A real physics rope, but painted by us instead of wearing its own texture.
         ///
         /// NOT THE DEFAULT ANY MORE, because the painting is the problem. The ribbon is one
@@ -331,27 +344,24 @@ namespace Fumes.Core
         /// presented hand and a presented hand is open. He is meant to be gripping a hose, so
         /// the clip has to be one where the left hand is closed around an object.
         ///
-        /// laddersbase base_left_hand_up is a man gripping a rung above him: the left hand
-        /// CLOSED around something, and the arm at full extension rather than the half-reach a
-        /// drop gives you. mp_weapon_drop drop_lh had the closed hand but never straightened
-        /// the elbow, because you do not hold a thing out at arm's length to let go of it.
+        /// Picked by eye in an animation browser rather than by reading names out of a dump,
+        /// which is how the four before it were picked and why the four before it were wrong. A
+        /// dump gives you a name; it does not tell you where the elbow ends up.
         ///
-        /// Its height is the thing to watch and also why it suits this: a rung is grabbed above
-        /// head height standing, and crouched that same reach lands about where a fuel filler
-        /// is. The pose and the crouch were picked together.
+        /// It is an UPPER-body clip by construction -- the dictionary says so -- which is what
+        /// lets it sit over a crouch and over walking rather than replacing them.
         ///
-        /// Others, all closed-handed:
-        ///   mp_weapon_drop  drop_lh              shorter reach, hand opens if the phase runs on
-        ///   ladders         climb_up_settle_left_hand
+        /// Others, if the reach wants adjusting:
+        ///   mp_player_int_wank_01          the other take in the same dictionary
+        ///   laddersbase  base_left_hand_up a closed grip, higher and straighter
         /// </summary>
-        public string SiphonAnimDict = "laddersbase";
-        public string SiphonAnimClip = "base_left_hand_up";
+        public string SiphonAnimDict = "mp_player_int_upperwank";
+        public string SiphonAnimClip = "mp_player_int_wank_02";
 
         /// <summary>
-        /// Where in the grip to freeze. A base clip barely moves, so this is near the start and
-        /// the arm is at its extension throughout. See FillAnimPhase.
+        /// Where in the motion to freeze. Mid-stroke, where the arm is out. See FillAnimPhase.
         /// </summary>
-        public float SiphonAnimPhase = 0.10f;
+        public float SiphonAnimPhase = 0.50f;
         public int SiphonAnimFlag = 50;
 
         /// <summary>
@@ -460,15 +470,21 @@ namespace Fumes.Core
         /// is the darkest of the eight. Not black -- a rope carries its own texture and no
         /// native tints one -- but dark, and round beats black at this distance.
         /// </summary>
-        public HoseMode SiphonHose = HoseMode.Auto;
+        public HoseMode SiphonHose = HoseMode.Tube;
 
         public int SiphonHoseRed, SiphonHoseGreen, SiphonHoseBlue;
         public int SiphonHoseSheen;
 
         /// <summary>
-        /// Only read when SiphonHose is Painted. The rope has its own thickness.
+        /// Read by Painted and by Tube. The rope draws itself and ignores this.
         /// </summary>
         public float SiphonHoseThickness = 0.030f;
+
+        /// <summary>
+        /// How many faces round the tube. Six is round enough at arm's length; more is
+        /// polygons spent on a curve nobody is measuring.
+        /// </summary>
+        public int SiphonHoseSides = 7;
         public float SiphonHoseSag = 1.05f;
 
         /// <summary>
@@ -701,6 +717,9 @@ namespace Fumes.Core
         /// pipe.
         /// </summary>
         public float HoseThickness = 0.055f;
+
+        /// <summary>How many faces round the tube, when the hose is drawn as one.</summary>
+        public int HoseSides = 7;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
         public float HoseSag = 1.22f;
@@ -1241,6 +1260,8 @@ namespace Fumes.Core
                 s.SiphonHoseBlue = ini.GetInt("Station", "SiphonHoseBlue", s.SiphonHoseBlue, 0, 255);
                 s.SiphonHoseSheen = ini.GetInt("Station", "SiphonHoseSheen", s.SiphonHoseSheen, 0, 255);
                 s.SiphonHoseThickness = ini.GetFloat("Station", "SiphonHoseThickness", s.SiphonHoseThickness, 0.002f, 0.5f);
+                s.SiphonHoseSides = ini.GetInt("Station", "SiphonHoseSides", s.SiphonHoseSides, 3, 16);
+                s.HoseSides = ini.GetInt("Nozzle", "HoseSides", s.HoseSides, 3, 16);
                 s.SiphonHoseSag = ini.GetFloat("Station", "SiphonHoseSag", s.SiphonHoseSag, 1f, 3f);
                 s.SiphonHoseRopeType = ini.GetInt("Station", "SiphonHoseRopeType", s.SiphonHoseRopeType, 0, 7);
                 s.KickWhileFilling = ini.GetBool("Station", "KickWhileFilling", s.KickWhileFilling);

@@ -76,6 +76,7 @@ namespace Fumes.Station
         private float Thickness => _siphon ? _cfg.SiphonHoseThickness : _cfg.HoseThickness;
         private float Sag => _siphon ? _cfg.SiphonHoseSag : _cfg.HoseSag;
         private int RopeType => _siphon ? _cfg.SiphonHoseRopeType : _cfg.HoseRopeType;
+        private int Sides => _siphon ? _cfg.SiphonHoseSides : _cfg.HoseSides;
 
         public bool Live => _rope != null && _rope.Exists();
 
@@ -116,7 +117,7 @@ namespace Fumes.Station
         {
             if (_mode == HoseMode.None) return;
 
-            if (_mode == HoseMode.Line) { DrawCatenary(from, to); return; }
+            if (_mode == HoseMode.Line || _mode == HoseMode.Tube) { DrawCatenary(from, to); return; }
 
             if (!Live && !Spawn(from, to))
             {
@@ -166,7 +167,8 @@ namespace Fumes.Station
                 var points = new Vector3[count];
                 for (var i = 0; i < count; i++) points[i] = _rope.GetVertexCoord(i);
 
-                Stroke(points);
+                if (_mode == HoseMode.Tube) Sleeve(points);
+                else Stroke(points);
             }
             catch (Exception ex)
             {
@@ -468,6 +470,129 @@ namespace Fumes.Station
         /// behind: the hose would vanish in halves as you walked past it. Four polygons a
         /// segment is nothing next to that.
         /// </summary>
+        /// <summary>
+        /// Draws the run of points as an actual TUBE -- rings of vertices around the curve with
+        /// triangles between them.
+        ///
+        /// WHY THE POWER LINES LOOK BETTER THAN ANYTHING A SCRIPT DRAWS, and what can be done
+        /// about it. Those cables are map geometry: modelled, textured and lit by the people who
+        /// built the world, baked into the props. No script can add map geometry. What a script
+        /// has is three things, and only three:
+        ///
+        ///   ADD_ROPE      a real physics rope, flexible, but its thickness is fixed per type
+        ///                 in ropedata.xml and NO native changes it. All eight types are tow
+        ///                 ropes and winch cables. That is the tiny rope.
+        ///   billboards    a strip turned to face the camera. Flat, and the eye knows. That is
+        ///                 the flat planes.
+        ///   DRAW_POLY     raw triangles in world space. Full control of the shape.
+        ///
+        /// The first two are what has been tried. This is the third, and it is the only one that
+        /// can be round, because it is the only one where the roundness is geometry rather than
+        /// a picture of geometry. It will not be lit or textured the way the power lines are --
+        /// DRAW_POLY is flat-shaded -- so each face is tinted by how square-on it sits to the
+        /// camera, which is what lighting would have done for it anyway on a matt black cable.
+        ///
+        /// The frame is CARRIED from ring to ring rather than rebuilt from a fixed up-vector.
+        /// Rebuilt, the tube spins on its axis wherever the curve passes through vertical, and a
+        /// hose that rotates as it hangs is worse than a flat one.
+        /// </summary>
+        private void Sleeve(Vector3[] points)
+        {
+            if (points == null || points.Length < 2) return;
+
+            var radius = Thickness * 0.5f;
+            if (radius < 0.002f) radius = 0.002f;
+
+            var sides = Sides;
+            if (sides < 3) sides = 3;
+            if (sides > 16) sides = 16;
+
+            Vector3 eye;
+            try { eye = GameplayCamera.Position; }
+            catch { eye = points[0]; }
+
+            var tangent = Unit(points[1] - points[0]);
+
+            // Any vector not along the tangent will do to start; the carry keeps it honest
+            // from there.
+            var seed = Math.Abs(tangent.Z) > 0.9f ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f);
+
+            var normal = Unit(Vector3.Cross(seed, tangent));
+
+            var ring = new Vector3[sides];
+            var last = new Vector3[sides];
+            var started = false;
+
+            for (var i = 0; i < points.Length; i++)
+            {
+                Vector3 t;
+                if (i == 0) t = Unit(points[1] - points[0]);
+                else if (i == points.Length - 1) t = Unit(points[i] - points[i - 1]);
+                else t = Unit(points[i + 1] - points[i - 1]);
+
+                // Carried, not rebuilt: the old normal pushed back square to the new tangent.
+                normal = Unit(normal - t * Vector3.Dot(normal, t));
+                var binormal = Unit(Vector3.Cross(t, normal));
+
+                for (var s = 0; s < sides; s++)
+                {
+                    var a = (float)(2.0 * Math.PI * s / sides);
+                    ring[s] = points[i]
+                              + normal * ((float)Math.Cos(a) * radius)
+                              + binormal * ((float)Math.Sin(a) * radius);
+                }
+
+                if (started)
+                {
+                    for (var s = 0; s < sides; s++)
+                    {
+                        var n = (s + 1) % sides;
+
+                        var mid = (last[s] + last[n] + ring[s] + ring[n]) * 0.25f;
+                        var out_ = Unit(mid - points[i]);
+                        var toEye = Unit(eye - mid);
+
+                        var facing = Vector3.Dot(out_, toEye);
+
+                        // The far side of the tube. Drawing it costs the same as drawing the
+                        // near side and is covered by it.
+                        if (facing <= 0f) continue;
+
+                        Quad(last[s], last[n], ring[s], ring[n], Curve(facing));
+                    }
+                }
+
+                Array.Copy(ring, last, sides);
+                started = true;
+            }
+        }
+
+        /// <summary>
+        /// A face's colour from how square-on it is to the camera.
+        ///
+        /// This is the shading the billboard was faking. On real geometry it is honest: the
+        /// faces along the silhouette are steeply angled and go dark, the ones facing you are
+        /// lit, and the gradient between them is the tube being round rather than a picture of
+        /// a tube being round.
+        /// </summary>
+        private Color Curve(float facing)
+        {
+            var tone = 0.35f + 0.65f * facing;
+            var gloss = (float)Math.Pow(facing, 6) * 0.9f;
+            var lift = Clamp255(Sheen);
+
+            return Color.FromArgb(255,
+                                  Shade(Red, tone, gloss, lift),
+                                  Shade(Green, tone, gloss, lift),
+                                  Shade(Blue, tone, gloss, lift));
+        }
+
+        private static Vector3 Unit(Vector3 v)
+        {
+            var len = v.Length();
+            return len < 0.0001f ? new Vector3(0f, 0f, 1f) : v / len;
+        }
+
         private static void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color colour)
         {
             try
