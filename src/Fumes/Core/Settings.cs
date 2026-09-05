@@ -1044,7 +1044,7 @@ namespace Fumes.Core
         /// down: it aims a pistol, so the arm sits at chest height. Right idea, wrong altitude.
         /// </summary>
         public string FillAnimDict = "mp_common";
-        public string FillAnimClip = "givetake1_a";
+        public string FillAnimClip = "givetake1_b";
 
         /// <summary>
         /// Where in the clip to stop, 0 at the first frame and 1 at the last.
