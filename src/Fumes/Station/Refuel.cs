@@ -202,6 +202,19 @@ namespace Fumes.Station
             // a sound that plays until the game is closed.
             _sound.Update(_stage == Stage.Filling, me);
 
+            // AND THE POSES, for exactly the same reason and in exactly the same place.
+            //
+            // The sound got this treatment because filling ends in six different places and a
+            // Stop missing from any one of them is a sound that plays until the game is closed.
+            // The animations end in MORE places than the sound does -- the can runs out, the
+            // tank fills, you walk off the leash, the car despawns, you swing at somebody, you
+            // press stop -- and every one of them was expected to remember to take the clip off
+            // him. Miss one and he siphons for the rest of the session.
+            //
+            // Driven by the stage, nothing has to remember. If the stage that wants a pose is
+            // not running, the pose comes off, whichever way it stopped running.
+            Poses(me);
+
             // One help box for however many buttons were asked for, and only when the bar
             // itself could not be drawn. Calling Draw.Help per prompt would have each one
             // overwrite the last and the player would see only whichever came last.
@@ -1313,6 +1326,27 @@ namespace Fumes.Station
         }
 
         /// <summary>
+        /// Takes each pose off him the moment its own stage stops running.
+        ///
+        /// A SWEEP RATHER THAN A STOP AT EVERY EXIT. Three clips, each owned by a different set
+        /// of stages: the held pose belongs to Filling, FillingCan and Siphoning, the pour to
+        /// Pouring, the crouch to Siphoning alone. Asking every exit path to know which of the
+        /// three it owes a Stop to is how one gets missed, and a missed one is not subtle --
+        /// he keeps the animation until something else happens to clear his tasks.
+        ///
+        /// Cheap to call every frame: each Stop is guarded by its own "am I actually on" flag,
+        /// so the common case is three boolean reads.
+        /// </summary>
+        private void Poses(Ped me)
+        {
+            var siphoning = _stage == Stage.Siphoning;
+
+            if (!siphoning && _stage != Stage.Filling && _stage != Stage.FillingCan) StopFillPose();
+            if (_stage != Stage.Pouring) StopPourPose();
+            if (!siphoning) StandUp(me);
+        }
+
+        /// <summary>
         /// Crouches him with an ANIMATION, because the stance system will not.
         ///
         /// THAT IS SETTLED RATHER THAN ASSUMED, which is what the last attempt was for. It
@@ -2300,6 +2334,14 @@ namespace Fumes.Station
         /// <summary>Called on shutdown. Leaves nothing of ours in the world.</summary>
         public void Shutdown()
         {
+            // THE POSES FIRST, and this is the one that actually bit: reloading the script mid
+            // siphon left the crouch and the arm clip running on him with nothing left alive to
+            // take them off. Every other kind of stop goes through a stage change; this one does
+            // not happen at all, because the object stops existing. He kept siphoning at nothing
+            // until the game was closed.
+            try { Poses(Player()); }
+            catch { /* he is beyond helping */ }
+
             _nozzle.PutBack();
             _hose.Release();
             _siphonLine.Release();
@@ -2735,6 +2777,12 @@ namespace Fumes.Station
                 if (me == null) return;
 
                 if (string.IsNullOrEmpty(_posedClip)) return;
+
+                // SPEED BACK TO ONE BEFORE IT STOPS. The burst pacing parks this clip at speed
+                // zero for seconds at a time, and a stop that does not take -- the task already
+                // replaced, the clip renamed under it -- leaves a man frozen mid-motion rather
+                // than merely still posing. Costs one native to make the failure survivable.
+                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle, _posedDict, _posedClip, 1f);
 
                 Function.Call(Hash.STOP_ANIM_TASK, me.Handle, _posedDict, _posedClip, -4f);
             }
