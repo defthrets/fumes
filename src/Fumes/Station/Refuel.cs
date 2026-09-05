@@ -1276,23 +1276,30 @@ namespace Fumes.Station
                 var over = CanSpout(me);
                 var at = new Vector3(over.X, over.Y, me.Position.Z - 0.9f);
 
+                // WIDTH COMES FROM HOW MUCH HAS GONE ON THE FLOOR, not from a counter that adds
+                // a fixed step each time it fires. The step version reached its ceiling in about
+                // four seconds and then did nothing for the rest of the spill -- so nine litres
+                // looked exactly like two, which is the opposite of the point. Tied to litres it
+                // keeps spreading for as long as fuel keeps coming.
+                var want = _cfg.SiphonPoolWidth + _spilled * _cfg.SiphonPoolPerLitre;
+                if (want > _cfg.SiphonPoolMaxWidth) want = _cfg.SiphonPoolMaxWidth;
+
                 // Far enough from the last one to be a new puddle rather than the same one.
-                if (_poolAt == Vector3.Zero || at.DistanceTo(_poolAt) > _cfg.SiphonPoolStep)
+                var moved = _poolAt == Vector3.Zero || at.DistanceTo(_poolAt) > _cfg.SiphonPoolStep;
+
+                if (moved)
                 {
                     _poolAt = at;
-                    _poolWidth = _cfg.SiphonPoolWidth;
                 }
-                else if (_poolWidth < _cfg.SiphonPoolMaxWidth)
+                else if (want - _poolWidth < _cfg.SiphonPoolGrowth)
                 {
-                    _poolWidth += _cfg.SiphonPoolGrowth;
-                    if (_poolWidth > _cfg.SiphonPoolMaxWidth) _poolWidth = _cfg.SiphonPoolMaxWidth;
-                }
-                else
-                {
-                    // As big as it gets. More decals on top of it cost budget and change
-                    // nothing anybody can see.
+                    // Not visibly bigger than the one already down. A decal that lands inside
+                    // its predecessor costs budget and changes nothing anybody can see, and at
+                    // the cap that is every single one of them from then on.
                     return;
                 }
+
+                _poolWidth = want;
 
                 Function.Call(Hash.ADD_PETROL_DECAL, _poolAt.X, _poolAt.Y, _poolAt.Z,
                               0.1f, _poolWidth, 1f);
@@ -1577,11 +1584,24 @@ namespace Fumes.Station
         /// a prop at all: when he keeps hold of it, the can is his WEAPON and the game supplies
         /// both the model and the animation for carrying it.
         /// </summary>
+        /// <summary>
+        /// Jerry can props for the version that stands one on the floor, best first.
+        ///
+        /// w_am_jerrycan IS THE CAN HE CARRIES. It is the weapon model, so standing that one on
+        /// the ground matches what is in his hands by construction rather than by two models
+        /// happening to agree -- and they did not agree: prop_jerrycan_01a, which used to lead
+        /// this list, is the scuffed old scenery can, a different red and visibly beaten up next
+        /// to the clean one on his back.
+        ///
+        /// It was leading because it is the one BUILT to stand on a floor, which is a real
+        /// point and the smaller one. PLACE_OBJECT_ON_GROUND_PROPERLY stands anything up; only
+        /// one of these is the right can.
+        /// </summary>
         private static readonly string[] CanProps =
         {
+            "w_am_jerrycan",
             "prop_jerrycan_01a",
-            "prop_ld_jerrycan_01",
-            "w_am_jerrycan"
+            "prop_ld_jerrycan_01"
         };
 
         /// <summary>

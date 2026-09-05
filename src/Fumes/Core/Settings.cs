@@ -526,8 +526,19 @@ namespace Fumes.Core
         /// bullet hole already on the street.
         /// </summary>
         public float SiphonPoolWidth = 0.50f;
+
+        /// <summary>
+        /// How much wider the pool gets per litre on the floor.
+        ///
+        /// THE SIZE IS THE VOLUME, which it was not before: the old version added a fixed step
+        /// every time the timer fired, hit its ceiling in about four seconds, and then drew
+        /// nothing new for the rest of the spill. Nine litres looked exactly like two.
+        /// </summary>
+        public float SiphonPoolPerLitre = 0.45f;
+
+        /// <summary>How much bigger than the last one a new decal has to be to be worth laying.</summary>
         public float SiphonPoolGrowth = 0.18f;
-        public float SiphonPoolMaxWidth = 4.0f;
+        public float SiphonPoolMaxWidth = 8.0f;
         public float SiphonPoolEverySeconds = 0.20f;
         public int SiphonPoolMaxDecals = 60;
 
@@ -1435,8 +1446,9 @@ namespace Fumes.Core
                 s.SiphonOverflow = ini.GetBool("Station", "SiphonOverflow", s.SiphonOverflow);
                 s.SiphonPool = ini.GetBool("Station", "SiphonPool", s.SiphonPool);
                 s.SiphonPoolWidth = ini.GetFloat("Station", "SiphonPoolWidth", s.SiphonPoolWidth, 0.05f, 3f);
+                s.SiphonPoolPerLitre = ini.GetFloat("Station", "SiphonPoolPerLitre", s.SiphonPoolPerLitre, 0f, 5f);
                 s.SiphonPoolGrowth = ini.GetFloat("Station", "SiphonPoolGrowth", s.SiphonPoolGrowth, 0.005f, 1f);
-                s.SiphonPoolMaxWidth = ini.GetFloat("Station", "SiphonPoolMaxWidth", s.SiphonPoolMaxWidth, 0.1f, 8f);
+                s.SiphonPoolMaxWidth = ini.GetFloat("Station", "SiphonPoolMaxWidth", s.SiphonPoolMaxWidth, 0.1f, 20f);
                 s.SiphonPoolEverySeconds = ini.GetFloat("Station", "SiphonPoolEverySeconds", s.SiphonPoolEverySeconds, 0.05f, 5f);
                 s.SiphonPoolMaxDecals = ini.GetInt("Station", "SiphonPoolMaxDecals", s.SiphonPoolMaxDecals, 1, 400);
                 s.SiphonPoolStep = ini.GetFloat("Station", "SiphonPoolStep", s.SiphonPoolStep, 0.1f, 5f);
