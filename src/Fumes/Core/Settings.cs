@@ -189,6 +189,20 @@ namespace Fumes.Core
         /// <summary>Litres burnt per hour sitting still with the engine running, before the multiplier.</summary>
         public float IdleLitresPerHour = 1.4f;
 
+        /// <summary>
+        /// Electric vehicles get a tank and buy fuel like everything else.
+        ///
+        /// OFF, and off is the honest default: a Voltic pulling up to a bowser and taking
+        /// sixty litres of unleaded is the one thing in this mod that is simply wrong. The
+        /// alternative was already half-built -- the gauge says CHARGE instead of FUEL for
+        /// them -- but a charge you top up at a petrol pump is a fuel tank with a different
+        /// word on it, and modelling real chargers is a bigger mod than this one.
+        ///
+        /// On, they behave as they did: a tank, a gauge that says CHARGE, and a forecourt that
+        /// sells them electricity.
+        /// </summary>
+        public bool AffectElectric;
+
         public bool AffectBoats = true;
         public bool AffectAircraft = false;
 
@@ -1413,6 +1427,7 @@ namespace Fumes.Core
                 s.BikeRangeKm = ini.GetFloat("Fuel", "BikeRangeKm", s.BikeRangeKm, 0f, 5000f);
                 s.IdleLitresPerHour = ini.GetFloat("Fuel", "IdleLitresPerHour", s.IdleLitresPerHour, 0f, 60f);
                 s.AffectBoats = ini.GetBool("Fuel", "AffectBoats", s.AffectBoats);
+                s.AffectElectric = ini.GetBool("Fuel", "AffectElectric", s.AffectElectric);
                 s.AffectAircraft = ini.GetBool("Fuel", "AffectAircraft", s.AffectAircraft);
                 s.AffectTraffic = ini.GetBool("Fuel", "AffectTraffic", s.AffectTraffic);
                 s.AbandonedIdle = ini.GetBool("Fuel", "AbandonedIdle", s.AbandonedIdle);

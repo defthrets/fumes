@@ -110,6 +110,16 @@ namespace Fumes.Fuel
 
             try
             {
+                // ELECTRICS ARE OUT BEFORE THE CLASS IS EVEN LOOKED AT, because they are not a
+                // class -- GTA has no notion of a drivetrain, so they are a list of names in
+                // Tank.ElectricNames and they sit in Sports and Sedans alongside petrol cars.
+                //
+                // Here rather than anywhere further in, because Covers is the one gate: For()
+                // returns null for anything it refuses, and every caller already handles null.
+                // Excluding them here means no tank, no gauge, no prompt at a pump and no fuel
+                // burned, from one line, instead of four places each remembering to ask.
+                if (!_cfg.AffectElectric && Tank.IsElectric(v)) return false;
+
                 switch (v.ClassType)
                 {
                     case VehicleClass.Cycles:
