@@ -162,7 +162,15 @@ namespace Fumes.Station
                     b.Color = BlipColor.White;
                     b.IsShortRange = true;
                     b.Scale = 0.8f;
-                    b.Name = f.Title;
+                    // ONE NAME FOR ALL OF THEM, because the map legend groups by NAME.
+                    // Giving each station its own title put every forecourt in the list as a
+                    // separate entry -- twenty-six of the one hundred and forty-seven rows you
+                    // page through to find anything. Sharing a name collapses them to a single
+                    // row you can step along.
+                    //
+                    // The cost is the brand and the district, which the legend row can no
+                    // longer show. Blank the setting to have them back as individual entries.
+                    b.Name = string.IsNullOrEmpty(_cfg.BlipName) ? f.Title : _cfg.BlipName;
                     f.Blip = b;
                 }
                 catch (Exception ex)

@@ -805,6 +805,19 @@ namespace Fumes.Core
         /// <summary>How far a station price may wander from the base, either way. 0 disables it.</summary>
         public float PriceVariance = 0.18f;
 
+        /// <summary>
+        /// What every station blip is called on the map. Blank gives each its own title.
+        ///
+        /// THE LEGEND GROUPS BY NAME, which is the whole mechanism: blips sharing a name are
+        /// one row you can step through, and blips with their own names are a row each. With
+        /// individual titles the twenty-six forecourts were twenty-six of the hundred and
+        /// forty-seven rows in that list.
+        ///
+        /// The cost is that the row can no longer say which brand or which district -- that is
+        /// what having its own name bought. Blank this to take it back.
+        /// </summary>
+        public string BlipName = "Fuel Station";
+
         public bool ShowBlips = true;
 
         /// <summary>
@@ -1550,6 +1563,7 @@ namespace Fumes.Core
                 s.PremiumEconomy = ini.GetFloat("Station", "PremiumEconomy", s.PremiumEconomy, 0.5f, 2f);
                 s.PriceVariance = ini.GetFloat("Station", "PriceVariance", s.PriceVariance, 0f, 0.9f);
                 s.ShowBlips = ini.GetBool("Station", "ShowBlips", s.ShowBlips);
+                s.BlipName = ini.GetString("Station", "BlipName", s.BlipName);
                 s.LearnStations = ini.GetBool("Station", "LearnStations", s.LearnStations);
                 s.TrafficRefuels = ini.GetBool("Station", "TrafficRefuels", s.TrafficRefuels);
                 s.TrafficRefuelBelow = ini.GetFloat("Station", "TrafficRefuelBelow", s.TrafficRefuelBelow, 0.01f, 1f);
