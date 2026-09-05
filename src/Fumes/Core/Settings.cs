@@ -285,7 +285,29 @@ namespace Fumes.Core
 
         // ---- running dry ------------------------------------------------------
         /// <summary>Litres left at which the engine starts coughing.</summary>
+        /// <summary>
+        /// The floor: never less warning than this, whatever the tank.
+        /// </summary>
         public float SputterLitres = 0.6f;
+
+        /// <summary>
+        /// How much of the tank is spent spluttering, as a share.
+        ///
+        /// A share rather than a fixed number of litres, because a fixed number gives a
+        /// different warning on every vehicle -- 0.6 L is under one per cent of a saloon and
+        /// nearly four of a motorbike, so the smaller the tank the less notice you got. That is
+        /// backwards: the small tank empties soonest.
+        /// </summary>
+        public float SputterFraction = 0.10f;
+
+        /// <summary>
+        /// The ceiling on that share, in litres.
+        ///
+        /// A share alone is wrong the other way. A tenth of a saloon is six litres and
+        /// spluttering through six litres is spluttering for seventy kilometres. Whatever the
+        /// tank, about two litres of warning is the honest amount.
+        /// </summary>
+        public float SputterMaxLitres = 2.0f;
         public bool StallWhenEmpty = true;
 
 
@@ -1452,6 +1474,8 @@ namespace Fumes.Core
                 }
 
                 s.SputterLitres = ini.GetFloat("Engine", "SputterLitres", s.SputterLitres, 0f, 20f);
+                s.SputterFraction = ini.GetFloat("Engine", "SputterFraction", s.SputterFraction, 0f, 1f);
+                s.SputterMaxLitres = ini.GetFloat("Engine", "SputterMaxLitres", s.SputterMaxLitres, 0f, 40f);
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 

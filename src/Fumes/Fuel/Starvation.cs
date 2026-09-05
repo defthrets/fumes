@@ -65,7 +65,7 @@ namespace Fumes.Fuel
 
                 Stalled = false;
 
-                if (tank.Litres <= _cfg.SputterLitres) { Cough(v); return; }
+                if (tank.Litres <= SputterAt(tank)) { Cough(v); return; }
 
                 // Back above the sputter line: everything resets, including the warnings, so
                 // a tank filled and run down again warns again.
@@ -90,6 +90,31 @@ namespace Fumes.Fuel
                                          " - the engine will not be cut for want of fuel.");
                 Stalled = false;
             }
+        }
+
+        /// <summary>
+        /// The litres at which it starts catching and dropping.
+        ///
+        /// A SHARE OF THE TANK, not a fixed number of litres, because a fixed number is a
+        /// different warning on every vehicle: 0.6 L is 0.9 per cent of a saloon and 3.8 of a
+        /// motorbike, so the smaller the tank the less notice you get -- which is backwards,
+        /// since the small tank is the one that empties soonest.
+        ///
+        /// CAPPED, because a share alone is worse the other way. Ten per cent of a saloon is
+        /// six litres, and spluttering for the last six litres is spluttering for seventy
+        /// kilometres. The cap is the honest quantity: however big the tank, you get about two
+        /// litres of warning that it is nearly done.
+        ///
+        /// And floored by the old absolute, so a five-litre moped keeps a warning long enough
+        /// to notice at all.
+        /// </summary>
+        private float SputterAt(Tank tank)
+        {
+            var share = tank.Capacity * _cfg.SputterFraction;
+
+            if (share > _cfg.SputterMaxLitres) share = _cfg.SputterMaxLitres;
+
+            return share > _cfg.SputterLitres ? share : _cfg.SputterLitres;
         }
 
         /// <summary>A different car means somebody else's timers. Drop them.</summary>
