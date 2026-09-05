@@ -53,6 +53,21 @@ namespace Fumes.Fuel
                 if (!v.IsEngineRunning) return LeakOnly(v, tank, dt);
 
                 var thirst = _cfg.ThirstFor(v.ClassType);
+
+                // A BIKE'S THIRST IS WORKED OUT FROM ITS TANK, not looked up, so that a quarter
+                // of the fuel still covers the same ground. Sixteen litres at the class figure
+                // of 4.5 is three hundred and fifty kilometres against a saloon's seven
+                // hundred, which is the honest consequence of a small tank and not what anybody
+                // wants from a motorbike.
+                //
+                // Derived rather than another number in the table, because the two have to
+                // agree: change the tank and the range holds by construction. Two independent
+                // settings would drift the first time one of them moved.
+                if (_cfg.BikeRangeKm > 0f && Tanks.IsBike(v) && tank.Capacity > 0f)
+                {
+                    thirst = tank.Capacity / _cfg.BikeRangeKm * 100f;
+                }
+
                 if (thirst <= 0f) return 0f;
 
                 // Distance actually covered, in kilometres. Speed is metres per second and is

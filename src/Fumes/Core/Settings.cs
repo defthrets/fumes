@@ -1338,6 +1338,34 @@ namespace Fumes.Core
         /// constant in Consumption. Keyed by the GTA.VehicleClass name, so the ini names them
         /// the same way the game does.
         /// </summary>
+        /// <summary>
+        /// What a motorbike's tank holds, as a ceiling. 0 leaves them to handling.meta.
+        ///
+        /// A CEILING RATHER THAN A FLAT VALUE, because handling is right for cars and wrong for
+        /// bikes: fPetrolTankVolume comes back around sixty-five for them, the same as a
+        /// saloon, so filling one cost eighty dollars. Sixteen is a sports bike, and it puts a
+        /// top-up from half at about seventeen dollars.
+        /// </summary>
+        public float BikeTankLitres = 16f;
+
+        /// <summary>
+        /// How far a bike goes on a full tank, in kilometres. 0 uses the class thirst instead.
+        ///
+        /// THE POINT IS THE RANGE, not the economy figure, so the economy figure is derived
+        /// from it: litres per hundred kilometres comes out of the tank size and this number
+        /// together. Sixteen litres over seven hundred and twenty kilometres is 2.2 L/100km,
+        /// which sounds absurd for a motorbike and is exactly the intention -- a quarter of the
+        /// fuel covering the same ground as the saloon it is parked next to.
+        ///
+        /// 720 is what a 65-litre saloon does at its own 9.0 L/100km, so bikes match the car
+        /// the range was measured against rather than a number picked to sound right.
+        ///
+        /// Derived rather than a second entry in the thirst table, because the tank and the
+        /// range have to agree: move one and the other follows. Two independent numbers drift
+        /// the first time either is touched.
+        /// </summary>
+        public float BikeRangeKm = 720f;
+
         public readonly Dictionary<VehicleClass, float> Thirst = new Dictionary<VehicleClass, float>
         {
             { VehicleClass.Compacts,        7.5f },
@@ -1381,6 +1409,8 @@ namespace Fumes.Core
                 s.LogLevel = ParseEnum(ini.GetString("General", "LogLevel", "Info"), s.LogLevel);
 
                 s.ConsumptionMultiplier = ini.GetFloat("Fuel", "ConsumptionMultiplier", s.ConsumptionMultiplier, 0.05f, 20f);
+                s.BikeTankLitres = ini.GetFloat("Fuel", "BikeTankLitres", s.BikeTankLitres, 0f, 200f);
+                s.BikeRangeKm = ini.GetFloat("Fuel", "BikeRangeKm", s.BikeRangeKm, 0f, 5000f);
                 s.IdleLitresPerHour = ini.GetFloat("Fuel", "IdleLitresPerHour", s.IdleLitresPerHour, 0f, 60f);
                 s.AffectBoats = ini.GetBool("Fuel", "AffectBoats", s.AffectBoats);
                 s.AffectAircraft = ini.GetBool("Fuel", "AffectAircraft", s.AffectAircraft);

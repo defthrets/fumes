@@ -74,6 +74,13 @@ namespace Fumes.Fuel
         /// still get a tank, it just lives and dies with the session, because there is nothing
         /// stable to write it under and a made-up key would be a different vehicle next time.
         /// </summary>
+        /// <summary>Motorcycles, and not push-bikes -- those have no tank to speak of.</summary>
+        internal static bool IsBike(Vehicle v)
+        {
+            try { return v != null && v.Exists() && v.ClassType == VehicleClass.Motorcycles; }
+            catch { return false; }
+        }
+
         public static string KeyFor(Vehicle v)
         {
             try
@@ -169,6 +176,19 @@ namespace Fumes.Fuel
         private Tank Create(Vehicle v, string key)
         {
             var capacity = Tank.CapacityOf(v);
+
+            // BIKES DO NOT GET THEIR TANK FROM HANDLING, because Rockstar's number for them is
+            // not a real-world one. CapacityOf trusts fPetrolTankVolume whenever it is between
+            // 5 and 800 litres, which is the right rule for cars and wrong here: the bikes come
+            // back around sixty-five, the same as a saloon, so a top-up cost eighty dollars and
+            // the class table's sensible sixteen never got a look in.
+            //
+            // A cap rather than a flat override, so a bike whose handling says something
+            // plausible keeps it and only the absurd ones are pulled back.
+            if (_cfg.BikeTankLitres > 0f && capacity > _cfg.BikeTankLitres && IsBike(v))
+            {
+                capacity = _cfg.BikeTankLitres;
+            }
 
             var tank = new Tank
             {
