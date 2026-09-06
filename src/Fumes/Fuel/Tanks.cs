@@ -226,7 +226,26 @@ namespace Fumes.Fuel
                 return tank;
             }
 
-            tank.Litres = capacity * FoundFraction(v);
+            tank.Litres = capacity * FoundFraction(v, key != null);
+
+            var line = "Invented a tank for " + Name(v) + ": key " + (key ?? "-") +
+                       ", " + tank.Litres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
+                       capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L (" +
+                       (capacity > 0.01f ? tank.Litres / capacity * 100f : 0f)
+                           .ToString("0", CultureInfo.InvariantCulture) + "%)" +
+                       ", mission=" + Mission() + ", persistent=" + Persistent(v) +
+                       ", remembered=" + _saved.Count;
+
+            // A KEYLESS CAR IS THE ONE WORTH SHOUTING ABOUT, and it has to shout at a level the
+            // default LogLevel of Info actually writes -- a Debug line is invisible in every
+            // log anybody would send in, which is exactly the people this needs to hear from.
+            //
+            // Once per model per session, because boats and aircraft have no plate by nature
+            // and would otherwise fill the file. A CAR with no plate is the interesting case:
+            // it means the vehicle has a saved fuel level that could not be looked up.
+            if (key == null) Log.Once("nokey-" + Name(v), line);
+            else Log.Debug(line);
+
             return tank;
         }
 
@@ -238,7 +257,7 @@ namespace Fumes.Fuel
         /// those on a quarter tank turns a mod about fuel into a mod about walking. Traffic
         /// gets a spread, so hijacking is a gamble.
         /// </summary>
-        private float FoundFraction(Vehicle v)
+        private float FoundFraction(Vehicle v, bool hasKey)
         {
             // A FULL TANK FOR MISSION VEHICLES, AND ONLY THOSE.
             //
@@ -256,7 +275,16 @@ namespace Fumes.Fuel
             // of vehicle are persistent, but only one of them appears while a mission is
             // actually running. A trainer spawn in free roam is a found car; a car the game
             // gives you mid-mission is not.
-            if (_cfg.MissionTanksFull)
+            // NOT FOR A VEHICLE WE CANNOT NAME, and this is the guard that matters on a
+            // save load. Both halves of the mission test go true during a load: the car is
+            // persistent, and the mission flag is set while the game restores itself. If the
+            // plate has not streamed yet then KeyFor came back null, the remembered litres were
+            // never looked up, and this hands out a full tank to a car that had half of one.
+            //
+            // A vehicle with no key is one we cannot identify, and "full" is the most damaging
+            // thing to guess about a car we do not recognise. Reported by sjmss8094: half a
+            // tank saved, a full one after loading.
+            if (_cfg.MissionTanksFull && hasKey)
             {
                 try
                 {
@@ -300,6 +328,24 @@ namespace Fumes.Fuel
             r.Capacity = tank.Capacity;
             r.Seen = Now();
             _dirty = true;
+        }
+
+        private static string Name(Vehicle v)
+        {
+            try { return v.LocalizedName; }
+            catch { return "?"; }
+        }
+
+        private static bool Mission()
+        {
+            try { return Game.IsMissionActive; }
+            catch { return false; }
+        }
+
+        private static bool Persistent(Vehicle v)
+        {
+            try { return v.IsPersistent; }
+            catch { return false; }
         }
 
         private static long Now()
