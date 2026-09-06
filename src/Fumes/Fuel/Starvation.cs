@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using GTA;
 using GTA.Native;
 using Fumes.Core;
@@ -65,12 +66,36 @@ namespace Fumes.Fuel
 
                 Stalled = false;
 
-                if (tank.Litres <= SputterAt(tank)) { Cough(v); return; }
+                if (tank.Litres <= SputterAt(tank))
+                {
+                    // WRITTEN ONCE PER EPISODE, because four rounds of reading the code have
+                    // not explained a report of spluttering at half a tank. Everything here is
+                    // plain arithmetic on two numbers, the gauge divides the same two, and both
+                    // are handed the same vehicle -- so either the tank really is low and the
+                    // gauge is lying, or this line never fires and the noise is something else.
+                    //
+                    // One line in the log tells those apart. Guessing has not.
+                    if (!_coughLogged)
+                    {
+                        _coughLogged = true;
+
+                        Log.Info("Spluttering " + v.LocalizedName + ": " +
+                                 tank.Litres.ToString("0.00", CultureInfo.InvariantCulture) + " / " +
+                                 tank.Capacity.ToString("0.0", CultureInfo.InvariantCulture) + " L = " +
+                                 (tank.Fraction * 100f).ToString("0", CultureInfo.InvariantCulture) +
+                                 "%, threshold " +
+                                 SputterAt(tank).ToString("0.00", CultureInfo.InvariantCulture) + " L.");
+                    }
+
+                    Cough(v);
+                    return;
+                }
 
                 // Back above the sputter line: everything resets, including the warnings, so
                 // a tank filled and run down again warns again.
                 _coughUntil = 0;
                 _nextCough = 0;
+                _coughLogged = false;
                 _cutByUs = false;
                 _toldEmpty = false;
 
@@ -117,6 +142,8 @@ namespace Fumes.Fuel
             return share > _cfg.SputterLitres ? share : _cfg.SputterLitres;
         }
 
+        private bool _coughLogged;
+
         /// <summary>A different car means somebody else's timers. Drop them.</summary>
         private void Retarget(Vehicle v)
         {
@@ -124,7 +151,7 @@ namespace Fumes.Fuel
 
             _handle = v.Handle;
             _coughUntil = _nextCough = _crankUntil = _crankAgainAt = 0;
-            _warned = _toldEmpty = _cutByUs = false;
+            _warned = _toldEmpty = _cutByUs = _coughLogged = false;
             Stalled = false;
         }
 
