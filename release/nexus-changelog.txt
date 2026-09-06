@@ -1,0 +1,21 @@
+<b>Changelog — 0.1.4</b>
+
+<ul>
+<li><b>Fixed: a vehicle could come back from a save load with a full tank</b> when it had half of one. Two things have to go wrong together and a load is the one moment they both do — the plate hasn't streamed yet so the saved level isn't found, and the mission flag is set while the game restores itself, so the rule that hands a full tank to a mission car fires. The mission rule now needs a plate. <i>Reported by sjmss8094.</i></li>
+
+<li><b>Bikes get a bike's tank</b> — 16 L instead of the 65 handling reports, so filling one costs ~$17 rather than $80. And they still go as far as a car: the economy figure is derived from the tank and the range together, so change one and the other follows.</li>
+
+<li><b>Electric vehicles are out entirely</b> — no tank, no gauge, no prompt, no fuel burned. <i>Asked for by MaitreSystem.</i></li>
+
+<li><b>All stations are one map-legend entry</b> instead of twenty-six. <i>Asked for by enbee997.</i></li>
+
+<li><b>Fixed: he filled with the wrong hand.</b> <i>Reported by Zona Comics.</i></li>
+
+<li><b>Fixed: siphon and pour animations could stick</b> — reloading mid-siphon left them on him forever.</li>
+
+<li><b>Spluttering is a share of the tank</b>, capped at ~2 litres.</li>
+
+<li><b>The spill pool grows with the litres</b> rather than maxing out in four seconds.</li>
+
+<li><b>The ground can is the same model he carries.</b></li>
+</ul>
