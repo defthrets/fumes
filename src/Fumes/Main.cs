@@ -308,8 +308,32 @@ namespace Fumes
         {
             try
             {
-                if (Math.Abs(v.FuelLevel - tank.Litres) < 0.15f) return;
-                v.FuelLevel = tank.Litres;
+                var want = tank.Litres;
+
+                // ON THE GAME'S SCALE, NOT OURS. FuelLevel is measured against handling.meta's
+                // fPetrolTankVolume, and a motorbike reports about sixty-five litres there
+                // while the tank we give it is sixteen. Writing our litres straight into that
+                // field therefore tells the game a brimmed bike is a quarter full, and a
+                // half-full one is down to its last few per cent.
+                //
+                // WHICH THE GAME ACTS ON. The note above this method -- that nothing reads
+                // this for driving -- is what made three attempts at "bikes splutter at half a
+                // tank" look in the wrong place: our own splutter threshold is ten per cent and
+                // provably never fired, because the spluttering was never ours. It was the
+                // game's, reacting to a number we had been quietly understating by four times
+                // ever since bikes got a tank of their own.
+                //
+                // Scaled by fraction, so the two capacities can disagree all they like and the
+                // game still believes the same thing we do about how full the thing is.
+                var theirs = v.PetrolTankVolume;
+
+                if (theirs >= 5f && theirs <= 800f && tank.Capacity > 0.01f)
+                {
+                    want = tank.Fraction * theirs;
+                }
+
+                if (Math.Abs(v.FuelLevel - want) < 0.15f) return;
+                v.FuelLevel = want;
             }
             catch
             {

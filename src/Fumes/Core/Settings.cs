@@ -288,7 +288,7 @@ namespace Fumes.Core
         /// <summary>
         /// The floor: never less warning than this, whatever the tank.
         /// </summary>
-        public float SputterLitres = 0.6f;
+        public float SputterLitres = 0.4f;
 
         /// <summary>
         /// How much of the tank is spent spluttering, as a share.
@@ -298,7 +298,7 @@ namespace Fumes.Core
         /// nearly four of a motorbike, so the smaller the tank the less notice you got. That is
         /// backwards: the small tank empties soonest.
         /// </summary>
-        public float SputterFraction = 0.10f;
+        public float SputterFraction = 0.06f;
 
         /// <summary>
         /// The ceiling on that share, in litres.
@@ -307,7 +307,7 @@ namespace Fumes.Core
         /// spluttering through six litres is spluttering for seventy kilometres. Whatever the
         /// tank, about two litres of warning is the honest amount.
         /// </summary>
-        public float SputterMaxLitres = 2.0f;
+        public float SputterMaxLitres = 1.2f;
         public bool StallWhenEmpty = true;
 
 
