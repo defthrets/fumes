@@ -418,6 +418,36 @@ namespace Fumes.Station
         }
 
         /// <summary>
+        /// Re-reads what is in the can he owns, so putting the nozzle back cannot undo a fill.
+        ///
+        /// THE CARRYING POSE IS THE PETROL CAN WEAPON. That is how the nozzle sits in his fist
+        /// at all -- the can is equipped and hidden and the nozzle prop hangs off the hand --
+        /// which means the ammo this class carefully saves and restores IS the fuel in his
+        /// jerry can.
+        ///
+        /// Saved once, when the nozzle is taken. Fine for filling a car; wrong the moment you
+        /// fill the CAN with the nozzle out, because the level then changes underneath a number
+        /// that was read before it started and is written back afterwards. Hanging up would
+        /// have handed back the empty can you arrived with and kept your money.
+        ///
+        /// So whoever changes the can says so, and the saved figure follows it.
+        /// </summary>
+        public void NoteOwnAmmo(Ped me)
+        {
+            if (!_posed || !_hadOwn) return;
+            if (me == null || !me.Exists()) return;
+
+            try
+            {
+                _ownAmmo = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, (uint)_poseWeapon);
+            }
+            catch
+            {
+                // Keep the old figure. Worse than the new one, better than none.
+            }
+        }
+
+        /// <summary>
         /// Hands everything back. Safe to call when nothing is out.
         ///
         /// The weapon HAS to be taken away rather than merely hidden: an invisible extinguisher

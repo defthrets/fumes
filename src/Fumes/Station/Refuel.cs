@@ -822,6 +822,13 @@ namespace Fumes.Station
                 _owed += wanted * _price;
 
                 SetCanFuel(me, _canLitres);
+
+                // EVERY TICK, NOT AT THE END. The nozzle restores the can's ammo whenever it
+                // goes back, and it goes back on every way out of here -- hanging up, walking
+                // off, dying, getting into a car. Telling it only when the fill finishes
+                // cleanly would still lose the fuel on all the other endings.
+                _nozzle.NoteOwnAmmo(me);
+
                 Settle();
             }
 
