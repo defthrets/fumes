@@ -1,6 +1,25 @@
 FUMES -- changes
 
 
+0.1.6
+=====
+
+  * AN EMPTY JERRY CAN IS NO LONGER A DEAD ITEM. Reaching for one did nothing at
+    all: the pour prompt gives up above zero litres and the siphon prompt was
+    offered from inside it, so a can drained to nothing offered neither -- and being
+    filled back up is the one thing an empty can is for.
+
+    The interact key now puts it down as a real object on the floor rather than
+    deleting it out of his hands, and the secondary key still siphons into it.
+    DropEmptyCan = false leaves it alone.
+
+  * The grade card can be turned off from the settings menu rather than only from
+    the ini. It was already a setting; it was not anywhere you could reach without
+    opening a text file. Off fills straight away with the grade you last picked.
+
+  * 216 settings in the ini, up from 215.
+
+
 0.1.5
 =====
 
@@ -41,20 +60,7 @@ FUMES -- changes
     may raise it. Pouring it on the floor as a weapon still empties it, because that
     is you spending it. RememberCan = false goes back to trusting the game.
 
-  * AN EMPTY JERRY CAN IS NO LONGER A DEAD ITEM. Reaching for one did nothing at
-    all: the pour prompt gives up above zero litres and the siphon prompt was
-    offered from inside it, so a can drained to nothing offered neither -- and being
-    filled back up is the one thing an empty can is for.
-
-    The interact key now puts it down as a real object on the floor rather than
-    deleting it out of his hands, and the secondary key still siphons into it.
-    DropEmptyCan = false leaves it alone.
-
-  * The grade card can be turned off from the settings menu rather than only from the
-    ini. It was already a setting; it was not anywhere you could reach without
-    opening a text file. Off fills straight away with the grade you last picked.
-
-  * 216 settings in the ini, up from 214.
+  * 215 settings in the ini, up from 214.
 
 
 0.1.4
