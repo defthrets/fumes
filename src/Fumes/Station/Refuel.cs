@@ -376,6 +376,28 @@ namespace Fumes.Station
         /// holding the pose, so anything that asked "is he holding a can" would answer no at
         /// exactly the moment he is standing at a pump wanting to fill it.
         /// </summary>
+        /// <summary>
+        /// Whether the can is IN HIS HANDS, as opposed to merely in his inventory.
+        ///
+        /// A SEPARATE QUESTION FROM Can(), and the one that was asked wrongly. Can() looks up
+        /// the weapon he OWNS, which is right for reading and writing what is in it -- that has
+        /// to work with the can on his back. It is the wrong test for showing a prompt: it is
+        /// true from the moment he first picks a can up until he loses it, so "Put the empty
+        /// can down" followed him around the map empty-handed.
+        /// </summary>
+        private static bool HoldingCan(Ped me)
+        {
+            try
+            {
+                var w = me.Weapons.Current;
+                return w != null && w.Hash == WeaponHash.PetrolCan;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static Weapon Can(Ped me)
         {
             try
@@ -476,14 +498,23 @@ namespace Fumes.Station
         /// Reaching for it did nothing whatever, which reads as the mod having stopped working.
         ///
         /// Both directions on their own buttons, same as a part-full can: the primary puts it
-        /// down, the secondary siphons into it. Only ever while it is actually in his hands,
-        /// because CanLitres reads the weapon he is holding -- so this is not a prompt that
-        /// follows you round for owning a can.
+        /// down, the secondary siphons into it.
+        ///
+        /// GATED ON THE CAN BEING OUT. This first shipped gated on Can(), which asks whether he
+        /// OWNS one -- true from the first can he ever picks up -- so the prompt followed him
+        /// round the map with empty hands. CanLitres reporting zero for a can that is not out
+        /// is what routed a full can down here in the first place.
         /// </summary>
         private bool OfferEmptyCan(Ped me)
         {
             if (!_cfg.DropEmptyCan) return false;
-            if (Can(me) == null) return false;
+
+            // IN HIS HANDS, not in his pockets. Can() answers "does he own one", which is true
+            // from the first can he ever picks up onwards -- so this prompt followed him round
+            // the map with nothing in his hands at all. It also stopped a full can he was not
+            // holding from being read as an empty one, since CanLitres reports zero for a
+            // weapon that is not out.
+            if (!HoldingCan(me)) return false;
 
             // Still worth offering the siphon, and this is the case that needed it most.
             var vehicle = NearestFillable(me, out var filler, out var inReach);
