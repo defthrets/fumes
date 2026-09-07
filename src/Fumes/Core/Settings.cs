@@ -365,6 +365,16 @@ namespace Fumes.Core
         /// </summary>
         public bool RememberCan = true;
 
+        /// <summary>
+        /// Whether reaching for an empty can puts it down instead of doing nothing.
+        ///
+        /// AN EMPTY CAN USED TO BE A DEAD ITEM. The pour prompt bails out above zero litres, and
+        /// the siphon prompt was offered from inside it -- so a can drained to nothing offered
+        /// neither, and the one thing an empty can is for is being filled back up. Now the
+        /// primary button puts it down and the secondary still siphons into it.
+        /// </summary>
+        public bool DropEmptyCan = true;
+
         public float JerryCanLitres = 20f;
 
         /// <summary>
@@ -1508,6 +1518,7 @@ namespace Fumes.Core
                 s.LitresPerSecond = ini.GetFloat("Station", "LitresPerSecond", s.LitresPerSecond, 0.1f, 60f);
                 s.JerryCan = ini.GetBool("Station", "JerryCan", s.JerryCan);
                 s.RememberCan = ini.GetBool("Station", "RememberCan", s.RememberCan);
+                s.DropEmptyCan = ini.GetBool("Station", "DropEmptyCan", s.DropEmptyCan);
                 s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);

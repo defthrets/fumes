@@ -161,6 +161,7 @@ namespace Fumes.Station
         {
             SampleKey();
             TidyDropped();
+            TidyDroppedCan();
 
             var me = Player();
             if (me == null)
@@ -330,7 +331,7 @@ namespace Fumes.Station
             if (!_cfg.JerryCan) return false;
 
             var litres = CanLitres(me);
-            if (litres <= 0.01f) return false;
+            if (litres <= 0.01f) return OfferEmptyCan(me);
 
             var vehicle = NearestFillable(me, out var filler, out var inReach);
             if (vehicle == null || !inReach) return false;
@@ -459,6 +460,115 @@ namespace Fumes.Station
             {
                 Log.Once("can-ammo", "Could not change what is in the can: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// What an empty can can still do: be put down, or be filled back up.
+        ///
+        /// IT COULD DO NEITHER BEFORE. OfferCan gives up above zero litres and OfferSiphon was
+        /// called from inside it, so a can drained to nothing offered no prompt at all -- and
+        /// being refilled is the entire reason KeepEmptyCan holds on to it in the first place.
+        /// Reaching for it did nothing whatever, which reads as the mod having stopped working.
+        ///
+        /// Both directions on their own buttons, same as a part-full can: the primary puts it
+        /// down, the secondary siphons into it. Only ever while it is actually in his hands,
+        /// because CanLitres reads the weapon he is holding -- so this is not a prompt that
+        /// follows you round for owning a can.
+        /// </summary>
+        private bool OfferEmptyCan(Ped me)
+        {
+            if (!_cfg.DropEmptyCan) return false;
+            if (Can(me) == null) return false;
+
+            // Still worth offering the siphon, and this is the case that needed it most.
+            var vehicle = NearestFillable(me, out var filler, out var inReach);
+
+            if (vehicle != null && inReach)
+            {
+                var tank = _tanks.For(vehicle);
+                if (tank != null) OfferSiphon(me, vehicle, tank, 0f);
+            }
+
+            Prompt(Control.Context, "Put the empty can down");
+
+            if (Pressed()) DropCan(me);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Puts the can on the floor as a real object and takes it off him.
+        ///
+        /// A PROP RATHER THAN A DELETED WEAPON, because "it vanished from my hands" is what a
+        /// bug looks like. The same three models the siphon stands on the ground, so whatever
+        /// this build has is what gets used.
+        ///
+        /// One at a time. Without that a determined player can carpet a forecourt in jerry
+        /// cans, which is funny once and a physics bill forever.
+        /// </summary>
+        private void DropCan(Ped me)
+        {
+            try
+            {
+                TidyDroppedCan(true);
+
+                var at = me.Position + me.ForwardVector * 0.6f;
+
+                foreach (var name in CanProps)
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid) continue;
+
+                    model.Request(1200);
+                    if (!model.IsLoaded) { model.MarkAsNoLongerNeeded(); continue; }
+
+                    _droppedCan = World.CreateProp(model, at, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_droppedCan == null || !_droppedCan.Exists()) continue;
+
+                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _droppedCan.Handle);
+                    _droppedCan.Heading = me.Heading + 90f;
+                    break;
+                }
+
+                // Off him only once something is on the floor, so a build with none of the
+                // three models keeps the can rather than losing it to a prop that never came.
+                if (_droppedCan != null && _droppedCan.Exists())
+                {
+                    Function.Call(Hash.REMOVE_WEAPON_FROM_PED, me.Handle, (uint)WeaponHash.PetrolCan);
+                    Remember(0f);
+
+                    _tidyCanAt = Game.GameTime + 120000;
+
+                    Notify("~y~Empty can put down.~s~");
+                    Log.Info("The empty can was put down.");
+                }
+                else
+                {
+                    Log.Once("drop-can", "No jerry can model in this build to put down; " +
+                                         "the can stays in his hands.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("drop-can-fail", "Could not put the can down: " + ex.Message);
+            }
+        }
+
+        private Prop _droppedCan;
+        private int _tidyCanAt;
+
+        /// <summary>Takes a put-down can away again, so the world does not fill up with them.</summary>
+        private void TidyDroppedCan(bool now = false)
+        {
+            if (_droppedCan == null) return;
+            if (!now && Game.GameTime < _tidyCanAt) return;
+
+            try { if (_droppedCan.Exists()) _droppedCan.Delete(); }
+            catch { /* it will go with the session */ }
+
+            _droppedCan = null;
         }
 
         /// <summary>
@@ -2461,6 +2571,7 @@ namespace Fumes.Station
             catch { /* he is beyond helping */ }
 
             SaveCan();
+            TidyDroppedCan(true);
 
             _nozzle.PutBack();
             _hose.Release();

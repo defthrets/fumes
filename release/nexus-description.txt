@@ -75,7 +75,7 @@ To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 <b>⌨️ CONTROLS</b>
 
 <ul>
-<li><b>SHIFT + F</b> — the settings menu. 215 of them.</li>
+<li><b>SHIFT + F</b> — the settings menu. 216 of them.</li>
 <li><b>LB + D-pad Down</b> — the same menu on a controller.</li>
 </ul>
 
@@ -91,7 +91,11 @@ To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 
 <li>🥫 <b>The jerry can keeps what is in it.</b> Its contents are stored by the game as ammunition, and the game puts that back to full on its own — after a respawn, an arrest, a mission, a reload. An emptied can came back brimmed, which is free fuel. Only a station fill or a siphon raises it now; pouring it on the floor still empties it. <i>RememberCan</i> turns the old behaviour back on.</li>
 
-<li>⚙️ <b>215 settings in the ini</b>, up from 214.</li>
+<li>🥫 <b>An empty jerry can is no longer a dead item.</b> Reaching for one did nothing at all — the pour prompt gives up above zero litres and the siphon prompt was offered from inside it, so a can drained to nothing offered neither, and being filled back up is the one thing an empty can is for. The interact key now puts it down as a real object on the floor, and the secondary key still siphons into it.</li>
+
+<li>💳 <b>The grade card can be switched off from the settings menu</b>, not just the ini. Off fills straight away with the grade you last picked.</li>
+
+<li>⚙️ <b>216 settings in the ini</b>, up from 214.</li>
 </ul>
 
 
