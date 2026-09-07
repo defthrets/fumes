@@ -1026,6 +1026,26 @@ namespace Fumes.Station
             // be guessed at to put a can in a fist.
             if (_cfg.SiphonCanInHand && !force) return;
 
+            // ONE CAN, HOWEVER MANY TIMES THIS IS ASKED. The siphon called it once, at the
+            // start, so nothing here ever needed to check -- and the pump fill calls it every
+            // frame, because the crouch and the pose have to be re-asserted every frame and
+            // the can was put down alongside them.
+            //
+            // Without this that is a new can sixty times a second, each one orphaning the last:
+            // _canOnGround only ever points at the newest, so picking it up collected one and
+            // left every earlier one standing in the road.
+            if (_canOnGround != null)
+            {
+                var there = false;
+                try { there = _canOnGround.Exists(); }
+                catch { there = false; }
+
+                if (there) return;
+
+                // Streamed out or deleted from under us. Forget it and stand a new one.
+                _canOnGround = null;
+            }
+
             try
             {
                 // IN FRONT OF HIM, not out to the side. It was beside-and-slightly-behind
