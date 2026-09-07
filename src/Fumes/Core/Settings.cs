@@ -356,6 +356,15 @@ namespace Fumes.Core
         public bool JerryCan = true;
 
         /// <summary>How many litres a full can holds.</summary>
+        /// <summary>
+        /// Whether the can remembers what is in it, rather than trusting the weapon's ammo.
+        ///
+        /// ON, because the ammo is the game's to reset and it does. An empty can that comes
+        /// back full is free fuel, and free fuel is the whole mod undone -- there is no reason
+        /// to drive to a station if standing still refills you.
+        /// </summary>
+        public bool RememberCan = true;
+
         public float JerryCanLitres = 20f;
 
         /// <summary>
@@ -1498,6 +1507,7 @@ namespace Fumes.Core
                 s.PromptStickiness = ini.GetFloat("Station", "PromptStickiness", s.PromptStickiness, 0f, 3f);
                 s.LitresPerSecond = ini.GetFloat("Station", "LitresPerSecond", s.LitresPerSecond, 0.1f, 60f);
                 s.JerryCan = ini.GetBool("Station", "JerryCan", s.JerryCan);
+                s.RememberCan = ini.GetBool("Station", "RememberCan", s.RememberCan);
                 s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);

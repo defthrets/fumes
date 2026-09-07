@@ -311,7 +311,7 @@ namespace Fumes.UI
                 //
                 // Chunks are split on SPACES, which is what makes it safe: a formatting tag
                 // never contains one, so no split can ever land inside a tag.
-                foreach (var chunk in Chunks(text, 96))
+                foreach (var chunk in Chunks(Fit(text, 98), 96))
                 {
                     Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, chunk);
                 }
@@ -369,6 +369,69 @@ namespace Fumes.UI
 
             return pieces;
         }
+
+        /// <summary>
+        /// Trims a help string to what the box will actually draw, a line at a time.
+        ///
+        /// ONE HELP MESSAGE HOLDS ABOUT A HUNDRED CHARACTERS however many components it is fed
+        /// in. Feeding it more does not spill into a second box and does not wrap: the tail is
+        /// simply not drawn. Chunks() was made lossless to stop a cut landing inside a ~tag~,
+        /// and that was necessary and not sufficient -- every character still arrives, and the
+        /// box still stops rendering at its own limit.
+        ///
+        /// WHICH IS WHY THE SIPHON PROMPT WAS A BUTTON WITH NO WORDS. Stack two prompts with
+        /// ~n~ and the part that falls off the end is the whole of the second one's text, while
+        /// its ~INPUT_CONTEXT_SECONDARY~ tag sits safely inside the limit and draws its glyph.
+        /// The prompt was never missing. It was beheaded.
+        ///
+        /// Shortened the LONGEST line first, and only ever its words, so what goes is the least
+        /// load-bearing text on screen -- the name of a vehicle you are standing in front of --
+        /// and never a whole line. Every prompt keeps its glyph and enough words to read.
+        /// </summary>
+        private static string Fit(string text, int limit)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= limit) return text;
+
+            var lines = text.Split(new[] { Break }, StringSplitOptions.None);
+
+            // The separators are not negotiable, so they come off the budget first.
+            var budget = limit - (lines.Length - 1) * Break.Length;
+            if (budget < lines.Length) return text.Substring(0, limit);
+
+            // Longest first, one word at a time, until the whole thing fits. Trimming the
+            // longest rather than the last keeps two prompts legible instead of sacrificing
+            // the second one to spare the first.
+            for (var guard = 0; guard < 200; guard++)
+            {
+                var total = 0;
+                foreach (var l in lines) total += l.Length;
+                if (total <= budget) break;
+
+                var worst = 0;
+                for (var i = 1; i < lines.Length; i++)
+                {
+                    if (lines[i].Length > lines[worst].Length) worst = i;
+                }
+
+                var line = lines[worst];
+
+                // Back to a space, so a cut can never land inside a ~tag~ -- no tag has one.
+                var cut = line.LastIndexOf(' ');
+                if (cut <= 0) break;
+
+                lines[worst] = line.Substring(0, cut).TrimEnd();
+            }
+
+            var joined = string.Join(Break, lines);
+
+            Log.Once("help-fit", "A prompt was too long for the help box and was shortened: \"" +
+                                 text + "\" -> \"" + joined + "\".");
+
+            return joined.Length <= limit ? joined : joined.Substring(0, limit);
+        }
+
+        /// <summary>The help-text newline. Named because its length is part of the budget above.</summary>
+        private const string Break = "~n~";
 
         /// <summary>Clears a help box early, so a prompt does not linger after you walk away.</summary>
         public static void ClearHelp()

@@ -194,6 +194,14 @@ namespace Fumes.Core
         public static string TanksFile => Path.Combine(Writable, "tanks.json");
 
         /// <summary>
+        /// What is in the jerry can, because the game will not keep it.
+        ///
+        /// A file of its own rather than a corner of tanks.json: that file is keyed by vehicle
+        /// and the can belongs to the player, so it has no key to sit under.
+        /// </summary>
+        public static string CanFile => Path.Combine(Writable, "can.json");
+
+        /// <summary>
         /// Station positions the mod worked out for itself, kept APART from the shipped list.
         ///
         /// stations.json is content: it ships, it gets replaced by updates, and a player may

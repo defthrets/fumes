@@ -139,6 +139,8 @@ namespace Fumes.Station
             _nozzle = new Nozzle(cfg);
             _siphonLine = new Hose(cfg, true);
             _grades = new Grades(cfg);
+
+            LoadCan();
             _hose = new Hose(cfg);
             _hazard = new Hazard(cfg);
             _sound = new FillSound(cfg);
@@ -181,6 +183,10 @@ namespace Fumes.Station
             }
 
             _fallback = null;
+
+            // BEFORE the stage runs, so a prompt is never offered against litres the game
+            // invented a frame ago.
+            GuardCan(me);
 
             // The prompt's memory only means anything while the nozzle is out. Left set, walking
             // away and coming back would resume mid-argument with whatever it last decided.
@@ -332,8 +338,12 @@ namespace Fumes.Station
             var tank = _tanks.For(vehicle);
             if (tank == null || tank.Litres >= tank.Capacity - 0.05f) return false;
 
-            Prompt(Control.Context, "Pour the can into the " + vehicle.LocalizedName +
-                                    "   " + litres.ToString("0.0", CultureInfo.InvariantCulture) + " L");
+            // THE LITRES BEFORE THE NAME, because the help box drops whatever does not fit from
+            // the END, and of the two the name is the part already standing in front of you. In
+            // the other order a long vehicle name pushed the quantity off the edge, and a
+            // half-eaten "11.1" with its unit missing is worse than a shortened name.
+            Prompt(Control.Context, "Pour " + litres.ToString("0.0", CultureInfo.InvariantCulture) +
+                                    " L into the " + vehicle.LocalizedName);
 
             OfferSiphon(me, vehicle, tank, litres);
 
@@ -442,6 +452,7 @@ namespace Fumes.Station
             {
                 if (can.MaxAmmo <= 0) return;
 
+                Remember(litres);
                 can.Ammo = AmmoFrom(litres, can.MaxAmmo);
             }
             catch (Exception ex)
@@ -1473,9 +1484,116 @@ namespace Fumes.Station
             }
         }
 
+        /// <summary>
+        /// What we last knew to be in the can, in litres. Negative until one has been seen.
+        ///
+        /// THE MOD'S NUMBER, NOT THE GAME'S. The can's contents live in the weapon's ammo,
+        /// which belongs to the game -- and the game puts it back to full on its own, after a
+        /// respawn, an arrest, a mission, a reload. So an emptied can came back brimmed, which
+        /// is free fuel, which removes the reason to visit a station at all.
+        ///
+        /// Only ever raised by something the mod did: a station fill or a siphon. Anything
+        /// else that raises it is the game handing out petrol, and is put back.
+        /// </summary>
+        private float _canOwn = -1f;
+
+        private bool _canDirty;
+
+        /// <summary>
+        /// Puts back what the game topped up.
+        ///
+        /// Runs every tick and does nothing at all in the stages that are allowed to change the
+        /// level, because those go through SetCanLitres and tell this what they did. A rise
+        /// nobody claimed is the game's doing.
+        ///
+        /// A DROP IS ALWAYS ACCEPTED. Petrol poured on the floor as a weapon is the player
+        /// spending it, and second-guessing that would fight the one bit of vanilla behaviour
+        /// worth keeping.
+        /// </summary>
+        private void GuardCan(Ped me)
+        {
+            if (!_cfg.JerryCan || !_cfg.RememberCan) return;
+            if (_stage == Stage.FillingCan || _stage == Stage.Siphoning || _stage == Stage.Pouring) return;
+
+            try
+            {
+                if (Can(me) == null) return;
+
+                var now = CanLitres(me);
+
+                // First sight this session with nothing remembered: whatever it holds is the truth.
+                if (_canOwn < 0f) { _canOwn = now; return; }
+
+                if (now > _canOwn + 0.25f)
+                {
+                    SetCanLitres(me, _canOwn);
+
+                    Log.Once("can-topup", "The game refilled the petrol can to " +
+                                          now.ToString("0.0", CultureInfo.InvariantCulture) +
+                                          " L; put back to the " +
+                                          _canOwn.ToString("0.0", CultureInfo.InvariantCulture) +
+                                          " L it had. Set RememberCan = false to allow it.");
+                    return;
+                }
+
+                if (now < _canOwn - 0.01f) Remember(now);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-guard", "Could not check the can: " + ex.Message);
+            }
+        }
+
+        /// <summary>Records a level and marks it for saving.</summary>
+        private void Remember(float litres)
+        {
+            if (litres < 0f) litres = 0f;
+
+            _canOwn = litres;
+            _canDirty = true;
+        }
+
+        /// <summary>Reads the remembered level back. A missing file just means no can yet.</summary>
+        private void LoadCan()
+        {
+            try
+            {
+                var doc = JsonFile.Read(Paths.CanFile);
+                if (doc == null) return;
+
+                var litres = doc["litres"].AsFloat(-1f);
+                if (litres >= 0f) _canOwn = litres;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-load", "Could not read the can level: " + ex.Message);
+            }
+        }
+
+        /// <summary>Writes it out, if it moved.</summary>
+        private void SaveCan()
+        {
+            if (!_canDirty || _canOwn < 0f) return;
+
+            try
+            {
+                if (JsonFile.Write(Paths.CanFile,
+                                   Json.Object().Set("litres", Math.Round(_canOwn, 2))))
+                {
+                    _canDirty = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("can-save", "Could not save the can level: " + ex.Message);
+            }
+        }
+
         /// <summary>Writes litres back to the can as ammo, so the game and the mod agree.</summary>
         private void SetCanLitres(Ped me, float litres)
         {
+            Remember(litres);
+
             try
             {
                 var weapon = me.Weapons.Current;
@@ -2341,6 +2459,8 @@ namespace Fumes.Station
             // until the game was closed.
             try { Poses(Player()); }
             catch { /* he is beyond helping */ }
+
+            SaveCan();
 
             _nozzle.PutBack();
             _hose.Release();
