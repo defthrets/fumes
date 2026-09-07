@@ -11,13 +11,16 @@ FUMES -- changes
 
     The interact key now puts it down as a real object on the floor rather than
     deleting it out of his hands, and the secondary key still siphons into it.
-    DropEmptyCan = false leaves it alone.
+    Stand over it and the same key picks it back up with whatever was in it, which
+    is the half that makes "put down" different from "thrown away" -- and standing
+    near it holds off the sweeper, so it cannot vanish from under someone who is
+    looking straight at it. DropEmptyCan = false leaves the whole thing alone.
 
   * The grade card can be turned off from the settings menu rather than only from
     the ini. It was already a setting; it was not anywhere you could reach without
     opening a text file. Off fills straight away with the grade you last picked.
 
-  * 216 settings in the ini, up from 215.
+  * 217 settings in the ini, up from 215.
 
 
 0.1.5

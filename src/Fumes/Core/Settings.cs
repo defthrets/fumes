@@ -375,6 +375,15 @@ namespace Fumes.Core
         /// </summary>
         public bool DropEmptyCan = true;
 
+        /// <summary>
+        /// How close you have to be to pick a put-down can back up, in metres.
+        ///
+        /// Its own number rather than CapReach, which is the reach to a car's filler and is
+        /// tuned to a thing the size of a car. A jerry can is ankle height and you are standing
+        /// over it, so the prompt should want you actually over it.
+        /// </summary>
+        public float CanPickUpReach = 1.8f;
+
         public float JerryCanLitres = 20f;
 
         /// <summary>
@@ -1519,6 +1528,7 @@ namespace Fumes.Core
                 s.JerryCan = ini.GetBool("Station", "JerryCan", s.JerryCan);
                 s.RememberCan = ini.GetBool("Station", "RememberCan", s.RememberCan);
                 s.DropEmptyCan = ini.GetBool("Station", "DropEmptyCan", s.DropEmptyCan);
+                s.CanPickUpReach = ini.GetFloat("Station", "CanPickUpReach", s.CanPickUpReach, 0.5f, 8f);
                 s.JerryCanLitres = ini.GetFloat("Station", "JerryCanLitres", s.JerryCanLitres, 1f, 200f);
                 s.JerryCanLitresPerSecond = ini.GetFloat("Station", "JerryCanLitresPerSecond", s.JerryCanLitresPerSecond, 0.05f, 20f);
                 s.Siphon = ini.GetBool("Station", "Siphon", s.Siphon);

@@ -348,6 +348,9 @@ namespace Fumes.UI
             station.Items.Add(Number("Reach: hanging up", () => _cfg.HangUpReach,
                                      v => _cfg.HangUpReach = v, 0.1f, 0.4f, 6f, "0.0",
                                      "Station", "HangUpReach", null));
+            station.Items.Add(Toggle("Put an empty can down", () => _cfg.DropEmptyCan,
+                                     v => _cfg.DropEmptyCan = v, "Station", "DropEmptyCan",
+                                     "Interact with an empty can to set it down, and again to pick it up."));
             station.Items.Add(Toggle("Grade card before filling", () => _cfg.GradeMenu,
                                      v => _cfg.GradeMenu = v, "Station", "GradeMenu",
                                      "Off fills straight away with the grade you last picked."));

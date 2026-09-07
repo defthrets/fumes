@@ -315,6 +315,11 @@ namespace Fumes.Station
             // the one place it is not needed.
             if (OfferCan(me)) return;
 
+            // AFTER the can he is holding, before the pump. A can on the floor is a smaller
+            // thing than a forecourt and you are standing on top of it, so it wins over a pump
+            // several metres away -- but it must not talk over the can already in his hands.
+            if (OfferPickUpCan(me)) return;
+
             var pump = _pumps.Nearest(me.Position, _cfg.PumpReach);
             if (pump == null) return;
 
@@ -558,6 +563,77 @@ namespace Fumes.Station
 
         private Prop _droppedCan;
         private int _tidyCanAt;
+
+        /// <summary>
+        /// Picking a put-down can back up.
+        ///
+        /// THE OTHER HALF OF PUTTING IT DOWN, and without it "put down" is a polite word for
+        /// throwing it away. The can is the thing you siphon into; a player who sets one down
+        /// to free his hands and then cannot retrieve it has been quietly robbed of the only
+        /// item in the mod.
+        ///
+        /// Standing near it also holds the sweeper off, so it cannot vanish from under someone
+        /// who is looking straight at it and deciding.
+        /// </summary>
+        private bool OfferPickUpCan(Ped me)
+        {
+            if (_droppedCan == null) return false;
+
+            try
+            {
+                if (!_droppedCan.Exists()) { _droppedCan = null; return false; }
+
+                if (me.Position.DistanceTo(_droppedCan.Position) > _cfg.CanPickUpReach) return false;
+
+                // Near it, so it is not litter yet.
+                _tidyCanAt = Game.GameTime + 120000;
+
+                Prompt(Control.Context, "Pick the can up");
+
+                if (Pressed()) PickUpCan(me);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("pickup-can", "Could not offer the can: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>Back into his hands, with exactly what it had in it.</summary>
+        private void PickUpCan(Ped me)
+        {
+            try
+            {
+                var had = _canOwn < 0f ? 0f : _canOwn;
+
+                // A notional unit, then the real level written over it. GIVE_WEAPON_TO_PED is
+                // what refills a can to full on its own, so nothing is trusted to it but the
+                // fact that he now has one.
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle,
+                              (uint)WeaponHash.PetrolCan, 1, false, false);
+
+                // Written through the owned-can setter rather than the held one, because
+                // selecting a weapon does not take effect in the frame you ask for it and the
+                // held setter reads whatever is in his hands right now.
+                SetCanFuel(me, had);
+                Remember(had);
+
+                try { me.Weapons.Select(WeaponHash.PetrolCan, true); }
+                catch { /* he has it; which hand it is in can wait a frame */ }
+
+                TidyDroppedCan(true);
+
+                Notify("~y~Can picked up.~s~");
+                Log.Info("The can was picked back up with " +
+                         had.ToString("0.0", CultureInfo.InvariantCulture) + " L in it.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("pickup-can-fail", "Could not pick the can up: " + ex.Message);
+            }
+        }
 
         /// <summary>Takes a put-down can away again, so the world does not fill up with them.</summary>
         private void TidyDroppedCan(bool now = false)
