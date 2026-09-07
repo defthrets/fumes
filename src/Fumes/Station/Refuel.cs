@@ -1662,6 +1662,24 @@ namespace Fumes.Station
 
             // And the can on the floor belongs to whichever of the two put it there.
             if (!crouching && _canOnGround != null) PickCanUp(me);
+
+            // THE CARRYING POSE, KEPT UP FOR AS LONG AS THE NOZZLE IS OUT.
+            //
+            // Take() re-hides the pose weapon every time it is called, and it was only being
+            // called from Carrying -- so the grade card and the fill itself, both of which have
+            // the nozzle in his hand, ran without it. Anything that reselects a weapon in that
+            // window leaves the pose weapon SHOWING, and the pose weapon is a jerry can or a
+            // fire extinguisher: exactly the two things people reported appearing in the hand
+            // already holding the nozzle, and gone again the moment it was hung up.
+            //
+            // It is idempotent -- Out means pose and return -- so asking every frame costs a
+            // weapon comparison, and here rather than in three separate stages because this is
+            // where the file already keeps poses honest by stage rather than by memory.
+            if (_stage == Stage.Carrying || _stage == Stage.Choosing ||
+                _stage == Stage.Filling || _stage == Stage.FillingCan)
+            {
+                _nozzle.Take();
+            }
         }
 
         /// <summary>
