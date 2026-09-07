@@ -1,5 +1,5 @@
 ================================================================================
-  FUMES 0.1.4 -- copy for the mod page
+  FUMES 0.1.5 -- copy for the mod page
 ================================================================================
 
 MARKUP: the page allows <b> <i> <u> <a> <ul> <ol> <li> and nothing else. No
@@ -11,7 +11,7 @@ Paste from the next divider down.
 
 --------------------------------------------------------------------------------
 
-<b>⛽ FUMES 0.1.4</b>
+<b>⛽ FUMES 0.1.5</b>
 <i>Persistent vehicle fuel for GTA V, with a refuel you walk through.</i>
 by spitmux
 
@@ -75,8 +75,23 @@ To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 <b>⌨️ CONTROLS</b>
 
 <ul>
-<li><b>SHIFT + F</b> — the settings menu. 214 of them.</li>
+<li><b>SHIFT + F</b> — the settings menu. 215 of them.</li>
 <li><b>LB + D-pad Down</b> — the same menu on a controller.</li>
+</ul>
+
+
+<b>📋 CHANGELOG — 0.1.5</b>
+
+<ul>
+<li>🏍️ <b>Fixed: bikes spluttered at half a tank.</b> Reported three times, and three goes at our own splutter threshold never touched it, because the spluttering was never ours. The game keeps a fuel level of its own and we copy our litres into it, so a car shot while empty does not spill a full tank across the road — but the game reads that against handling.meta, where a motorbike claims about sixty-five litres while the tank we give it is sixteen. A brimmed bike was handed to the game as a quarter full. Mirrored by fraction now, so both sides agree. <i>Reported by several of you.</i></li>
+
+<li>💨 <b>Spluttering starts later</b> — six per cent of the tank, capped at 1.2 L. A sixteen-litre bike now catches under 0.96 L rather than 1.6.</li>
+
+<li>🥤 <b>Fixed: the siphon prompt was a button with no words next to it.</b> A help box holds about a hundred characters however many pieces it is fed in, and the pour line plus the siphon line came to a hundred and five. What fell off the end was the whole of "Siphon it out" — the glyph in front of it sat inside the limit and drew fine. Long prompts are shortened a word at a time now, and the pour prompt puts the litres before the vehicle name, since the name is the part already in front of you.</li>
+
+<li>🥫 <b>The jerry can keeps what is in it.</b> Its contents are stored by the game as ammunition, and the game puts that back to full on its own — after a respawn, an arrest, a mission, a reload. An emptied can came back brimmed, which is free fuel. Only a station fill or a siphon raises it now; pouring it on the floor still empties it. <i>RememberCan</i> turns the old behaviour back on.</li>
+
+<li>⚙️ <b>215 settings in the ini</b>, up from 214.</li>
 </ul>
 
 

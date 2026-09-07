@@ -1,6 +1,49 @@
 FUMES -- changes
 
 
+0.1.5
+=====
+
+  * Fixed: BIKES SPLUTTERED AT HALF A TANK. Reported three times, and three goes at
+    the splutter threshold did not touch it, because the spluttering was never ours.
+
+    The game keeps a fuel level of its own and this mod copies our litres into it, so
+    that a car shot while empty does not spill a full tank across the road. The game
+    reads that field against handling.meta, where a motorbike claims about sixty-five
+    litres -- while the tank we give a bike is sixteen. So a brimmed bike was handed
+    to the game as a quarter full, and one showing half on our gauge as about twelve
+    per cent, which is where the game does its own spluttering.
+
+    Bikes only, because bikes are the only vehicles whose tank we override. It is
+    mirrored by fraction now, so both sides agree about how full the thing is however
+    far the two capacities differ.
+
+  * Spluttering starts later: six per cent of the tank, capped at 1.2 L. A sixteen
+    litre bike now catches under 0.96 L rather than 1.6.
+
+  * Fixed: THE SIPHON PROMPT WAS A BUTTON WITH NO WORDS NEXT TO IT. A help box holds
+    about a hundred characters however many pieces it is fed in, and "Pour the can
+    into the Sanchez (livery)   11.1 L" plus the siphon line came to a hundred and
+    five. What fell off the end was the whole of "Siphon it out", while the button
+    glyph in front of it sat safely inside the limit and drew.
+
+    Long prompts are now shortened a word at a time, longest line first, so every
+    prompt keeps its glyph and enough words to read. The pour prompt also puts the
+    litres before the vehicle name, because what does not fit is dropped from the end
+    and the name is the part already standing in front of you.
+
+  * THE JERRY CAN KEEPS WHAT IS IN IT. Its contents are stored by the game as
+    ammunition, and the game puts that back to full on its own -- after a respawn, an
+    arrest, a mission, a reload. An emptied can came back brimmed, which is free
+    fuel, which removes the reason to visit a station at all.
+
+    The level is kept in scripts/Fumes/can.json, and only a station fill or a siphon
+    may raise it. Pouring it on the floor as a weapon still empties it, because that
+    is you spending it. RememberCan = false goes back to trusting the game.
+
+  * 215 settings in the ini, up from 214.
+
+
 0.1.4
 =====
 
