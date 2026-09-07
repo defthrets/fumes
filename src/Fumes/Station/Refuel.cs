@@ -325,6 +325,8 @@ namespace Fumes.Station
 
             Prompt(Control.Context, "Take the nozzle");
 
+            OfferCanAtPump(me, pump);
+
             if (Pressed()) Take(me, pump);
         }
 
@@ -764,13 +766,30 @@ namespace Fumes.Station
         {
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
-            var anchor = Anchor();
-            _hose.Update(anchor, _nozzle.HoseEnd());
-
             if (_hazard.Update(_pump.Position, true)) { Abandon("the pump went up"); return; }
 
-            LockHands();
-            HoldStill(me);
+            if (_canAtPump)
+            {
+                // NO HOSE AND NO NOZZLE. He walked up holding the can; there is nothing in his
+                // other hand and nothing strung between him and the pump.
+                //
+                // The can goes on the floor, forced past SiphonCanInHand, and he crouches over
+                // it. The crouch is a full-body clip with the fill pose laid on top as
+                // upper-body -- one owns the legs, the other owns the arms -- which is the same
+                // trick the siphon uses and the reason he can be bent over a can and still be
+                // reaching for it.
+                PutCanDown(me, true);
+                Crouch(me);
+            }
+            else
+            {
+                var anchor = Anchor();
+                _hose.Update(anchor, _nozzle.HoseEnd());
+
+                LockHands();
+                HoldStill(me);
+            }
+
             FillPose(me);
 
             if (me.Position.DistanceTo(_pump.Position) > _cfg.PumpReach + 1.2f)
@@ -825,6 +844,13 @@ namespace Fumes.Station
         private void StopCan(Ped me, string why)
         {
             StopFillPose();
+
+            if (_canAtPump)
+            {
+                _canAtPump = false;
+                StandUp(me);
+                PickCanUp(me);
+            }
 
             Log.Info("Stopped filling the can" + (why == null ? "" : " - " + why) + ". " +
                      _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L in it, $" +
@@ -972,11 +998,24 @@ namespace Fumes.Station
         /// </summary>
         private void PutCanDown(Ped me)
         {
+            PutCanDown(me, false);
+        }
+
+        /// <summary>
+        /// Stands the can on the floor. force ignores SiphonCanInHand.
+        ///
+        /// FORCED FOR THE PUMP FILL, which is a different job from the siphon: you are setting
+        /// a can down at a pump to fill it, and a can held in a fist while a hose runs into it
+        /// is not what that looks like. The siphon keeps the setting because there the can in
+        /// the hand is the whole trick -- see below.
+        /// </summary>
+        private void PutCanDown(Ped me, bool force)
+        {
             // HE JUST KEEPS HOLDING IT. The can is a weapon, so leaving it selected gets the
             // game's own carrying animation for free -- the right hand is already solved, by
             // the people who made the model, and no prop, no bone offset and no rotation has to
             // be guessed at to put a can in a fist.
-            if (_cfg.SiphonCanInHand) return;
+            if (_cfg.SiphonCanInHand && !force) return;
 
             try
             {
@@ -1039,8 +1078,11 @@ namespace Fumes.Station
         {
             _siphonLine.Retract();
 
-            // Nothing was ever put down.
-            if (_cfg.SiphonCanInHand) return;
+            // WHETHER ONE IS ACTUALLY DOWN, rather than whether the setting says one should be.
+            // The setting can be changed from the menu mid-siphon, and reading it here meant a
+            // can put down under the old value was never collected -- a jerry can left standing
+            // in the road forever. The prop's own existence cannot disagree with itself.
+            if (_canOnGround == null) return;
 
             try
             {
@@ -1581,9 +1623,16 @@ namespace Fumes.Station
         {
             var siphoning = _stage == Stage.Siphoning;
 
+            // The pump fill crouches too, so it counts as a stage that is allowed to be bent
+            // over. Without this the sweep stood him up every frame while he was filling.
+            var crouching = siphoning || (_stage == Stage.FillingCan && _canAtPump);
+
             if (!siphoning && _stage != Stage.Filling && _stage != Stage.FillingCan) StopFillPose();
             if (_stage != Stage.Pouring) StopPourPose();
-            if (!siphoning) StandUp(me);
+            if (!crouching) StandUp(me);
+
+            // And the can on the floor belongs to whichever of the two put it there.
+            if (!crouching && _canOnGround != null) PickCanUp(me);
         }
 
         /// <summary>
@@ -2048,6 +2097,58 @@ namespace Fumes.Station
         /// stacking a third meaning on it would bring back exactly the strobing this took two
         /// attempts to get rid of.
         /// </summary>
+        /// <summary>
+        /// Filling the can by walking up to a pump holding it. No nozzle involved.
+        ///
+        /// THE OBVIOUS WAY ROUND, and it was not the way it worked. Filling a can needed the
+        /// NOZZLE out first -- the prompt lived next to "Hang the nozzle up" -- so the one
+        /// errand where you are plainly carrying the can was the one that made you pick up
+        /// something else before it would talk to you.
+        ///
+        /// On the secondary button because the primary is already taking the nozzle, which is
+        /// still the thing most people at a pump want. Two intentions, two buttons, same as
+        /// everywhere else in here.
+        /// </summary>
+        private void OfferCanAtPump(Ped me, Prop pump)
+        {
+            if (!_cfg.JerryCan) return;
+            if (!HoldingCan(me)) return;
+
+            var litres = CanFuel(me);
+            if (litres >= _cfg.JerryCanLitres - 0.05f) return;
+
+            Prompt(Control.ContextSecondary, "Fill the can   " +
+                                             litres.ToString("0.0", CultureInfo.InvariantCulture) + " / " +
+                                             _cfg.JerryCanLitres.ToString("0.#", CultureInfo.InvariantCulture) + " L");
+
+            if (!SecondaryPressed()) return;
+
+            _pump = pump;
+            _basePrice = _stations.PriceAt(pump.Position, out var forecourt);
+
+            _grade = _cfg.Grade;
+            _price = _basePrice * _cfg.PriceFor(_grade);
+
+            _stationBrand = forecourt == null ? "PUMP" : forecourt.Brand;
+            _stationPlace = forecourt == null ? "" : forecourt.Name;
+            _stationName = forecourt == null ? "PUMP" : forecourt.Title;
+
+            _dispensed = 0f;
+            _owed = 0f;
+            _paid = 0;
+
+            _canLitres = litres;
+            _canAtPump = true;
+            _stage = Stage.FillingCan;
+
+            Log.Info("Filling the can at the pump, " + _stationName + " ($" +
+                     _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L), " +
+                     litres.ToString("0.0", CultureInfo.InvariantCulture) + " L in it.");
+        }
+
+        /// <summary>True while the can is being filled at a pump rather than off the nozzle.</summary>
+        private bool _canAtPump;
+
         private void OfferCanFill(Ped me)
         {
             if (!_cfg.JerryCan) return;
