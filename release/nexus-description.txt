@@ -83,6 +83,10 @@ To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 <b>📋 CHANGELOG — 0.1.6</b>
 
 <ul>
+<li>🛢️ <b>Fixed: the jerry can stuck at 0 litres in 0.1.5</b> — it would not fill at a station and could not be siphoned into. <b>If you are on 0.1.5, this is the reason to update.</b> 0.1.5 added a guard that puts back fuel the game hands out for free, and the guard asked how much was in the can he was <i>holding</i> when what it needed was the can he <i>owns</i>. Holstering a full can therefore read as zero, the guard took that for you spending it, and taking the can back out looked like the game refilling it — so it "put it back" to empty and saved that. A can.json written by 0.1.5 is now ignored rather than trusted; nothing to delete. <i>Reported by AliG_15.</i></li>
+
+<li>⛽ <b>Fixed: you could not siphon from a full car.</b> A tank with no room in it ended the whole prompt and took the siphon prompt down with the pour prompt, so the one vehicle you would most want to help yourself from was the one you could not.</li>
+
 <li>🥫 <b>An empty jerry can is no longer a dead item.</b> Reaching for one did nothing at all — the pour prompt gives up above zero litres and the siphon prompt was offered from inside it, so a can drained to nothing offered neither, and being filled back up is the one thing an empty can is for. The interact key now puts it down as a real object on the floor, and the secondary key still siphons into it. Stand over it and the same key picks it back up with whatever was in it — which is the half that makes "put down" different from "thrown away". <i>DropEmptyCan</i> turns it off.</li>
 
 <li>💳 <b>The grade card can be switched off from the settings menu</b>, not just the ini. Off fills straight away with the grade you last picked.</li>

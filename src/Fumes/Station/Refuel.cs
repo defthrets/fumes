@@ -342,16 +342,28 @@ namespace Fumes.Station
             if (vehicle == null || !inReach) return false;
 
             var tank = _tanks.For(vehicle);
-            if (tank == null || tank.Litres >= tank.Capacity - 0.05f) return false;
+            if (tank == null) return false;
 
-            // THE LITRES BEFORE THE NAME, because the help box drops whatever does not fit from
-            // the END, and of the two the name is the part already standing in front of you. In
-            // the other order a long vehicle name pushed the quantity off the edge, and a
-            // half-eaten "11.1" with its unit missing is worse than a shortened name.
-            Prompt(Control.Context, "Pour " + litres.ToString("0.0", CultureInfo.InvariantCulture) +
-                                    " L into the " + vehicle.LocalizedName);
+            // A FULL CAR USED TO END THIS WHOLE METHOD, which took the siphon prompt down with
+            // the pour prompt -- so the one vehicle you would most want to help yourself from
+            // was the one vehicle you could not. Only the pouring half depends on there being
+            // room in it.
+            var hasRoom = tank.Litres < tank.Capacity - 0.05f;
+
+            if (hasRoom)
+            {
+                // THE LITRES BEFORE THE NAME, because the help box drops whatever does not fit
+                // from the END, and of the two the name is the part already standing in front
+                // of you. In the other order a long vehicle name pushed the quantity off the
+                // edge, and a half-eaten "11.1" with its unit missing is worse than a
+                // shortened name.
+                Prompt(Control.Context, "Pour " + litres.ToString("0.0", CultureInfo.InvariantCulture) +
+                                        " L into the " + vehicle.LocalizedName);
+            }
 
             OfferSiphon(me, vehicle, tank, litres);
+
+            if (!hasRoom) return true;
 
             if (!Pressed()) return true;
 
@@ -1736,14 +1748,21 @@ namespace Fumes.Station
             {
                 if (Can(me) == null) return;
 
-                var now = CanLitres(me);
+                // THE CAN HE OWNS, NOT THE ONE IN HIS HANDS, and reading the wrong one is what
+                // emptied everybody's can in 0.1.5. CanLitres asks what he is HOLDING, which is
+                // zero whenever the can is on his back -- so the moment you holstered a full
+                // can this read 0, took it for you having spent it, and remembered nothing in
+                // it. Re-equipping then showed twenty litres of ammo against a remembered
+                // nought, which looks exactly like the game refilling it, so the guard
+                // "put it back" to empty and saved that. Stuck at zero, across restarts.
+                var now = CanFuel(me);
 
                 // First sight this session with nothing remembered: whatever it holds is the truth.
                 if (_canOwn < 0f) { _canOwn = now; return; }
 
                 if (now > _canOwn + 0.25f)
                 {
-                    SetCanLitres(me, _canOwn);
+                    SetCanFuel(me, _canOwn);
 
                     Log.Once("can-topup", "The game refilled the petrol can to " +
                                           now.ToString("0.0", CultureInfo.InvariantCulture) +
@@ -1778,6 +1797,22 @@ namespace Fumes.Station
                 var doc = JsonFile.Read(Paths.CanFile);
                 if (doc == null) return;
 
+                // ANYTHING OLDER THAN 2 IS THROWN AWAY, because 0.1.5 wrote zeroes into this
+                // file that were never true -- it read the can he was holding rather than the
+                // can he owned, so holstering a full can recorded it as empty. Trusting those
+                // files would carry the bug through the fix: the guard would see real fuel
+                // against a remembered nought and empty the can again on sight.
+                //
+                // Discarded rather than migrated, since there is nothing in a wrong number to
+                // migrate. No file means no memory, and no memory means the first can he picks
+                // up is taken at face value, which is the right way to start again.
+                if (doc["v"].AsInt(1) < 2)
+                {
+                    Log.Info("Ignoring a can.json from before 0.1.6; it may hold a level that " +
+                             "version recorded wrongly. The can starts from whatever is in it.");
+                    return;
+                }
+
                 var litres = doc["litres"].AsFloat(-1f);
                 if (litres >= 0f) _canOwn = litres;
             }
@@ -1795,7 +1830,9 @@ namespace Fumes.Station
             try
             {
                 if (JsonFile.Write(Paths.CanFile,
-                                   Json.Object().Set("litres", Math.Round(_canOwn, 2))))
+                                   Json.Object()
+                                       .Set("v", 2)
+                                       .Set("litres", Math.Round(_canOwn, 2))))
                 {
                     _canDirty = false;
                 }

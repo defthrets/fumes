@@ -4,6 +4,31 @@ FUMES -- changes
 0.1.6
 =====
 
+  * FIXED: THE JERRY CAN STUCK AT 0 LITRES IN 0.1.5. It would not fill at a station
+    and could not be siphoned into. If you are on 0.1.5, this is the reason to
+    update. Reported by AliG_15.
+
+    0.1.5 added a guard that puts back fuel the game hands out for free, because
+    the can's contents are stored as ammunition and the game resets that on its
+    own. The guard asked how much was in the can HE WAS HOLDING, when what it
+    needed was the can HE OWNS -- and those differ the moment the can is on his
+    back rather than in his hands.
+
+    So holstering a full can read as zero, which the guard took for you having
+    spent it, and it remembered nothing in the can. Taking the can back out then
+    showed twenty litres of ammunition against a remembered nought, which is
+    exactly what the game refilling it looks like -- so the guard dutifully put it
+    back to empty, and saved that. Filling at a station repeated the whole cycle.
+
+    A can.json written by 0.1.5 is now ignored rather than trusted, since the level
+    in it was never true. Nothing to delete: the can starts again from whatever is
+    actually in it.
+
+  * Fixed: you could not siphon from a full car. A tank with no room in it ended
+    the whole prompt, and took the siphon prompt down with the pour prompt -- so the
+    one vehicle you would most want to help yourself from was the one vehicle you
+    could not. Only pouring needs there to be room.
+
   * AN EMPTY JERRY CAN IS NO LONGER A DEAD ITEM. Reaching for one did nothing at
     all: the pour prompt gives up above zero litres and the siphon prompt was
     offered from inside it, so a can drained to nothing offered neither -- and being
