@@ -768,25 +768,27 @@ namespace Fumes.Station
 
             if (_hazard.Update(_pump.Position, true)) { Abandon("the pump went up"); return; }
 
+            // THE NOZZLE AND THE HOSE IN BOTH MODES. He came to the pump for fuel either way,
+            // and a can filling itself from a pump he is not holding is what looked wrong.
+            var anchor = Anchor();
+            _hose.Update(anchor, _nozzle.HoseEnd());
+
+            LockHands();
+
             if (_canAtPump)
             {
-                // NO HOSE AND NO NOZZLE. He walked up holding the can; there is nothing in his
-                // other hand and nothing strung between him and the pump.
+                // The can on the floor and him crouched over it, nozzle still in his hand and
+                // lifted by the same pose that fills a car. The crouch is a full-body clip
+                // underneath and the pose is upper body on top -- one owns the legs, the other
+                // owns the arms -- so he bends over the can and the arm still reaches.
                 //
-                // The can goes on the floor, forced past SiphonCanInHand, and he crouches over
-                // it. The crouch is a full-body clip with the fill pose laid on top as
-                // upper-body -- one owns the legs, the other owns the arms -- which is the same
-                // trick the siphon uses and the reason he can be bent over a can and still be
-                // reaching for it.
+                // No HoldStill: the crouch clip owns his legs already, and planting him twice
+                // is what makes a pose look like a freeze.
                 PutCanDown(me, true);
                 Crouch(me);
             }
             else
             {
-                var anchor = Anchor();
-                _hose.Update(anchor, _nozzle.HoseEnd());
-
-                LockHands();
                 HoldStill(me);
             }
 
@@ -2098,7 +2100,7 @@ namespace Fumes.Station
         /// attempts to get rid of.
         /// </summary>
         /// <summary>
-        /// Filling the can by walking up to a pump holding it. No nozzle involved.
+        /// Filling the can by walking up to a pump holding it.
         ///
         /// THE OBVIOUS WAY ROUND, and it was not the way it worked. Filling a can needed the
         /// NOZZLE out first -- the prompt lived next to "Hang the nozzle up" -- so the one
@@ -2123,26 +2125,22 @@ namespace Fumes.Station
 
             if (!SecondaryPressed()) return;
 
-            _pump = pump;
-            _basePrice = _stations.PriceAt(pump.Position, out var forecourt);
-
-            _grade = _cfg.Grade;
-            _price = _basePrice * _cfg.PriceFor(_grade);
-
-            _stationBrand = forecourt == null ? "PUMP" : forecourt.Brand;
-            _stationPlace = forecourt == null ? "" : forecourt.Name;
-            _stationName = forecourt == null ? "PUMP" : forecourt.Title;
-
-            _dispensed = 0f;
-            _owed = 0f;
-            _paid = 0;
+            // THROUGH Take, WHICH IS THE WHOLE OF STARTING AT A PUMP: the anchor the hose hangs
+            // from, the forecourt's price, its name for the meter, the counters reset, and the
+            // nozzle into his hand. Reproducing that list here is how the two drift apart, and
+            // the copy that lived here had already missed the anchor -- so the hose had nothing
+            // to hang from.
+            //
+            // It leaves the stage at Carrying, which is exactly where StopCan puts him back to
+            // afterwards: he finishes with the nozzle in his hand and hangs it up like any
+            // other fill.
+            Take(me, pump);
 
             _canLitres = litres;
             _canAtPump = true;
             _stage = Stage.FillingCan;
 
-            Log.Info("Filling the can at the pump, " + _stationName + " ($" +
-                     _price.ToString("0.00", CultureInfo.InvariantCulture) + "/L), " +
+            Log.Info("Filling the can at the pump, " +
                      litres.ToString("0.0", CultureInfo.InvariantCulture) + " L in it.");
         }
 
