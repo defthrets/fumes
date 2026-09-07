@@ -41,6 +41,16 @@ FUMES -- changes
     near it holds off the sweeper, so it cannot vanish from under someone who is
     looking straight at it. DropEmptyCan = false leaves the whole thing alone.
 
+  * FILL THE CAN AT A PUMP BY WALKING UP HOLDING IT. Filling a can used to need the
+    NOZZLE out first -- the prompt lived beside "Hang the nozzle up" -- so the one
+    errand where you are plainly carrying a jerry can was the one that made you pick
+    up something else before it would talk to you.
+
+    Walk up with the can and the secondary button offers it. He stands the can on the
+    floor, takes the nozzle, and crouches over it to fill: the crouch is a full-body
+    clip with the filling pose laid over the top as upper body, so his legs bend and
+    the arm still reaches. He collects the can himself when it is done.
+
   * The grade card can be turned off from the settings menu rather than only from
     the ini. It was already a setting; it was not anywhere you could reach without
     opening a text file. Off fills straight away with the grade you last picked.

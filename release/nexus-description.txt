@@ -89,6 +89,8 @@ To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 
 <li>🥫 <b>An empty jerry can is no longer a dead item.</b> Reaching for one did nothing at all — the pour prompt gives up above zero litres and the siphon prompt was offered from inside it, so a can drained to nothing offered neither, and being filled back up is the one thing an empty can is for. The interact key now puts it down as a real object on the floor, and the secondary key still siphons into it. Stand over it and the same key picks it back up with whatever was in it — which is the half that makes "put down" different from "thrown away". <i>DropEmptyCan</i> turns it off.</li>
 
+<li>⛽ <b>Fill the can at a pump by walking up holding it.</b> Filling a can used to need the nozzle out first — the prompt lived beside "Hang the nozzle up" — so the one errand where you are plainly carrying a jerry can was the one that made you pick up something else before it would talk to you. Now he stands the can on the floor, takes the nozzle and crouches over it to fill, and collects the can himself when it is done.</li>
+
 <li>💳 <b>The grade card can be switched off from the settings menu</b>, not just the ini. Off fills straight away with the grade you last picked.</li>
 
 <li>⚙️ <b>217 settings in the ini</b>, up from 215.</li>
