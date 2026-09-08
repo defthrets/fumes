@@ -1243,6 +1243,23 @@ namespace Fumes.Core
         /// </summary>
         public bool Vertical = true;
 
+        /// <summary>
+        /// The gauge takes its size and its foot from Bare Minimum's row of bars, if that mod
+        /// is running.
+        ///
+        /// THE FUEL GAUGE IS THE SIXTH BAR IN A ROW OF FIVE, and the only thing that makes the
+        /// six read as one instrument is that every number matches. They used to be matched by
+        /// hand, copied into this ini whenever the other mod's changed, and that held until its
+        /// minimap frame started deciding where the row ends -- then every change to the frame
+        /// left this one standing behind. Asked for now, once a frame, from the mod that owns
+        /// the answer. See UI.Neighbour. X is never taken: the row stands on the far side of
+        /// the minimap and this stands on the near side, which is this mod's own decision.
+        ///
+        /// Off, or with that mod not installed, Width, Height and Y below are used as they
+        /// always were.
+        /// </summary>
+        public bool GaugeMatchBars = true;
+
         public float GaugeX = 0.1330f;
         public float GaugeY = 0.8100f;
         // BARE MINIMUM'S BarWidth AND BarLength, so the two instruments are one row.
@@ -1642,6 +1659,7 @@ namespace Fumes.Core
                 s.ShowGauge = ini.GetBool("HUD", "ShowGauge", s.ShowGauge);
                 s.GaugeOnlyInVehicle = ini.GetBool("HUD", "OnlyInVehicle", s.GaugeOnlyInVehicle);
                 s.GaugeFollowsHud = ini.GetBool("HUD", "FollowsHud", s.GaugeFollowsHud);
+                s.GaugeMatchBars = ini.GetBool("HUD", "MatchBars", s.GaugeMatchBars);
                 s.GaugeX = ini.GetFloat("HUD", "X", s.GaugeX, 0f, 1f);
                 s.GaugeY = ini.GetFloat("HUD", "Y", s.GaugeY, 0f, 1f);
                 s.GaugeWidth = ini.GetFloat("HUD", "Width", s.GaugeWidth, 0.0010f, 0.8f);
