@@ -483,14 +483,43 @@ namespace Fumes.UI
         private int _screenW;
         private int _screenH;
 
+        /// <summary>
+        /// The screen in pixels, read once and kept.
+        ///
+        /// BEHIND ACCESSORS BECAUSE A FIELD READ IN ONE PLACE AND FILLED IN ANOTHER IS A TRAP.
+        /// _screenH was only ever assigned inside Bands(), and when Bands() was deleted with
+        /// the gradient it left every reader falling back to 1080 -- right on this monitor by
+        /// luck and wrong on any other, with nothing on screen to say so. The compiler noticed;
+        /// nobody playing it would have.
+        /// </summary>
+        private float ScreenW()
+        {
+            if (_screenW <= 0)
+            {
+                try { _screenW = GTA.UI.Screen.Resolution.Width; }
+                catch { _screenW = 1920; }
+            }
+
+            return _screenW;
+        }
+
+        private float ScreenH()
+        {
+            if (_screenH <= 0)
+            {
+                try { _screenH = GTA.UI.Screen.Resolution.Height; }
+                catch { _screenH = 1080; }
+            }
+
+            return _screenH;
+        }
+
         /// <summary>The accumulated clock. Advanced by Tick at the pace, times the road-speed lift.</summary>
         private float _clock;
 
         /// <summary>Set once a frame by Tick. See Motion.</summary>
         private float _motion = 1f;
 
-        /// <summary>The slow clock the body's shading drifts on: this many seconds per unit.</summary>
-        private const float InsideSlow = 7f;
 
         /// <summary>
         /// The equilibrium throw per m/s² of acceleration, as a share of the bar, times the
@@ -673,13 +702,7 @@ namespace Fumes.UI
         /// <summary>One column per two pixels, eight to forty. Sub-pixel strips boil; see Bare Minimum.</summary>
         private int Columns(float w)
         {
-            if (_screenW <= 0)
-            {
-                try { _screenW = GTA.UI.Screen.Resolution.Width; }
-                catch { _screenW = 1920; }
-            }
-
-            var px = w * _screenW;
+            var px = w * ScreenW();
 
             // ONE COLUMN ON A NARROW BAR, AND THAT IS THE HONEST ANSWER. Rendering the surface
             // as five strips across nine pixels is what made the top of the bar a staircase:
@@ -704,34 +727,6 @@ namespace Fumes.UI
             return n;
         }
 
-        /// <summary>One band per fourteen pixels of height, five to eighteen. See below.</summary>
-        private int Bands(float h)
-        {
-            if (_screenH <= 0)
-            {
-                try { _screenH = GTA.UI.Screen.Resolution.Height; }
-                catch { _screenH = 1080; }
-            }
-
-            // ONE EVERY FOURTEEN PIXELS, WHICH USED TO BE ONE EVERY FOUR.
-            //
-            // The gradient this draws is two humps on a fourteen- and a twenty-two-second lap,
-            // wide enough that neighbouring bands differ by a hair -- which is the whole
-            // argument for banding it, and also the reason the number of bands hardly shows.
-            // Six bands and twenty-four look the same on a bar this narrow.
-            //
-            // What they do not cost the same is the frame. Rectangles come out of one list the
-            // whole machine shares and the game drops whatever is handed over once it is full,
-            // so a bar spending twenty-four on a gradient nobody can count is twenty-four
-            // another script does not get. Six bars of them took the phone's background off
-            // the screen in a car.
-            var n = (int)(h * _screenH / 14f);
-
-            if (n < 5) n = 5;
-            if (n > 18) n = 18;
-
-            return n;
-        }
 
         private static float Lowest(float[] tops, float floor)
         {
@@ -745,19 +740,6 @@ namespace Fumes.UI
             return low > floor ? floor : low;
         }
 
-        /// <summary>
-        /// A soft hump, 1 at its centre and 0 past its width, wrapped so it goes round the bar
-        /// rather than off the end. Cosine rather than a triangle: a linear falloff has a corner.
-        /// </summary>
-        private static float Pulse(float u, float width)
-        {
-            u -= (float)Math.Floor(u);
-
-            var d = Math.Abs(u - 0.5f) * 2f;
-            if (d >= width) return 0f;
-
-            return 0.5f + 0.5f * (float)Math.Cos(d / width * Math.PI);
-        }
 
         /// <summary>
         /// THE RELIEF: the bevel the vitals' bars wear.
@@ -785,7 +767,7 @@ namespace Fumes.UI
 
             var k = Clamp01(_cfg.GaugeRelief);
 
-            var edgeW = Math.Max(1f / (_screenW > 0 ? _screenW : 1920f), w * 0.14f);
+            var edgeW = Math.Max(1f / ScreenW(), w * 0.14f);
 
             Draw.Bar(x, surface, edgeW, tall, Fade(Color.FromArgb((int)(60f * k), 255, 255, 255)));
             Draw.Bar(x + w - edgeW, surface, edgeW, tall, Fade(Color.FromArgb((int)(70f * k), 0, 0, 0)));
@@ -869,7 +851,6 @@ namespace Fumes.UI
                             bool filling)
         {
             var t = _clock;
-            var inside = t / InsideSlow;
 
             var level = h * fraction;
             var empty = 1f - fraction;
@@ -887,37 +868,30 @@ namespace Fumes.UI
 
             // The rate climbs as the tank empties, so running it down makes it visibly livelier.
             var hurry = 1f + 0.85f * empty;
-            var capH = Math.Max(1.6f / (_screenH > 0 ? _screenH : 1080f), h * 0.007f);
+            var capH = Math.Max(1.6f / ScreenH(), h * 0.007f);
             var tops = Surface(x, y, w, h, surfaceY, t * hurry, swing, speed, capH, 0f);
 
             var bodyTop = Lowest(tops, floor);
 
-            // ---- the contents: two broad humps drifting up the column, very slowly ----
-            var bands = Bands(h);
-
-            for (var i = 0; i < bands; i++)
-            {
-                var bTop = bodyTop + (floor - bodyTop) * i / bands;
-                var bBot = bodyTop + (floor - bodyTop) * (i + 1) / bands;
-
-                if (bBot - bTop <= 0f) continue;
-
-                var u = (i + 0.5f) / bands;
-
-                var a = Pulse(u - inside * 0.00138f, 0.58f);
-                var b = Pulse(u - inside * 0.00085f + 0.5f, 0.76f);
-
-                var warm = (a * 0.6f + b * 0.4f) * (0.09f + 0.13f * empty);
-
-                Draw.Bar(x, bTop, w, bBot - bTop, Mix(body, Color.FromArgb(body.A, 255, 245, 220), warm));
-            }
+            // ---- the fuel itself: one flat colour ----
+            //
+            // NO GRADIENT TURNING OVER INSIDE IT. Bare Minimum's food bar has two broad humps
+            // of warmth drifting up the fill and the port brought them across, but on fuel they
+            // read as a shimmer laid over the top of everything else -- one effect too many
+            // beside the bevel and the bubbles, which are the two that say what this is.
+            //
+            // One rectangle is also the cheapest thing the body could be, and a single
+            // rectangle cannot band: forty-four stacked alpha strips were forty-three edges
+            // that had to agree, and they only did because they were computed from one
+            // expression.
+            Draw.Bar(x, bodyTop, w, floor - bodyTop, body);
 
             if (level <= 0.002f) return;
 
             // ---- the surface, column by column, from the tops worked out above ----
             // A crest thinner than a pixel is drawn on some frames and not others. The vitals
             // hold theirs at a pixel and a half at least; so does this one now.
-            var crestH = Math.Max(1.6f / (_screenH > 0 ? _screenH : 1080f), h * 0.007f);
+            var crestH = Math.Max(1.6f / ScreenH(), h * 0.007f);
             var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 205), 0.55f);
 
             for (var i = 0; i < tops.Length; i++)
