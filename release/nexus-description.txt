@@ -7,6 +7,9 @@ headings, no <br>, no tables -- so headings are bold lines, breaks are real
 newlines, and every list is a <ul>. Everything below the divider is written in
 that set and is meant to be pasted as it is.
 
+Kept brief on purpose: one line per change, reasons left out. The full story of
+every fix is in CHANGES.txt, which ships in the zip.
+
 Paste from the next divider down.
 
 --------------------------------------------------------------------------------
@@ -18,185 +21,92 @@ by spitmux
 
 <b>🛻 WHAT IT IS</b>
 
-Every vanilla and online vehicle carries a real fuel tank. It empties as you drive, and it is still empty when you come back to that car tomorrow.
+Every vehicle carries a real fuel tank. It empties as you drive, and it is still empty when you come back to that car tomorrow.
 
-<b>Refuelling is not a menu.</b> Get out, walk to the pump, take the nozzle off it — it goes in your hand and the hose comes with you. Walk round to wherever that model's filler actually is, fill up, then walk the nozzle back and hang it on the pump. Walk too far and the hose pulls it out of your hands.
+<b>Refuelling is not a menu.</b> Walk to the pump, take the nozzle — it goes in your hand and the hose comes with you. Walk round to that model's filler, fill up, walk the nozzle back and hang it up. Walk too far and the hose pulls it out of your hands.
 
-Runs on <b>both editions, Legacy and Enhanced, from one build</b>.
+Runs on <b>Legacy and Enhanced from one build</b>.
 
 
 <b>🔧 WHAT ELSE IS IN THERE</b>
 
 <ul>
-<li>🥤 <b>Siphon fuel out of any car.</b> Walk up with a jerry can and draw it the other way. He crouches, stands the can down, and runs a hose from his hand to its spout.</li>
-<li>🔥 <b>A full can does not stop it.</b> A pool of petrol grows at your feet, and it is the game's own petrol — it ignites.</li>
-<li>⛽ <b>Fuel grades — Regular, Plus, Premium.</b> The grade lives in the tank, so a car you filled with premium is still running on premium next week. A card at the pump shows what each grade costs there and what it gives you back.</li>
-<li>🚛 <b>Diesel.</b> Trucks, buses, tractors and the fire engine take it. Costs more, goes further.</li>
-<li>🏍️ <b>A bike gets a bike's tank</b> — sixteen litres, not the sixty-five handling.meta claims — so filling one costs about seventeen dollars. It still covers the same ground, because the economy is worked out from the tank and the range together.</li>
-<li>🔌 <b>Electric vehicles are left alone entirely.</b> No tank, no gauge, no prompt, no fuel burned.</li>
+<li>🥤 <b>Siphon fuel out of any car</b> with a jerry can, or fill the can at a pump.</li>
+<li>🔥 <b>A full can does not stop it.</b> The overflow pools at your feet, and it ignites.</li>
+<li>⛽ <b>Fuel grades — Regular, Plus, Premium.</b> The grade stays in the tank. A card at the pump shows what each costs there.</li>
+<li>🚛 <b>Diesel</b> for trucks, buses, tractors and the fire engine. Costs more, goes further.</li>
+<li>🏍️ <b>Bikes get a bike's tank</b> — about seventeen dollars to fill, same range as a car.</li>
+<li>🔌 <b>Electric vehicles are left alone entirely.</b> No tank, no gauge, no fuel burned.</li>
 <li>🚗 <b>Traffic pulls into forecourts</b> when it is low and already nearby.</li>
-<li>📟 <b>The gauge sloshes with speed</b>, throws sideways when you stop hard, chimes when you dip into reserve, and hides when the game's own HUD does.</li>
-<li>🗺️ <b>Twenty-five stations on the map</b>, sharing one legend entry so they do not fill the list you page through.</li>
+<li>📟 <b>The gauge sloshes with speed</b>, chimes on reserve, and hides with the game's HUD.</li>
+<li>🗺️ <b>Twenty-five stations on the map</b>, one legend entry between them.</li>
 </ul>
 
 
 <b>✅ REQUIREMENTS</b>
 
 <ul>
-<li><b>Script Hook V</b> — for your edition.</li>
-<li><b>ScriptHookVDotNet 3</b> — any build from <b>3.6.0 onwards</b>, nightlies included, Enhanced fork included.</li>
+<li><b>Script Hook V</b> for your edition.</li>
+<li><b>ScriptHookVDotNet 3</b> — any build from <b>3.6.0</b> up, nightlies and the Enhanced fork included.</li>
 </ul>
 
-On <b>GTA V Enhanced</b> it has to be the Enhanced fork, because nothing else runs on that edition at all: <a href="https://www.gta5-mods.com/tools/script-hook-v-net-enhanced">script-hook-v-net-enhanced</a>
+On <b>GTA V Enhanced</b> it must be the Enhanced fork: <a href="https://www.gta5-mods.com/tools/script-hook-v-net-enhanced">script-hook-v-net-enhanced</a>
 
-<u>One thing that stops more installs than anything else:</u> <b>there is no "3.9" to download.</b> The Enhanced fork reports an assembly version of 3.9.0.0 but is released as <b>v1.1.x</b>. People go looking for a 3.9, find nothing, install the newest thing labelled 3, and the mod quietly does not load. Check the DLL itself — right-click <i>ScriptHookVDotNet3.dll</i>, Properties, Details.
+<b>There is no "3.9" to download.</b> The Enhanced fork reports 3.9.0.0 but is released as v1.1.x. To see what you have: right-click <i>ScriptHookVDotNet3.dll</i>, Properties, Details.
 
-Nothing else is needed. No NativeUI, no LemonUI, no iFruitAddon.
-
-⚠️ <b>Remove any other fuel mod first.</b> Two of them will both cut your engine and both charge you, and neither will know about the other.
+Nothing else is needed. ⚠️ <b>Remove any other fuel mod first.</b>
 
 
 <b>💾 INSTALLING</b>
 
-Copy the <i>scripts</i> folder from this zip into your GTA V folder, so you end up with:
+Copy the <i>scripts</i> folder from the zip into your GTA V folder. You end up with <i>Fumes.dll</i>, <i>Fumes.ini</i> and a <i>Fumes</i> folder inside <i>scripts</i>. The <i>Fumes\icons</i> folder is the HUD's pictures — keep it.
 
-<ul>
-<li>Grand Theft Auto V\scripts\Fumes.dll</li>
-<li>Grand Theft Auto V\scripts\Fumes.ini</li>
-<li>Grand Theft Auto V\scripts\Fumes\stations.json</li>
-<li>Grand Theft Auto V\scripts\Fumes\icons\*.png</li>
-</ul>
-
-The icons folder is <b>not optional decoration</b> — without it the HUD still works, but there are no pictures in it.
-
-To uninstall, delete those. Nothing is written anywhere else, and nothing in the game's own files is touched.
+To uninstall, delete those. Nothing else is written and nothing in the game's files is touched.
 
 
 <b>⌨️ CONTROLS</b>
 
 <ul>
-<li><b>SHIFT + F</b> — the settings menu. 217 of them.</li>
-<li><b>LB + D-pad Down</b> — the same menu on a controller.</li>
+<li><b>SHIFT + F</b> — the settings menu, 217 of them. <b>LB + D-pad Down</b> on a controller.</li>
+<li><b>E</b> — take the nozzle, fill, hang up, pour the can. <b>Q</b> — siphon, or fill the can at a pump.</li>
 </ul>
 
 
 <b>📋 CHANGELOG — 0.1.8</b>
 
 <ul>
-<li>🔧 <b>Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies</b> — "Could not load file or assembly 'ScriptHookVDotNet3, Version=3.9.0.0'". It was built against the 3.9 Enhanced fork, so the dll asked for 3.9 by name, and an older host will not hand a script a ScriptHookVDotNet newer than itself. Every report that it ran on 3.6 was from somebody on the 3.9 fork. Built against 3.6.0 now, so the one dll runs on 3.6, the nightlies and the Enhanced fork. <i>Reported by RReu and Van_Zandt.</i> 0.1.7 went up before this was built — if you are on 3.6 or a nightly, <b>0.1.8 is the first version that loads at all.</b></li>
-
-<li>🔧 <b>Four members that 3.6.0 lacks were replaced</b> with ones every supported build has. Nothing changes on the 3.9 fork.</li>
-
-<li>⚙️ <b>217 settings in the ini</b>, unchanged.</li>
+<li>🔧 <b>Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies.</b> It was built against the 3.9 fork and asked for 3.9 by name. Built against 3.6.0 now. <b>If you are on 3.6 or a nightly, this is the first version that loads at all.</b> <i>RReu, Van_Zandt.</i></li>
 </ul>
 
 
 <b>📋 CHANGELOG — 0.1.7</b>
 
 <ul>
-<li>⛽ <b>Fixed: the nozzle could not be hung back up.</b> The prompt stuck on "Fill" at the pump. You arrive from the car already latched to it, and from there the old rule wanted the filler further than the pump by half a metre before offering hang-up — at a pump the two sit twenty to thirty centimetres apart, so on a snug park it was unreachable. Hang-up now wins the moment the pump is the nearer thing. <i>Reported by susipupi44.</i></li>
-
-<li>🧯 <b>Fixed: a jerry can or fire extinguisher flashed into his hand when taking the nozzle.</b> Those are the two weapons the nozzle is held with — one is equipped and hidden. The hide was applied before the weapon's object existed. The asset is now loaded first.</li>
-
-<li>🧯 <b>Fixed: the same two showed during the grade card and the fill</b>, and went when the nozzle was hung up. The hide was only re-asserted while carrying; anything reselecting a weapon mid-fill left it visible. Kept hidden for as long as the nozzle is out. <i>Reported by Gta5gamer__.</i></li>
-
-<li>🔌 <b>Electric vehicles are detected by the model's own flag</b>, not a list of names. The list was nineteen and already missing the I-Wagen and both Inductors, and could never know an add-on car. The game's own <i>FLAG_IS_ELECTRIC</i> is read now — on every ScriptHookVDotNet build this runs on, checked rather than assumed. <i>Suggested by MaitreSystem.</i></li>
-
-<li>🥫 <b>Fixed: the fire button poured a second stream</b> onto the road while pouring the can into a car.</li>
-
-<li>🥫 <b>Fixed: an interrupted pump can-fill</b> could leave the next can-fill crouched over a can on the floor.</li>
-
+<li>⛽ <b>Fixed: the nozzle could not be hung back up</b> — the prompt stuck on "Fill". <i>susipupi44.</i></li>
+<li>🧯 <b>Fixed: a jerry can or fire extinguisher flashed into his hand</b> when taking the nozzle, and showed during the grade card and fill. <i>Gta5gamer__.</i></li>
+<li>🔌 <b>Electric vehicles are detected by the model's own flag</b>, so DLC and add-on electrics are left alone too. <i>MaitreSystem.</i></li>
+<li>🥫 <b>Fixed: the fire button poured a second stream</b> while pouring the can into a car.</li>
 <li>💾 <b>The can's level is saved every ten seconds</b>, not only at shutdown.</li>
-
-<li>⚙️ <b>217 settings in the ini</b>, unchanged.</li>
 </ul>
 
 
 <b>📋 CHANGELOG — 0.1.6</b>
 
 <ul>
-<li>🛢️ <b>Fixed: the jerry can stuck at 0 litres in 0.1.5</b> — it would not fill at a station and could not be siphoned into. <b>If you are on 0.1.5, this is the reason to update.</b> 0.1.5 added a guard that puts back fuel the game hands out for free, and the guard asked how much was in the can he was <i>holding</i> when what it needed was the can he <i>owns</i>. Holstering a full can therefore read as zero, the guard took that for you spending it, and taking the can back out looked like the game refilling it — so it "put it back" to empty and saved that. A can.json written by 0.1.5 is now ignored rather than trusted; nothing to delete. <i>Reported by AliG_15.</i></li>
-
-<li>⛽ <b>Fixed: you could not siphon from a full car.</b> A tank with no room in it ended the whole prompt and took the siphon prompt down with the pour prompt, so the one vehicle you would most want to help yourself from was the one you could not.</li>
-
-<li>🥫 <b>An empty jerry can is no longer a dead item.</b> Reaching for one did nothing at all — the pour prompt gives up above zero litres and the siphon prompt was offered from inside it, so a can drained to nothing offered neither, and being filled back up is the one thing an empty can is for. The interact key now puts it down as a real object on the floor, and the secondary key still siphons into it. Stand over it and the same key picks it back up with whatever was in it — which is the half that makes "put down" different from "thrown away". <i>DropEmptyCan</i> turns it off.</li>
-
-<li>⛽ <b>Fill the can at a pump by walking up holding it.</b> Filling a can used to need the nozzle out first — the prompt lived beside "Hang the nozzle up" — so the one errand where you are plainly carrying a jerry can was the one that made you pick up something else before it would talk to you. Now he stands the can on the floor, takes the nozzle and crouches over it to fill, and collects the can himself when it is done.</li>
-
-<li>💳 <b>The grade card can be switched off from the settings menu</b>, not just the ini. Off fills straight away with the grade you last picked.</li>
-
-<li>⚙️ <b>217 settings in the ini</b>, up from 215.</li>
+<li>🛢️ <b>Fixed: the jerry can stuck at 0 litres in 0.1.5.</b> Nothing to delete. <i>AliG_15.</i></li>
+<li>⛽ <b>Fixed: you could not siphon from a full car.</b></li>
+<li>🥫 <b>An empty can can be put down and picked back up</b> — it used to do nothing at all.</li>
+<li>⛽ <b>Fill the can at a pump by walking up holding it.</b> He stands it down, takes the nozzle and crouches over it.</li>
+<li>💳 <b>The grade card can be switched off from the settings menu.</b></li>
 </ul>
 
 
-<b>📋 CHANGELOG — 0.1.5</b>
+<b>📋 EARLIER</b>
 
 <ul>
-<li>🏍️ <b>Fixed: bikes spluttered at half a tank.</b> Reported three times, and three goes at our own splutter threshold never touched it, because the spluttering was never ours. The game keeps a fuel level of its own and we copy our litres into it, so a car shot while empty does not spill a full tank across the road — but the game reads that against handling.meta, where a motorbike claims about sixty-five litres while the tank we give it is sixteen. A brimmed bike was handed to the game as a quarter full. Mirrored by fraction now, so both sides agree. <i>Reported by several of you.</i></li>
-
-<li>💨 <b>Spluttering starts later</b> — six per cent of the tank, capped at 1.2 L. A sixteen-litre bike now catches under 0.96 L rather than 1.6.</li>
-
-<li>🥤 <b>Fixed: the siphon prompt was a button with no words next to it.</b> A help box holds about a hundred characters however many pieces it is fed in, and the pour line plus the siphon line came to a hundred and five. What fell off the end was the whole of "Siphon it out" — the glyph in front of it sat inside the limit and drew fine. Long prompts are shortened a word at a time now, and the pour prompt puts the litres before the vehicle name, since the name is the part already in front of you.</li>
-
-<li>🥫 <b>The jerry can keeps what is in it.</b> Its contents are stored by the game as ammunition, and the game puts that back to full on its own — after a respawn, an arrest, a mission, a reload. An emptied can came back brimmed, which is free fuel. Only a station fill or a siphon raises it now; pouring it on the floor still empties it. <i>RememberCan</i> turns the old behaviour back on.</li>
-
-<li>⚙️ <b>215 settings in the ini</b>, up from 214.</li>
+<li><b>0.1.5</b> — Fixed bikes spluttering at half a tank. The jerry can keeps what is in it across respawns and reloads. Siphon prompt fixed.</li>
+<li><b>0.1.4</b> — Fixed a full tank after a save load. Bikes get a bike's tank. Electric vehicles excluded. One legend entry for all stations. Fixed filling with the wrong hand.</li>
+<li><b>0.1.3</b> — Siphoning. Fuel grades and diesel. The grade card. Controller support. Traffic refuels. Runs on any ScriptHookVDotNet 3.</li>
 </ul>
 
-
-<b>📋 CHANGELOG — 0.1.4</b>
-
-<ul>
-<li>🐛 <b>Fixed: a vehicle could come back from a save load with a full tank</b> when it had half of one. Two things have to go wrong together and a load is the one moment they both do — the plate has not streamed in yet so the saved level is not found, and the game's mission flag is set while it restores itself, so the rule that hands a full tank to a mission car fires. The mission rule now needs a plate: a vehicle that cannot be identified cannot be known to be a mission vehicle, and "full" is the most damaging thing to guess about a car you do not recognise. <i>Reported by sjmss8094.</i></li>
-
-<li>🏍️ <b>Bikes get a bike's tank</b> — 16 L instead of the 65 that handling.meta reports, so filling one costs about $17 rather than $80. And they still go as far as a car: the economy figure is derived from the tank and the range together, so change one and the other follows.</li>
-
-<li>🔌 <b>Electric vehicles are out entirely</b> — no tank, no gauge, no prompt, no fuel burned. A Voltic taking sixty litres of unleaded was the one thing in here that was simply wrong. <i>AffectElectric</i> turns the old behaviour back on. <i>Asked for by MaitreSystem.</i></li>
-
-<li>🗺️ <b>All the stations are one map-legend entry</b> instead of one row each — twenty-five forecourts were twenty-five of the rows you page through. The cost is that the row no longer names the brand or the district; blanking <i>BlipName</i> gives that back. <i>Asked for by enbee997.</i></li>
-
-<li>🖐️ <b>Fixed: he filled up with the wrong hand.</b> The nozzle was already in his right hand — that setting only ever moved the prop, never the animation — so the left arm did the reaching while the nozzle hung at his side. <i>Reported by Zona Comics.</i></li>
-
-<li>🔁 <b>Fixed: the siphon and pour animations could stick.</b> They ended in six different places and each was trusted to take the right clip off him; reloading the script mid-siphon took none of them off at all. The poses now come off by stage, the way the pump sound already did.</li>
-
-<li>💨 <b>Spluttering is a share of the tank</b> rather than a fixed number of litres. At 0.6 L it was under one per cent of a saloon and nearly four of a motorbike — the smaller the tank, the less warning you got, which is backwards. Capped, so nothing splutters for more than about two litres.</li>
-
-<li>🛢️ <b>The spilled pool grows with how much is on the floor</b>, rather than reaching full size in four seconds and stopping. Nine litres now looks like nine litres.</li>
-
-<li>🥫 <b>The can he stands on the ground while siphoning is the same model he carries</b> — the scuffed scenery can was a visibly different red next to the clean one on his back.</li>
-
-<li>⚙️ <b>214 settings in the ini</b>, up from 207.</li>
-</ul>
-
-
-<b>📋 CHANGELOG — 0.1.3</b>
-
-<ul>
-<li>✅ <b>Now runs on any ScriptHookVDotNet 3 from 3.6.0</b>, not just the Enhanced fork. It called one method that only newer builds have, in five places — so on older builds it loaded fine and then failed later, in five unrelated spots, none of them mentioning a version. It goes through the native underneath now.</li>
-
-<li>🥤 <b>Siphon fuel out of any car.</b> Walk up with a jerry can and draw fuel the other way. He crouches, stands the can down, and runs a hose from his hand to its spout.</li>
-
-<li>🔥 <b>A full can does not stop it.</b> A pool of petrol grows at your feet. It is the game's own petrol — it ignites.</li>
-
-<li>💳 <b>A grade card at the pump</b>, showing what each grade costs at that station and what it returns.</li>
-
-<li>🚛 <b>Diesel.</b> Trucks, buses, tractors and the fire engine take it. Costs more, goes further.</li>
-
-<li>⛽ <b>Fuel grades — Regular, Plus, Premium.</b> The grade lives in the tank, so a car you filled with premium is still running on premium.</li>
-
-<li>🎮 <b>Controller support</b> for the settings menu and the grade card.</li>
-
-<li>🚗 <b>Traffic pulls into forecourts</b> when low and already nearby.</li>
-
-<li>👊 <b>You can throw a punch mid-siphon.</b></li>
-
-<li>🔔 <b>A chime when you dip into reserve.</b></li>
-
-<li>📟 <b>The gauge sloshes with speed</b>, throws sideways when you stop hard, and hides when the game's HUD does.</li>
-
-<li>🐛 <b>Fixed: help text lost a space at every line break</b>, welding button icons to the word behind them.</li>
-
-<li>🐛 <b>Fixed: story-mission cars are full again</b>, without DLC cars going back to being full.</li>
-
-<li>⚙️ <b>207 settings in the ini</b>, up from 118.</li>
-</ul>
+Every fix above has a full explanation in <i>CHANGES.txt</i>, inside the zip.
