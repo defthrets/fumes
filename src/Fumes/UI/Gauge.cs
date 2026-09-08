@@ -725,8 +725,15 @@ namespace Fumes.UI
             return 0.5f + 0.5f * (float)Math.Cos(d / width * Math.PI);
         }
 
-        /// <summary>Three crumbs sinking slowly through the fuel. Something for the second look.</summary>
-        private void Sediment(float x, float y, float w, float h, float surfaceY, float t, float empty)
+        /// <summary>
+        /// Three bubbles rising slowly through the fuel. Something for the second look.
+        ///
+        /// UP, NOT DOWN. Bare Minimum's are crumbs settling through food, and the same code
+        /// carried over sent them sinking through petrol, which is not a thing petrol has. A
+        /// bubble starts at the floor and climbs to the surface, quick to appear and slow to
+        /// go, and it is pale -- a dark speck going up reads as nothing at all.
+        /// </summary>
+        private void Bubbles(float x, float y, float w, float h, float surfaceY, float t, float empty)
         {
             const int count = 3;
 
@@ -744,7 +751,9 @@ namespace Fumes.UI
                 var speed = (0.006f + i * 0.0015f + empty * 0.0035f) * drift;
                 var phase = (t * speed + i * 0.37f) % 1f;
 
-                var py = surfaceY + level * phase;
+                // From the floor up to the surface, inside the bar the whole way.
+                var py = y + h - tall - (level - tall) * phase;
+                if (py < surfaceY) py = surfaceY;
 
                 var lane = 0.30f + i * 0.20f;
                 var sway = (float)Math.Sin(t * (0.5f + i * 0.13f) * drift + i * 2.1f) * 0.16f;
@@ -756,14 +765,14 @@ namespace Fumes.UI
                 var alpha = (int)(120 * Math.Max(fade, 0f));
                 if (alpha <= 4) continue;
 
-                Draw.Bar(px, py, size, tall, Fade(Color.FromArgb(alpha, 60, 40, 24)));
+                Draw.Bar(px, py, size, tall, Fade(Color.FromArgb(alpha, 255, 250, 235)));
             }
         }
 
         /// <summary>
         /// The fuel in the bar, drawn the way Bare Minimum draws a need: the surface first, then
         /// the body under the lowest point of it in slow-shifting bands, then the crest, then
-        /// the crumbs.
+        /// the bubbles.
         /// </summary>
         private void Liquid(float x, float y, float w, float h, float fraction, Color body,
                             bool filling)
@@ -828,7 +837,7 @@ namespace Fumes.UI
                 Draw.Bar(left, topY, right - left, crestH, crest);
             }
 
-            Sediment(x, y, w, h, surfaceY, inside, empty);
+            Bubbles(x, y, w, h, surfaceY, inside, empty);
         }
 
         private static float Clamp(float v, float lo, float hi)
