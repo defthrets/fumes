@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -679,12 +679,24 @@ namespace Fumes.UI
                 catch { _screenW = 1920; }
             }
 
-            // THE VITALS' RULE, NOT THE FOOD BAR'S. One column per two pixels, FOUR to ten. The
-            // food bar's floor of eight put eight strips across a nine-pixel bar -- 1.1 px each,
-            // and a sub-pixel rectangle is a lottery with the rasteriser: each one rounded to
-            // one or two pixels on its own, every frame, and the surface boiled. That is the
-            // glitch. Four strips of two pixels move; eight strips of one flicker.
-            var n = (int)Math.Round(w * _screenW / 2f);
+            var px = w * _screenW;
+
+            // ONE COLUMN ON A NARROW BAR, AND THAT IS THE HONEST ANSWER. Rendering the surface
+            // as five strips across nine pixels is what made the top of the bar a staircase:
+            // the curve's whole rise is under two pixels, so each strip rounds to a different
+            // row and the crest comes out as steps rather than a line. Bare Minimum's own
+            // comment reached this conclusion first -- at this width a parabola whose ends
+            // differ from its middle by under a pixel is not a curve anybody can see, and one
+            // strip moving up and down is exactly what nine pixels can express.
+            //
+            // With one column the tilt drops out by construction -- across is 0 in the middle
+            // -- and the bow still bobs the whole surface, so it moves and never steps.
+            //
+            // Sixteen pixels is where a five-strip curve starts to have a pixel per strip to
+            // put itself in. Wider bars keep the meniscus.
+            if (px < 16f) return 1;
+
+            var n = (int)Math.Round(px / 2f);
 
             if (n < 4) n = 4;
             if (n > 10) n = 10;
@@ -692,7 +704,7 @@ namespace Fumes.UI
             return n;
         }
 
-        /// <summary>One band per four pixels of height, twelve to sixty-four.</summary>
+        /// <summary>One band per fourteen pixels of height, five to eighteen. See below.</summary>
         private int Bands(float h)
         {
             if (_screenH <= 0)
@@ -701,10 +713,22 @@ namespace Fumes.UI
                 catch { _screenH = 1080; }
             }
 
-            var n = (int)(h * _screenH / 4f);
+            // ONE EVERY FOURTEEN PIXELS, WHICH USED TO BE ONE EVERY FOUR.
+            //
+            // The gradient this draws is two humps on a fourteen- and a twenty-two-second lap,
+            // wide enough that neighbouring bands differ by a hair -- which is the whole
+            // argument for banding it, and also the reason the number of bands hardly shows.
+            // Six bands and twenty-four look the same on a bar this narrow.
+            //
+            // What they do not cost the same is the frame. Rectangles come out of one list the
+            // whole machine shares and the game drops whatever is handed over once it is full,
+            // so a bar spending twenty-four on a gradient nobody can count is twenty-four
+            // another script does not get. Six bars of them took the phone's background off
+            // the screen in a car.
+            var n = (int)(h * _screenH / 14f);
 
-            if (n < 12) n = 12;
-            if (n > 64) n = 64;
+            if (n < 5) n = 5;
+            if (n > 18) n = 18;
 
             return n;
         }
@@ -733,6 +757,75 @@ namespace Fumes.UI
             if (d >= width) return 0f;
 
             return 0.5f + 0.5f * (float)Math.Cos(d / width * Math.PI);
+        }
+
+        /// <summary>
+        /// THE RELIEF: the bevel and the sweep, the same two the vitals' bars wear.
+        ///
+        /// A lit edge down the left of the fill and a shadowed one down the right, so the fuel
+        /// stands off the channel instead of lying flat in it; and one soft slanted band
+        /// crossing it every six seconds or so, the way a reflection travels over a polished
+        /// surface as it turns.
+        ///
+        /// THE NUMBERS ARE VITALS.COLUMNS.RELIEF'S, to the digit. This draws through Draw and
+        /// Fade rather than Ink so the code cannot be shared outright, and the row only reads
+        /// as one row while the two agree -- a change to either wants the same change to the
+        /// other.
+        ///
+        /// On the clock in SECONDS, like the bubbles: the sweep was written as one pass every
+        /// six seconds and the gauge's clock runs at Pace units a second.
+        /// </summary>
+        private void Relief(float x, float w, float floor, float surface, Color body, float t)
+        {
+            if (_cfg.GaugeRelief <= 0.001f) return;
+
+            var tall = floor - surface;
+            if (tall <= 0.004f) return;
+
+            var k = Clamp01(_cfg.GaugeRelief);
+
+            var edgeW = Math.Max(1f / (_screenW > 0 ? _screenW : 1920f), w * 0.14f);
+
+            Draw.Bar(x, surface, edgeW, tall, Fade(Color.FromArgb((int)(60f * k), 255, 255, 255)));
+            Draw.Bar(x + w - edgeW, surface, edgeW, tall, Fade(Color.FromArgb((int)(70f * k), 0, 0, 0)));
+
+            var at = t * 0.16f;
+            at -= (float)Math.Floor(at);
+
+            var bandH = Math.Max(3f / (_screenH > 0 ? _screenH : 1080f),
+                                 Math.Min(tall * 0.16f, w * _aspect * 1.2f));
+            var slant = bandH * 1.1f;
+            var centre = floor + slant - at * (tall + bandH + slant * 2f) + bandH * 0.5f;
+            var ends = Math.Min(at * 4f, Math.Min((1f - at) * 4f, 1f));
+
+            const int slices = 6;
+            var sliceW = w / slices;
+            var sheen = Mix(body, Color.FromArgb(body.A, 255, 255, 255), 0.85f);
+
+            for (var i = 0; i < slices; i++)
+            {
+                // Each column of the band a little higher than the last: the band leans.
+                var lift = ((i + 0.5f) / slices - 0.5f) * slant;
+                var sx = x + i * sliceW;
+
+                for (var j = 0; j < 3; j++)
+                {
+                    // Three stacked slices, the middle brightest: a highlight, not a stripe.
+                    var share = j == 1 ? 1f : 0.4f;
+                    var sTop = centre - lift - bandH * 0.5f + j * (bandH / 3f);
+                    var sBot = sTop + bandH / 3f;
+
+                    sTop = Math.Max(surface, sTop);
+                    sBot = Math.Min(floor, sBot);
+                    if (sBot - sTop <= 0f) continue;
+
+                    var alpha = (int)(85f * share * ends * k);
+                    if (alpha <= 3) continue;
+
+                    Draw.Bar(sx, sTop, sliceW, sBot - sTop,
+                             Fade(Color.FromArgb(alpha, sheen.R, sheen.G, sheen.B)));
+                }
+            }
         }
 
         /// <summary>
@@ -864,6 +957,11 @@ namespace Fumes.UI
 
             // Back on the clock they were written for: a unit a second, not Pace of them.
             var pace = _cfg.GaugePace < 0.05f ? 0.05f : _cfg.GaugePace;
+
+            // The relief over the fill, the bubbles inside it -- so a bubble reads as being in
+            // the fuel rather than under glass.
+            Relief(x, w, floor, surfaceY, body, _clock / pace);
+
             Bubbles(x, y, w, h, level, _clock / pace, filling);
         }
 

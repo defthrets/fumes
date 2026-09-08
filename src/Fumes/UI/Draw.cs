@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using GTA;
 using GTA.Native;
@@ -16,6 +16,84 @@ namespace Fumes.UI
     /// </summary>
     internal static class Draw
     {
+        // ======================================================================
+        // The budget
+        // ======================================================================
+
+        /// <summary>
+        /// How many rectangles this frame, and the worst frame so far.
+        ///
+        /// THERE IS A CEILING AND IT IS NOT OURS. The game keeps ONE list of these for the
+        /// whole machine and drops whatever is handed to it once that list is full -- so the
+        /// script that pays for a busy frame is whichever draws LAST, whatever it drew. A HUD
+        /// spending three hundred rectangles on gradients beside the minimap is not a slow
+        /// HUD; it is a HUD that takes somebody else's panel off the screen, and that is
+        /// exactly what happened: Hoodrich's phone came up in a car with no background at all, because
+        /// its screen is a rectangle and the HUDs beside the minimap had already spent
+        /// the list.
+        ///
+        /// So it is counted, and the peak is logged when it gets worse -- a handful of lines
+        /// in a session rather than sixty a second. The frame is told apart by the game's own
+        /// frame number, so nothing has to remember to call a Begin.
+        /// </summary>
+        public static int RectsThisFrame { get; private set; }
+
+        public static int PeakRects { get; private set; }
+
+        /// <summary>Where this install starts dropping them. The real figure is the game's and is not published.</summary>
+        private const int Ceiling = 350;
+
+        private static int _frame;
+
+        private static void Counted()
+        {
+            int frame;
+
+            try { frame = Game.FrameCount; }
+            catch { frame = 0; }
+
+            if (frame != _frame)
+            {
+                _frame = frame;
+
+                if (RectsThisFrame > PeakRects)
+                {
+                    PeakRects = RectsThisFrame;
+
+                    if (PeakRects >= Ceiling)
+                    {
+                        Log.Warn("Draw budget: " + PeakRects + " rectangles in a frame. Past about " +
+                                 Ceiling + " the game drops the rest of the frame's -- for every " +
+                                 "script on the machine, not only this one.");
+                    }
+                    else
+                    {
+                        Log.Info("Draw budget: " + PeakRects + " rectangles in a frame (new peak).");
+                    }
+                }
+
+                RectsThisFrame = 0;
+            }
+
+            RectsThisFrame++;
+        }
+
+        /// <summary>The screen's height in pixels, for the sub-pixel test. Read once.</summary>
+        private static int Tall
+        {
+            get
+            {
+                if (_tall > 0) return _tall;
+
+                try { _tall = GTA.UI.Screen.Resolution.Height; }
+                catch { _tall = 1080; }
+
+                return _tall;
+            }
+        }
+
+        private static int _tall;
+
         /// <summary>
         /// A filled rectangle, positioned by its CENTRE.
         ///
@@ -25,8 +103,15 @@ namespace Fumes.UI
         /// </summary>
         public static void Rect(float centreX, float centreY, float width, float height, Color colour)
         {
+            // NOTHING UNDER HALF A PIXEL. A band a fifth of a pixel tall is not a faint line,
+            // it is nothing at all -- and it costs exactly as much of the frame's one list of
+            // rectangles as a band you can see. See Counted for who pays.
+            if (height * Tall < 0.5f) return;
+
             try
             {
+                Counted();
+
                 Function.Call(Hash.DRAW_RECT, centreX, centreY, width, height,
                               colour.R, colour.G, colour.B, colour.A, false);
             }

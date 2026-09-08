@@ -1300,6 +1300,15 @@ namespace Fumes.Core
         public float GaugePace = 42f;
 
         /// <summary>
+        /// The bevel and the sweeping highlight, 0 to 1. 0 is flat.
+        ///
+        /// A lit edge down the left of the fuel and a shadowed one down the right, with a soft
+        /// slanted band crossing every six seconds or so. Bare Minimum's bars wear the same
+        /// two at the same numbers, so the row is one instrument.
+        /// </summary>
+        public float GaugeRelief = 1f;
+
+        /// <summary>
         /// How much faster the fuel moves at speed, and the speed it gets there at.
         ///
         /// Fuel in a tank does what the tank does: still at rest, thrown about at speed. The
@@ -1649,6 +1658,7 @@ namespace Fumes.Core
                 s.GaugeLean = ini.GetFloat("HUD", "Lean", s.GaugeLean, 0f, 1f);
                 s.GaugeDrift = ini.GetFloat("HUD", "Drift", s.GaugeDrift, 0f, 1f);
                 s.GaugePace = ini.GetFloat("HUD", "Pace", s.GaugePace, 0.05f, 200f);
+                s.GaugeRelief = ini.GetFloat("HUD", "Relief", s.GaugeRelief, 0f, 1f);
                 s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
                 s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.05f, 1f);
                 s.GaugeMotionRestKmh = ini.GetFloat("HUD", "MotionRestKmh", s.GaugeMotionRestKmh, 0f, 100f);
