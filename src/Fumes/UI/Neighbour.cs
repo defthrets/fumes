@@ -47,7 +47,7 @@ namespace Fumes.UI
         private static int _firstTry;
         private static bool _said;
 
-        private static PropertyInfo _ready, _bottom, _barWidth, _barLength, _opacity;
+        private static PropertyInfo _ready, _bottom, _barWidth, _barLength, _opacity, _plateHeight;
 
         /// <summary>Whether the other mod is here, has laid its row out, and is drawing bars.</summary>
         public static bool Ready
@@ -72,6 +72,16 @@ namespace Fumes.UI
 
         /// <summary>Its opacity, 0 to 1.</summary>
         public static float Opacity { get { return Read(_opacity); } }
+
+        /// <summary>
+        /// How deep the black plate under one of its bars is, as a fraction of screen height.
+        ///
+        /// ASKED FOR, NOT WORKED OUT. The obvious answer -- the plate's own width, made square
+        /// on screen -- is what this mod used and what that mod used, and it stopped being that
+        /// mod's answer the day its marks were made to start on the same line as the plate
+        /// under the minimap. Nought if that mod is too old to say, and then the square is used.
+        /// </summary>
+        public static float PlateHeight { get { return Read(_plateHeight); } }
 
         private static float Read(PropertyInfo p)
         {
@@ -126,6 +136,7 @@ namespace Fumes.UI
                     _barWidth = type.GetProperty("BarWidth", BindingFlags.Public | BindingFlags.Static);
                     _barLength = type.GetProperty("BarLength", BindingFlags.Public | BindingFlags.Static);
                     _opacity = type.GetProperty("Opacity", BindingFlags.Public | BindingFlags.Static);
+                    _plateHeight = type.GetProperty("PlateHeight", BindingFlags.Public | BindingFlags.Static);
 
                     _type = type;
 

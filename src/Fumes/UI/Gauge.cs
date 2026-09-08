@@ -226,7 +226,15 @@ namespace Fumes.UI
                 // left of the length after those. Computed from the same expressions from the
                 // same inputs, so the five bars beside this one and this one are one row.
                 var plateW = w + edge * 2f;
+
+                // AS DEEP AS THE ROW'S, which is not the square this used to work out for
+                // itself: those marks start on the same line as the plate under the minimap
+                // now, and a square one here would begin a dozen pixels below them. Asked for
+                // rather than derived -- see Neighbour.PlateHeight -- and the square is still
+                // the answer when there is nobody to ask.
                 var plateH = plateW * _aspect;
+                var theirs = Neighbour.PlateHeight;
+                if (_cfg.GaugeMatchBars && theirs > plateH) plateH = theirs;
                 var breath = edge * _aspect;
 
                 float iconW = 0f, iconH = 0f;
