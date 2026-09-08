@@ -679,10 +679,15 @@ namespace Fumes.UI
                 catch { _screenW = 1920; }
             }
 
-            var n = (int)(w * _screenW / 2f);
+            // THE VITALS' RULE, NOT THE FOOD BAR'S. One column per two pixels, FOUR to ten. The
+            // food bar's floor of eight put eight strips across a nine-pixel bar -- 1.1 px each,
+            // and a sub-pixel rectangle is a lottery with the rasteriser: each one rounded to
+            // one or two pixels on its own, every frame, and the surface boiled. That is the
+            // glitch. Four strips of two pixels move; eight strips of one flicker.
+            var n = (int)Math.Round(w * _screenW / 2f);
 
-            if (n < 8) n = 8;
-            if (n > 40) n = 40;
+            if (n < 4) n = 4;
+            if (n > 10) n = 10;
 
             return n;
         }
@@ -731,46 +736,58 @@ namespace Fumes.UI
         }
 
         /// <summary>
-        /// Three bubbles rising slowly through the fuel. Something for the second look.
+        /// Bubbles rising through the fuel. The original, back.
         ///
-        /// UP, NOT DOWN. Bare Minimum's are crumbs settling through food, and the same code
-        /// carried over sent them sinking through petrol, which is not a thing petrol has. A
-        /// bubble starts at the floor and climbs to the surface, quick to appear and slow to
-        /// go, and it is pale -- a dark speck going up reads as nothing at all.
+        /// THE THREE PALE SPECKS THAT STOOD IN FOR THESE WERE INVISIBLE. They were Bare
+        /// Minimum's crumbs turned upward -- three, tiny, on a clock that took half a minute to
+        /// cross the bar, and pale on a pale body. These are the bubbles the bar had before the
+        /// port: quicker, a shade warmer than the fuel, and quicker still while it is filling,
+        /// which is the one moment a tank has a reason to fizz.
+        ///
+        /// Deterministic rather than random: each one's position comes from the clock and its
+        /// own index, so there is no state to keep and no Random being pumped sixty times a
+        /// second. They fade in off the floor and out at the surface instead of appearing and
+        /// popping.
+        ///
+        /// ON THE OLD CLOCK. This was written when the clock advanced a unit a second; it now
+        /// advances Pace units a second, so the caller divides it back down. Drift is how
+        /// visible they are, and 0 removes them.
         /// </summary>
-        private void Bubbles(float x, float y, float w, float h, float surfaceY, float t, float empty)
+        private void Bubbles(float x, float y, float w, float h, float level, float t,
+                             bool filling)
         {
             const int count = 3;
 
-            var level = y + h - surfaceY;
-            if (level < h * 0.10f) return;
-
-            var size = w * 0.22f;
-            var tall = size * _aspect;
+            if (level < 0.014f) return;
 
             var drift = Clamp01(_cfg.GaugeDrift);
             if (drift <= 0.001f) return;
 
+            var floor = y + h;
+
+            // Square ON SCREEN. A rectangle given equal width and height fractions is as wide
+            // as the screen is wider than it is tall -- on this one that is a bubble half again
+            // wider than it is high, which at three pixels reads as a dash.
+            var size = w * 0.24f;
+            var tall = size * _aspect;
+
             for (var i = 0; i < count; i++)
             {
-                var speed = (0.006f + i * 0.0015f + empty * 0.0035f) * drift;
-                var phase = (t * speed + i * 0.37f) % 1f;
+                var lane = 0.22f + i * (0.56f / (count - 1));
 
-                // From the floor up to the surface, inside the bar the whole way.
-                var py = y + h - tall - (level - tall) * phase;
-                if (py < surfaceY) py = surfaceY;
+                // Quicker while fuel is actually going in. NOT multiplied by the motion here:
+                // t is already the accelerated clock, and multiplying twice would square it.
+                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f);
+                var phase = (t * speed + i * 0.41f) % 1f;
 
-                var lane = 0.30f + i * 0.20f;
-                var sway = (float)Math.Sin(t * (0.5f + i * 0.13f) * drift + i * 2.1f) * 0.16f;
+                var by = floor - level * phase;
 
-                var px = x + w * (lane + sway) - size / 2f;
-
-                var fade = Math.Min(phase * 5f, Math.Min((1f - phase) * 3f, 1f));
-
-                var alpha = (int)(120 * Math.Max(fade, 0f));
+                var edge = Math.Min(phase * 4f, Math.Min((1f - phase) * 3f, 1f));
+                var alpha = (int)(135 * Math.Max(edge, 0f) * drift);
                 if (alpha <= 4) continue;
 
-                Draw.Bar(px, py, size, tall, Fade(Color.FromArgb(alpha, 255, 250, 235)));
+                Draw.Bar(x + w * lane - size / 2f, by, size, tall,
+                         Fade(Color.FromArgb(alpha, 255, 245, 210)));
             }
         }
 
@@ -801,7 +818,8 @@ namespace Fumes.UI
 
             // The rate climbs as the tank empties, so running it down makes it visibly livelier.
             var hurry = 1f + 0.85f * empty;
-            var tops = Surface(x, y, w, h, surfaceY, t * hurry, swing, speed, h * 0.007f, 0f);
+            var capH = Math.Max(1.6f / (_screenH > 0 ? _screenH : 1080f), h * 0.007f);
+            var tops = Surface(x, y, w, h, surfaceY, t * hurry, swing, speed, capH, 0f);
 
             var bodyTop = Lowest(tops, floor);
 
@@ -828,7 +846,9 @@ namespace Fumes.UI
             if (level <= 0.002f) return;
 
             // ---- the surface, column by column, from the tops worked out above ----
-            var crestH = h * 0.007f;
+            // A crest thinner than a pixel is drawn on some frames and not others. The vitals
+            // hold theirs at a pixel and a half at least; so does this one now.
+            var crestH = Math.Max(1.6f / (_screenH > 0 ? _screenH : 1080f), h * 0.007f);
             var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 205), 0.55f);
 
             for (var i = 0; i < tops.Length; i++)
@@ -842,7 +862,9 @@ namespace Fumes.UI
                 Draw.Bar(left, topY, right - left, crestH, crest);
             }
 
-            Bubbles(x, y, w, h, surfaceY, inside, empty);
+            // Back on the clock they were written for: a unit a second, not Pace of them.
+            var pace = _cfg.GaugePace < 0.05f ? 0.05f : _cfg.GaugePace;
+            Bubbles(x, y, w, h, level, _clock / pace, filling);
         }
 
         private static float Clamp(float v, float lo, float hi)
