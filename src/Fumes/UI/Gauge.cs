@@ -760,12 +760,13 @@ namespace Fumes.UI
         }
 
         /// <summary>
-        /// THE RELIEF: the bevel and the sweep, the same two the vitals' bars wear.
+        /// THE RELIEF: the bevel the vitals' bars wear.
         ///
         /// A lit edge down the left of the fill and a shadowed one down the right, so the fuel
-        /// stands off the channel instead of lying flat in it; and one soft slanted band
-        /// crossing it every six seconds or so, the way a reflection travels over a polished
-        /// surface as it turns.
+        /// stands off the channel instead of lying flat in it.
+        ///
+        /// NO SWEEP. The slanted highlight that came with this belongs to the armour bar, where
+        /// it says metal; on fuel it said polished metal, which fuel is not.
         ///
         /// THE NUMBERS ARE VITALS.COLUMNS.RELIEF'S, to the digit. This draws through Draw and
         /// Fade rather than Ink so the code cannot be shared outright, and the row only reads
@@ -788,44 +789,6 @@ namespace Fumes.UI
 
             Draw.Bar(x, surface, edgeW, tall, Fade(Color.FromArgb((int)(60f * k), 255, 255, 255)));
             Draw.Bar(x + w - edgeW, surface, edgeW, tall, Fade(Color.FromArgb((int)(70f * k), 0, 0, 0)));
-
-            var at = t * 0.16f;
-            at -= (float)Math.Floor(at);
-
-            var bandH = Math.Max(3f / (_screenH > 0 ? _screenH : 1080f),
-                                 Math.Min(tall * 0.16f, w * _aspect * 1.2f));
-            var slant = bandH * 1.1f;
-            var centre = floor + slant - at * (tall + bandH + slant * 2f) + bandH * 0.5f;
-            var ends = Math.Min(at * 4f, Math.Min((1f - at) * 4f, 1f));
-
-            const int slices = 6;
-            var sliceW = w / slices;
-            var sheen = Mix(body, Color.FromArgb(body.A, 255, 255, 255), 0.85f);
-
-            for (var i = 0; i < slices; i++)
-            {
-                // Each column of the band a little higher than the last: the band leans.
-                var lift = ((i + 0.5f) / slices - 0.5f) * slant;
-                var sx = x + i * sliceW;
-
-                for (var j = 0; j < 3; j++)
-                {
-                    // Three stacked slices, the middle brightest: a highlight, not a stripe.
-                    var share = j == 1 ? 1f : 0.4f;
-                    var sTop = centre - lift - bandH * 0.5f + j * (bandH / 3f);
-                    var sBot = sTop + bandH / 3f;
-
-                    sTop = Math.Max(surface, sTop);
-                    sBot = Math.Min(floor, sBot);
-                    if (sBot - sTop <= 0f) continue;
-
-                    var alpha = (int)(85f * share * ends * k);
-                    if (alpha <= 3) continue;
-
-                    Draw.Bar(sx, sTop, sliceW, sBot - sTop,
-                             Fade(Color.FromArgb(alpha, sheen.R, sheen.G, sheen.B)));
-                }
-            }
         }
 
         /// <summary>
@@ -868,19 +831,32 @@ namespace Fumes.UI
             {
                 var lane = 0.22f + i * (0.56f / (count - 1));
 
+                // SLOWER, AND THEY WANDER. A bubble in fuel is not a bead on a wire: it takes
+                // its time getting up and it drifts sideways on the way. The rise is about a
+                // third of what it was -- ten seconds or so to cross a full bar rather than
+                // three -- and each one sways on its own period, none of them dividing into
+                // another, so the three never fall into formation.
+                //
                 // Quicker while fuel is actually going in. NOT multiplied by the motion here:
                 // t is already the accelerated clock, and multiplying twice would square it.
-                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f);
+                var speed = (0.105f + (i % 3) * 0.028f) * (filling ? 2.1f : 1f);
                 var phase = (t * speed + i * 0.41f) % 1f;
 
                 var by = floor - level * phase;
+
+                // The wander, wide enough to read on a nine-pixel bar. Clamped to the channel
+                // so a bubble leans against the glass rather than passing through it.
+                var sway = (float)Math.Sin(t * (0.62f + i * 0.19f) + i * 2.1f) * 0.17f;
+
+                var px = x + w * (lane + sway) - size / 2f;
+                if (px < x) px = x;
+                if (px > x + w - size) px = x + w - size;
 
                 var edge = Math.Min(phase * 4f, Math.Min((1f - phase) * 3f, 1f));
                 var alpha = (int)(135 * Math.Max(edge, 0f) * drift);
                 if (alpha <= 4) continue;
 
-                Draw.Bar(x + w * lane - size / 2f, by, size, tall,
-                         Fade(Color.FromArgb(alpha, 255, 245, 210)));
+                Draw.Bar(px, by, size, tall, Fade(Color.FromArgb(alpha, 255, 245, 210)));
             }
         }
 
