@@ -1,8 +1,21 @@
-FUMES -- changes
+﻿FUMES -- changes
 
 
 0.1.8
 =====
+
+  * THE GAUGE STOPPED TAKING OTHER MODS' PANELS OFF THE SCREEN. Rectangles come
+    out of one list the game keeps for the whole machine, and once it is full
+    everything handed over after that is dropped -- so the script that pays for a
+    busy frame is whichever draws LAST, whatever it drew. The fuel's gradient was
+    a band every four pixels, up to sixty-four of them, and with the other HUDs
+    beside the minimap doing the same there was nothing left: another mod's phone
+    came up in a car with no background, because its screen is a rectangle.
+
+    A band every fourteen pixels now, which on a bar this narrow looks the same,
+    and nothing under half a pixel is drawn at all. The gauge also counts what it
+    spends and writes the worst frame to the log, so the next time something goes
+    missing there is a number to look at.
 
   * FIXED: THE MOD DID NOT LOAD ON SCRIPTHOOKVDOTNET 3.6 OR ON THE NIGHTLIES.
     "Could not load file or assembly 'ScriptHookVDotNet3, Version=3.9.0.0'". It was
