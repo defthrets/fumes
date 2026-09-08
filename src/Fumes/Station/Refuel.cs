@@ -163,6 +163,17 @@ namespace Fumes.Station
             TidyDropped();
             TidyDroppedCan();
 
+            // THE CAN'S LEVEL ON THE TANKS' TEN-SECOND CADENCE. It was written at shutdown
+            // only, and shutdown is the one moment a crash never reaches -- so the level that
+            // survived a crash was whatever the game's ammo said, which is the number this
+            // whole file exists to distrust.
+            _sinceCanSave += dt;
+            if (_canDirty && _sinceCanSave >= 10f)
+            {
+                _sinceCanSave = 0f;
+                SaveCan();
+            }
+
             var me = Player();
             if (me == null)
             {
@@ -494,8 +505,10 @@ namespace Fumes.Station
             {
                 if (can.MaxAmmo <= 0) return;
 
-                Remember(litres);
+                // Written first, remembered second. Remembering a level that then failed to
+                // land is a memory of a can that does not exist.
                 can.Ammo = AmmoFrom(litres, can.MaxAmmo);
+                Remember(litres);
             }
             catch (Exception ex)
             {
@@ -1823,6 +1836,7 @@ namespace Fumes.Station
         private float _canOwn = -1f;
 
         private bool _canDirty;
+        private float _sinceCanSave;
 
         /// <summary>
         /// Puts back what the game topped up.
@@ -1939,25 +1953,6 @@ namespace Fumes.Station
             }
         }
 
-        /// <summary>Writes litres back to the can as ammo, so the game and the mod agree.</summary>
-        private void SetCanLitres(Ped me, float litres)
-        {
-            Remember(litres);
-
-            try
-            {
-                var weapon = me.Weapons.Current;
-                if (weapon == null || weapon.Hash != WeaponHash.PetrolCan) return;
-
-                if (weapon.MaxAmmo <= 0) return;
-
-                weapon.Ammo = AmmoFrom(litres, weapon.MaxAmmo);
-            }
-            catch (Exception ex)
-            {
-                Log.Once("can-ammo", "Could not empty the can: " + ex.Message);
-            }
-        }
 
         // ==================================================================
         // Pouring: a jerry can into a tank
@@ -1986,6 +1981,13 @@ namespace Fumes.Station
                 StopPouring(me, "you put the can away");
                 return;
             }
+
+            // THE ONE STAGE THAT DID NOT. Every other stage with a can or a nozzle in his hand
+            // locks the attack control, and this one is the stage where the thing in his hand
+            // is a jerry can with its own idea of what the fire button does -- so holding it
+            // poured a second stream onto the road, from the same can, on the game's own
+            // accounting rather than ours.
+            LockHands();
 
             var filler = Filler.On(_target, out var exact);
 
@@ -2024,7 +2026,7 @@ namespace Fumes.Station
                 _targetTank.Add(wanted);
                 _canLitres -= wanted;
 
-                SetCanLitres(me, _canLitres);
+                SetCanFuel(me, _canLitres);
                 _tanks.Touch(_target, _targetTank, false);
             }
 
@@ -2209,6 +2211,11 @@ namespace Fumes.Station
             if (!SecondaryPressed()) return;
 
             _canLitres = litres;
+
+            // SAID EXPLICITLY, because the other way into FillingCan sets it and an abandoned
+            // pump fill -- a death, a car -- left it set. This path would then have stood the
+            // can on the floor and crouched him for a fill that has the nozzle in his hand.
+            _canAtPump = false;
             _stage = Stage.FillingCan;
 
             // Back to the bought grade. A truck hovered a moment ago would otherwise leave the
@@ -2826,6 +2833,7 @@ namespace Fumes.Station
         private void Clear()
         {
             _stage = Stage.Idle;
+            _canAtPump = false;
             _pump = null;
             _target = null;
             _targetTank = null;
