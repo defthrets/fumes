@@ -32,6 +32,30 @@ def canvas():
     return img, ImageDraw.Draw(img)
 
 
+def fit(img, height_frac=0.66, cy=0.52):
+    """
+    Scales the ink so its box stands height_frac of the canvas tall, centred at cy.
+
+    BARE MINIMUM'S MARKS ARE THE MEASURE. Its heart, shield and bolt fill about sixty to
+    seventy per cent of their canvas and sit a shade below centre; the pump filled seventy-nine
+    and sat lower, so under the same plate at the same scale it came out visibly bigger than
+    the five beside it. Fitted to the shield's box, it is one of them.
+    """
+    box = img.getbbox()
+    if not box:
+        return img
+
+    w, h = img.size
+    bw, bh = box[2] - box[0], box[3] - box[1]
+    k = (h * height_frac) / float(bh)
+
+    ink = img.crop(box).resize((max(1, int(round(bw * k))), max(1, int(round(bh * k)))), Image.LANCZOS)
+
+    out = Image.new("RGBA", (w, h), CLEAR)
+    out.paste(ink, (int(round(w / 2.0 - ink.width / 2.0)), int(round(h * cy - ink.height / 2.0))), ink)
+    return out
+
+
 def save(img, name):
     if not os.path.isdir(OUT):
         os.makedirs(OUT)
@@ -76,7 +100,8 @@ def fuel_pump():
     rrect(d, (178, 64, 196, 112), 9, WHITE)
     rrect(d, (186, 44, 214, 74), 12, WHITE)
 
-    save(img, "fuel.png")
+    # To Bare Minimum's proportions, so it is one of the row's marks and not the big one.
+    save(fit(img), "fuel.png")
 
 
 def fuel_pump_bar():

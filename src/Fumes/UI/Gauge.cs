@@ -224,10 +224,13 @@ namespace Fumes.UI
                     h -= plateH + breath;
                     if (h < 0.004f) h = 0.004f;
 
-                    // The pump inside the plate rather than filling it, at its own proportions.
+                    // A SQUARE, THE WAY BARE MINIMUM'S BADGE DRAWS EVERY MARK: the plate's width
+                    // times IconScale, and as tall as that is wide on screen. The pump's art sits
+                    // inside a square canvas at the same proportions as the heart, the bolt and
+                    // the shield -- see tools/make_icons.py, which fits it to theirs -- so no
+                    // per-icon aspect is needed here, and having one was the difference.
                     iconW = plateW * Clamp(_cfg.GaugeIconScale, 0.2f, 1f);
-                    iconH = iconW * _aspect * _pump.Aspect;
-                    if (iconH > plateH * 0.92f) { iconH = plateH * 0.92f; iconW = iconH / (_aspect * _pump.Aspect); }
+                    iconH = iconW * _aspect;
                 }
 
                 // The surround is one edge all round -- an edge tall as well as wide, which is

@@ -1355,7 +1355,7 @@ namespace Fumes.Core
         /// the crop, and the only difference left is that it is sharper: the same pump, off a
         /// file with no margin to waste resolution on.
         /// </summary>
-        public float GaugeIconScale = 0.90f;
+        public float GaugeIconScale = 0.85f;   // Bare Minimum's BarIconScale
 
         /// <summary>
         /// Hide the reading at a full tank.
