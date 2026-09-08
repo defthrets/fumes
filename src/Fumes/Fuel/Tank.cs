@@ -136,13 +136,19 @@ namespace Fumes.Fuel
         }
 
         /// <summary>
-        /// The battery cars.
+        /// The battery cars, BY NAME. The safety net under IsElectric, not the whole of it.
         ///
-        /// A short list rather than a flag on the model, because there is no flag on the model
-        /// -- GTA has no notion of an electric drivetrain, only vehicles whose audio happens to
-        /// be a whine. Nothing about the simulation changes for these; the gauge says CHARGE
-        /// instead of FUEL and the forecourt sells them electricity. Modelling chargers as
-        /// separate world objects is a bigger mod than this one.
+        /// This used to say there was no flag on the model. There is: vehicles.meta carries
+        /// FLAG_IS_ELECTRIC, and ScriptHookVDotNet exposes it as Model.IsElectricVehicle in
+        /// every build this mod runs on -- checked by reflection against 3.6.0, the 3.7.0.189
+        /// nightly and 3.9.0, not assumed. That flag is the game's own answer, and it knows
+        /// about every DLC electric and every add-on car this list has never heard of. The
+        /// list was nineteen names and already short an I-Wagen and two Inductors.
+        ///
+        /// Kept underneath the flag rather than deleted, because a model whose meta is wrong
+        /// is not unheard of and a name here costs nothing. Nothing about the simulation
+        /// changes for these; the gauge says CHARGE instead of FUEL and the forecourt sells
+        /// them electricity.
         ///
         /// NAMES, NOT HASHES, and the difference matters. A table of 0x8CD0264C literals is a
         /// table of numbers nobody can check, and a wrong one fails silently -- the car simply
@@ -184,7 +190,13 @@ namespace Fumes.Fuel
         {
             try
             {
-                return Electrics().Contains(v.Model.Hash);
+                var model = v.Model;
+
+                // THE MODEL'S OWN FLAG FIRST. It is the reason a DLC electric or an add-on car
+                // gets left alone without anybody here having typed its name.
+                if (model.IsElectricVehicle) return true;
+
+                return Electrics().Contains(model.Hash);
             }
             catch
             {
