@@ -184,6 +184,8 @@ namespace Fumes.UI
             //
             // Read here rather than inside the drawing so it is one lookup a frame, and so the
             // preview and a stalled car both get the resting value without a special case.
+            _tickFraction = Clamp01(tank.Fraction);
+            _tickFilling = refuelling;
             Tick(vehicle);
 
             try
@@ -205,33 +207,32 @@ namespace Fumes.UI
                 var edge = w * 0.22f;
                 if (edge < 0.0005f) edge = 0.0005f;
 
-                // THE PUMP SITS OUTSIDE THE BAR NOW, under its foot, and the BAR GIVES UP THE
-                // ROOM rather than the column growing into it.
-                //
-                // That is the part worth doing deliberately. Hanging the icon below an
-                // unchanged bar would push the whole thing past the bottom of the minimap --
-                // and the bar's foot was measured off a screenshot to line up with the health
-                // bar, which is work that would be silently undone by adding twenty pixels
-                // underneath it. Taking the space out of the bar keeps the column exactly where
-                // it was put.
+                // BARE MINIMUM'S ROW, TO THE NUMBER. Width is its BarWidth, Height is its
+                // BarLength, and the bar's own column comes out of them the same way it does
+                // there: the plate under the bar is the outline's width, square-cornered on
+                // screen, a breath of one edge between the two, and the column is whatever is
+                // left of the length after those. Computed from the same expressions from the
+                // same inputs, so the five bars beside this one and this one are one row.
+                var plateW = w + edge * 2f;
+                var plateH = plateW * _aspect;
+                var breath = edge * _aspect;
+
                 float iconW = 0f, iconH = 0f;
 
                 if (_cfg.Vertical && _cfg.ShowGaugeIcon)
                 {
-                    iconW = w * _cfg.GaugeIconScale;
+                    h -= plateH + breath;
+                    if (h < 0.004f) h = 0.004f;
+
+                    // The pump inside the plate rather than filling it, at its own proportions.
+                    iconW = plateW * Clamp(_cfg.GaugeIconScale, 0.2f, 1f);
                     iconH = iconW * _aspect * _pump.Aspect;
-
-                    // Plate plus its own border. NO GAP: the two borders share an edge.
-                    var take = iconH + edge * 2f;
-
-                    // Never so far that the bar stops being a bar. A gauge with no gauge in it
-                    // is a worse trade than an icon that overlaps.
-                    if (take > h * 0.35f) take = h * 0.35f;
-
-                    h -= take;
+                    if (iconH > plateH * 0.92f) { iconH = plateH * 0.92f; iconW = iconH / (_aspect * _pump.Aspect); }
                 }
 
-                Draw.Bar(x - edge, y - edge, w + edge * 2f, h + edge * 2f, Fade(Color.FromArgb(205, 0, 0, 0)));
+                // The surround is one edge all round -- an edge tall as well as wide, which is
+                // the aspect on the vertical sides, so the corners are square on screen.
+                Draw.Bar(x - edge, y - breath, w + edge * 2f, h + breath * 2f, Fade(Color.FromArgb(205, 0, 0, 0)));
                 Draw.Bar(x, y, w, h, Fade(Color.FromArgb(165, 28, 28, 32)));
 
                 var colour = Fade(Level(fraction));
@@ -362,15 +363,16 @@ namespace Fumes.UI
                         // SEAMLESS. The bar's outline ends at y + h + edge and the plate's
                         // begins there -- one border thickness doing duty for both, so the two
                         // read as one column rather than two things stacked near each other.
-                        var plateTop = y + h + edge * 2f;
+                        // THE PLATE STARTS WHERE THE SURROUND ENDS, one breath below the foot,
+                        // which is the line Bare Minimum draws its badges on.
+                        var plateY = y + h + breath;
                         var cx = x + w / 2f;
 
-                        Draw.Bar(x - edge, plateTop - edge,
-                                 w + edge * 2f, iconH + edge * 2f,
+                        Draw.Bar(cx - plateW / 2f, plateY, plateW, plateH,
                                  Fade(Color.FromArgb(205, 0, 0, 0)));
 
-                        _pump.DrawSized(cx, plateTop + iconH / 2f, iconW, iconH,
-                                        Fade(Color.FromArgb(230, 235, 235, 238)));
+                        _pump.DrawSized(cx, plateY + plateH / 2f, iconW, iconH,
+                                        Fade(Color.FromArgb(240, 242, 246, 252)));
                     }
 
                     // FUEL, when it is asked for. It takes the same ink rule as the number
@@ -408,163 +410,424 @@ namespace Fumes.UI
             }
         }
 
+        // ==================================================================
+        // The level: Bare Minimum's bars, exactly
+        // ==================================================================
+        //
+        // THIS IS THE FOOD BAR'S ANIMATION, CARRIED OVER WHOLE. The two mods sit next to each
+        // other beside the minimap and were tuned against each other by eye for a week, and a
+        // fuel column that moves differently from the five beside it reads as the odd one out
+        // however good it is on its own. So the surface, the spring under it, the banded body,
+        // the crest and the crumbs are Bare Minimum's, at Bare Minimum's numbers -- the one
+        // thing kept from the old gauge is that the CLOCK runs faster with road speed, because
+        // fuel in a moving car has a reason to be livelier that hunger does not.
+
         /// <summary>
-        /// The fuel in the bar: a moving surface, and bubbles rising through it.
+        /// A damped spring the surface rides on. Kicked by a fill or a drain; leaned on by
+        /// braking. Under a second a swing, lightly damped, so a kick rings three or four times
+        /// before it is gone -- which reads as liquid rather than a cursor being nudged.
+        /// </summary>
+        private sealed class Slosh
+        {
+            public float S;
+            public float V;
+
+            private const float Omega = 7.4f;    // 2 pi over 0.85 seconds
+            private const float Damping = 2.1f;  // 2 zeta omega, zeta about 0.14
+            private const float Reach = 0.12f;
+
+            public void Kick(float velocity) { V += velocity; }
+
+            public void Step(float dt, float force)
+            {
+                V += (-Omega * Omega * S - Damping * V + force) * dt;
+                S += V * dt;
+
+                if (S > Reach) { S = Reach; if (V > 0f) V = 0f; }
+                if (S < -Reach) { S = -Reach; if (V < 0f) V = 0f; }
+            }
+        }
+
+        private readonly Slosh _spring = new Slosh();
+
+        /// <summary>This frame's level and whether a pump is running, for the spring's kicks.</summary>
+        private float _tickFraction;
+        private bool _tickFilling;
+
+        /// <summary>Last frame's level, for the kicks. Below zero until there has been one.</summary>
+        private float _lastFraction = -1f;
+
+        /// <summary>Fuel that has gone in since the last little bounce while filling.</summary>
+        private float _fillSince;
+
+        /// <summary>How hard he is being pushed along his own length, and upward, m/s², eased.</summary>
+        private float _accel;
+        private float _heave;
+
+        private float _lastAlong;
+        private float _lastUp;
+        private bool _haveAlong;
+        private int _lastBody;
+
+        /// <summary>The column tops of the surface. One buffer, reused.</summary>
+        private float[] _tops = new float[0];
+
+        private int _screenW;
+        private int _screenH;
+
+        /// <summary>The accumulated clock. Advanced by Tick at the pace, times the road-speed lift.</summary>
+        private float _clock;
+
+        /// <summary>Set once a frame by Tick. See Motion.</summary>
+        private float _motion = 1f;
+
+        /// <summary>The slow clock the body's shading drifts on: this many seconds per unit.</summary>
+        private const float InsideSlow = 7f;
+
+        /// <summary>
+        /// The equilibrium throw per m/s² of acceleration, as a share of the bar, times the
+        /// spring's stiffness -- so a steady 10 m/s² of braking lifts the fuel about three per
+        /// cent of the way up the bar and holds it there until the braking stops.
+        /// </summary>
+        private const float LeanGain = 0.003f * 7.4f * 7.4f;
+
+        /// <summary>The spring, moved on by this frame's step. Called from Tick.</summary>
+        private void Momentum(float fraction, bool filling, float dt)
+        {
+            if (dt < 0f) dt = 0f;
+            if (dt > 0.1f) dt = 0.1f;
+
+            var live = _cfg.GaugeLiquid;
+            var force = live ? Lean(dt) : 0f;
+
+            if (!live)
+            {
+                _haveAlong = false;
+                _accel = 0f;
+                _heave = 0f;
+            }
+
+            Kicks(fraction, filling, live);
+
+            _spring.Step(dt, force);
+        }
+
+        /// <summary>
+        /// The jolts: what changed since last frame, thrown at the spring.
         ///
-        /// THE BODY IS ONE RECTANGLE AND ONLY THE SURFACE IS COLUMNS. That is the whole fix for
-        /// the lines running down the bar, and they were not a rounding artefact -- they were
-        /// alpha.
+        /// A top-up throws the level up a little; a loss slaps it down harder. THE DRAIN DOES
+        /// NOT KICK -- a tank emptying over a drive moves a few millionths a frame, far under
+        /// the threshold -- so this is a can poured in, a siphon, a save load. Filling from a
+        /// pump is under the threshold too, so it gets its own small bounce every per cent, which
+        /// is what pouring into a container looks like.
+        /// </summary>
+        private void Kicks(float fraction, bool filling, bool live)
+        {
+            var k = live ? Clamp01(_cfg.GaugeSlosh) : 0f;
+
+            if (_lastFraction >= 0f)
+            {
+                var delta = fraction - _lastFraction;
+
+                if (delta > 0.001f) _spring.Kick(0.40f * Math.Min(1f, delta * 4f) * k);
+                else if (delta < -0.001f) _spring.Kick(-(0.35f + 0.65f * Math.Min(1f, -delta * 4f)) * k);
+                else if (filling && delta > 0f)
+                {
+                    _fillSince += delta;
+                    if (_fillSince >= 0.01f) { _spring.Kick(0.18f * k); _fillSince = 0f; }
+                }
+            }
+
+            if (!filling) _fillSince = 0f;
+            _lastFraction = fraction;
+        }
+
+        /// <summary>
+        /// Braking, accelerating and landing, as a force on the spring.
         ///
-        /// Every column used to be drawn from its own wavy top ALL THE WAY DOWN to the foot of
-        /// the bar, each overlapping its neighbour by a hair to keep a gap from opening between
-        /// them. But the fuel is translucent, and two translucent rectangles over the same
-        /// pixel do not come out the same as one: 1-(1-a)^2, not a. So every seam was a bright
-        /// stripe two hundred pixels long, and the fix that was supposed to hide the seams was
-        /// what drew them.
-        ///
-        /// Now the body is filled once, in a single rectangle, up to the LOWEST the surface can
-        /// swing. Only the few pixels of wave above that line are columns, they tile exactly
-        /// instead of overlapping, and there is nothing left to double up. Eight columns rather
-        /// than six as well, since a two-pixel strip is fine for a surface profile when it is
-        /// not also painting the whole bar.
+        /// From whatever he is riding in, or him on foot. Eased, so a physics tick that stutters
+        /// is a lean rather than a rattle; reset on a change of body or a long frame, because
+        /// the difference between two velocities only means something across one step.
+        /// </summary>
+        private float Lean(float dt)
+        {
+            var motion = Clamp01(_cfg.GaugeLean);
+
+            if (motion <= 0f || dt <= 0.0001f)
+            {
+                _accel = 0f;
+                _heave = 0f;
+                return 0f;
+            }
+
+            try
+            {
+                var ped = Game.Player.Character;
+                Entity body = ped;
+
+                if (ped.IsInVehicle())
+                {
+                    var veh = ped.CurrentVehicle;
+                    if (veh != null && veh.Exists()) body = veh;
+                }
+
+                var v = body.Velocity;
+                var f = body.ForwardVector;
+
+                var along = v.X * f.X + v.Y * f.Y + v.Z * f.Z;
+                var up = v.Z;
+
+                if (body.Handle != _lastBody || !_haveAlong || dt > 0.09f)
+                {
+                    _lastBody = body.Handle;
+                    _lastAlong = along;
+                    _lastUp = up;
+                    _haveAlong = true;
+                    _accel = 0f;
+                    _heave = 0f;
+                    return 0f;
+                }
+
+                var a = Clamp((along - _lastAlong) / dt, -30f, 30f);
+                var az = Clamp((up - _lastUp) / dt, -30f, 30f);
+
+                _lastAlong = along;
+                _lastUp = up;
+
+                // Footsteps bob the ped a little; that is not a landing.
+                if (Math.Abs(az) < 2f) az = 0f;
+
+                _accel += (a - _accel) * Math.Min(1f, dt * 12f);
+                _heave += (az - _heave) * Math.Min(1f, dt * 12f);
+
+                // Braking lifts it and a landing drops it, both through the spring, so they
+                // ring down rather than snapping back.
+                return (-_accel * 0.6f - _heave) * LeanGain * motion;
+            }
+            catch
+            {
+                _haveAlong = false;
+                return 0f;
+            }
+        }
+
+        /// <summary>
+        /// The tops of the surface, column by column: a slow bow and lift on their own
+        /// periods, a tilt, the spring's throw bending it, and braking leaning it up a wall.
+        /// </summary>
+        private float[] Surface(float x, float y, float w, float h, float surfaceY, float t,
+                                float swing, float speed, float capH, float phase)
+        {
+            var floor = y + h;
+            var wave = Clamp01(_cfg.GaugeWave);
+
+            // The width as a HEIGHT fraction, for anything measured across the bar in the same
+            // unit as along it.
+            var thickH = w * _aspect;
+
+            var bow = (float)Math.Sin(t * (2.0 * Math.PI / 144.0)) * swing;
+            var lift = (float)Math.Sin(t * (2.0 * Math.PI / 208.0)) * swing * 0.40f;
+
+            var tilt = (float)Math.Sin((t + phase) * (2.0 * Math.PI / 298.0)) * 0.20f * thickH * wave;
+
+            // Up is negative on screen: a surface thrown upward heaps in the middle.
+            bow -= speed * 0.55f * thickH;
+            tilt += speed * 0.35f * thickH;
+
+            // Braking leans the liquid up one wall; accelerating, the other.
+            tilt += Clamp(_accel / 10f, -1f, 1f) * 0.35f * thickH * Clamp01(_cfg.GaugeLean);
+
+            var columns = Columns(w);
+            if (_tops.Length != columns) _tops = new float[columns];
+
+            for (var i = 0; i < columns; i++)
+            {
+                // -1 at one wall, +1 at the other; 1 in the middle, 0 at both walls.
+                var across = ((i + 0.5f) / columns - 0.5f) * 2f;
+                var curve = 1f - across * across;
+
+                var topY = surfaceY + lift + bow * curve + tilt * across;
+
+                if (topY < y) topY = y;
+                if (topY > floor - capH) topY = floor - capH;
+
+                _tops[i] = topY;
+            }
+
+            return _tops;
+        }
+
+        /// <summary>One column per two pixels, eight to forty. Sub-pixel strips boil; see Bare Minimum.</summary>
+        private int Columns(float w)
+        {
+            if (_screenW <= 0)
+            {
+                try { _screenW = GTA.UI.Screen.Resolution.Width; }
+                catch { _screenW = 1920; }
+            }
+
+            var n = (int)(w * _screenW / 2f);
+
+            if (n < 8) n = 8;
+            if (n > 40) n = 40;
+
+            return n;
+        }
+
+        /// <summary>One band per four pixels of height, twelve to sixty-four.</summary>
+        private int Bands(float h)
+        {
+            if (_screenH <= 0)
+            {
+                try { _screenH = GTA.UI.Screen.Resolution.Height; }
+                catch { _screenH = 1080; }
+            }
+
+            var n = (int)(h * _screenH / 4f);
+
+            if (n < 12) n = 12;
+            if (n > 64) n = 64;
+
+            return n;
+        }
+
+        private static float Lowest(float[] tops, float floor)
+        {
+            var low = 0f;
+
+            for (var i = 0; i < tops.Length; i++)
+            {
+                if (tops[i] > low) low = tops[i];
+            }
+
+            return low > floor ? floor : low;
+        }
+
+        /// <summary>
+        /// A soft hump, 1 at its centre and 0 past its width, wrapped so it goes round the bar
+        /// rather than off the end. Cosine rather than a triangle: a linear falloff has a corner.
+        /// </summary>
+        private static float Pulse(float u, float width)
+        {
+            u -= (float)Math.Floor(u);
+
+            var d = Math.Abs(u - 0.5f) * 2f;
+            if (d >= width) return 0f;
+
+            return 0.5f + 0.5f * (float)Math.Cos(d / width * Math.PI);
+        }
+
+        /// <summary>Three crumbs sinking slowly through the fuel. Something for the second look.</summary>
+        private void Sediment(float x, float y, float w, float h, float surfaceY, float t, float empty)
+        {
+            const int count = 3;
+
+            var level = y + h - surfaceY;
+            if (level < h * 0.10f) return;
+
+            var size = w * 0.22f;
+            var tall = size * _aspect;
+
+            var drift = Clamp01(_cfg.GaugeDrift);
+            if (drift <= 0.001f) return;
+
+            for (var i = 0; i < count; i++)
+            {
+                var speed = (0.006f + i * 0.0015f + empty * 0.0035f) * drift;
+                var phase = (t * speed + i * 0.37f) % 1f;
+
+                var py = surfaceY + level * phase;
+
+                var lane = 0.30f + i * 0.20f;
+                var sway = (float)Math.Sin(t * (0.5f + i * 0.13f) * drift + i * 2.1f) * 0.16f;
+
+                var px = x + w * (lane + sway) - size / 2f;
+
+                var fade = Math.Min(phase * 5f, Math.Min((1f - phase) * 3f, 1f));
+
+                var alpha = (int)(120 * Math.Max(fade, 0f));
+                if (alpha <= 4) continue;
+
+                Draw.Bar(px, py, size, tall, Fade(Color.FromArgb(alpha, 60, 40, 24)));
+            }
+        }
+
+        /// <summary>
+        /// The fuel in the bar, drawn the way Bare Minimum draws a need: the surface first, then
+        /// the body under the lowest point of it in slow-shifting bands, then the crest, then
+        /// the crumbs.
         /// </summary>
         private void Liquid(float x, float y, float w, float h, float fraction, Color body,
                             bool filling)
         {
-            const int columns = 8;
-
-            // The accumulated clock, not the wall clock. See _clock for why that matters.
             var t = _clock;
+            var inside = t / InsideSlow;
 
             var level = h * fraction;
-            var surfaceY = y + h - level;
+            var empty = 1f - fraction;
 
-            // The waves die away as it fills, so a finished tank settles rather than sloshing
-            // forever -- and lift while fuel is going in, the one moment a surface has a reason
-            // to be disturbed.
-            var settle = Math.Min(fraction * 6f, 1f) * (1f - fraction * 0.55f);
-            if (filling) settle = Math.Min(settle * 2.2f + 0.35f, 1.5f);
+            // THE THROW. The spring's offset is a share of the bar's length, up when positive,
+            // and it moves the whole surface; its speed bends the surface as well.
+            var thrown = _spring.S * h;
+            var speed = Clamp(_spring.V * 1.8f, -1f, 1f);
 
-            // Filling is exempt: the pump already lifts the waves on purpose, and scaling
-            // that back down by a parked car's sway would cancel the one moment the surface is
-            // meant to be disturbed while standing still.
-            var sway = filling ? 1f : _sway;
+            var surfaceY = Clamp(y + h - level - thrown, y, y + h);
 
-            var a1 = 0.0013f * settle * sway;
-            var a2 = 0.0008f * settle * sway;
-
-            var amplitude = a1 + a2;
-
-            // The body, once, up to the deepest the surface can go. No seams because there is
-            // nothing to seam: it is one rectangle the full width of the bar.
-            var bodyTop = surfaceY + amplitude;
-            if (bodyTop < y) bodyTop = y;
-
-            if (bodyTop < y + h) Draw.Bar(x, bodyTop, w, y + h - bodyTop, body);
-
-            if (level <= 0.002f) return;
-
-            // A brighter line riding the surface, so the top is a surface and not just where
-            // the colour stops. Mixed off the body rather than fixed, because the body runs the
-            // whole ramp from yellow to red and a fixed crest would come loose from it.
-            var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 195), 0.55f);
-
-            if (amplitude < 0.00004f)
-            {
-                Draw.Bar(x, surfaceY, w, 0.0011f, crest);
-            }
-            else
-            {
-                for (var i = 0; i < columns; i++)
-                {
-                    // EXACT TILING, not overlapping. One column's right edge is the next one's
-                    // left edge, computed from the same expression, so no pixel is covered
-                    // twice and no seam can brighten.
-                    var left = x + w * i / columns;
-                    var right = x + w * (i + 1) / columns;
-
-                    var u = (float)i / (columns - 1);
-
-                    // Two waves rather than one, at frequencies that do not divide into each
-                    // other: a single sine reads as a machine and two read as a liquid.
-                    var wave = (float)(Math.Sin(t * 3.3f + u * 7.1f) * a1 +
-                                       Math.Sin(t * 5.1f - u * 11.7f) * a2);
-
-                    // THE SLOSH IS A TILT, not another wave. A hit throws the fuel at one wall
-                    // of the tank and it comes back -- so the whole surface leans, one end up
-                    // and the other down by the same amount, and the lean swings across and
-                    // dies away. Adding a bigger ripple instead would have been more of what
-                    // is already there rather than the thing an impact actually does.
-                    //
-                    // Cosine, so the very first frame is fully over to the right rather than
-                    // starting flat and building -- an impact has no wind-up.
-                    if (_slosh > 0.001f)
-                    {
-                        var lean = (float)Math.Cos(_sloshClock * _cfg.GaugeSloshHertz * 6.2832f);
-                        wave -= (u - 0.5f) * 2f * lean * _slosh * _cfg.GaugeSloshTilt;
-                    }
-
-                    var top = surfaceY + wave;
-                    if (top < y) top = y;
-
-                    // Only the sliver above the body line. A handful of pixels, not the bar.
-                    if (top < bodyTop) Draw.Bar(left, top, right - left, bodyTop - top, body);
-
-                    Draw.Bar(left, top, right - left, 0.0011f, crest);
-                }
-            }
-
-            Bubbles(x, y, w, h, level, t, filling);
-        }
-
-        /// <summary>
-        /// Bubbles rising through the fuel.
-        ///
-        /// Deterministic rather than random: each one's position comes from the clock and its
-        /// own index, so there is no state to keep and no Random being pumped sixty times a
-        /// second. They fade in off the floor and out at the surface instead of appearing and
-        /// popping.
-        ///
-        /// Three, not the pump's five. Across sixteen pixels, five lanes put them close enough
-        /// to read as a row rather than as separate bubbles.
-        /// </summary>
-        private void Bubbles(float x, float y, float w, float h, float level, float t,
-                             bool filling)
-        {
-            const int count = 3;
-
-            if (level < 0.014f) return;
+            var swing = h * 0.018f * Clamp01(_cfg.GaugeWave) * (0.35f + 0.65f * empty);
 
             var floor = y + h;
 
-            // Square ON SCREEN. A rectangle given equal width and height fractions is as wide
-            // as the screen is wider than it is tall -- on this one that is a bubble half again
-            // wider than it is high, which at three pixels reads as a dash.
-            var size = w * 0.24f;
-            var tall = size * _aspect;
+            // The rate climbs as the tank empties, so running it down makes it visibly livelier.
+            var hurry = 1f + 0.85f * empty;
+            var tops = Surface(x, y, w, h, surfaceY, t * hurry, swing, speed, h * 0.007f, 0f);
 
-            for (var i = 0; i < count; i++)
+            var bodyTop = Lowest(tops, floor);
+
+            // ---- the contents: two broad humps drifting up the column, very slowly ----
+            var bands = Bands(h);
+
+            for (var i = 0; i < bands; i++)
             {
-                var lane = 0.22f + i * (0.56f / (count - 1));
-                // Quicker while fuel is actually going in. refuelling reached this code and
-                // went unused for its whole life; with the waves gone the bubbles are the only
-                // thing left that can show the difference between filling and standing still.
-                // NOT multiplied by _motion here: t is already the accelerated clock, and
-                // multiplying twice would square the effect -- and would put the same jump back
-                // into the bubbles that the clock was changed to remove.
-                var speed = (0.30f + (i % 3) * 0.08f) * (filling ? 2.1f : 1f);
-                var phase = (t * speed + i * 0.41f) % 1f;
+                var bTop = bodyTop + (floor - bodyTop) * i / bands;
+                var bBot = bodyTop + (floor - bodyTop) * (i + 1) / bands;
 
-                var by = floor - level * phase;
+                if (bBot - bTop <= 0f) continue;
 
-                var edge = Math.Min(phase * 4f, Math.Min((1f - phase) * 3f, 1f));
-                var alpha = (int)(135 * Math.Max(edge, 0f));
-                if (alpha <= 4) continue;
+                var u = (i + 0.5f) / bands;
 
-                Draw.Bar(x + w * lane - size / 2f, by, size, tall,
-                         Fade(Color.FromArgb(alpha, 255, 245, 210)));
+                var a = Pulse(u - inside * 0.00138f, 0.58f);
+                var b = Pulse(u - inside * 0.00085f + 0.5f, 0.76f);
+
+                var warm = (a * 0.6f + b * 0.4f) * (0.09f + 0.13f * empty);
+
+                Draw.Bar(x, bTop, w, bBot - bTop, Mix(body, Color.FromArgb(body.A, 255, 245, 220), warm));
             }
+
+            if (level <= 0.002f) return;
+
+            // ---- the surface, column by column, from the tops worked out above ----
+            var crestH = h * 0.007f;
+            var crest = Mix(body, Color.FromArgb(body.A, 255, 240, 205), 0.55f);
+
+            for (var i = 0; i < tops.Length; i++)
+            {
+                var left = x + w * i / tops.Length;
+                var right = x + w * (i + 1) / tops.Length;
+                var topY = tops[i];
+
+                if (topY < bodyTop) Draw.Bar(left, topY, right - left, bodyTop - topY, body);
+
+                Draw.Bar(left, topY, right - left, crestH, crest);
+            }
+
+            Sediment(x, y, w, h, surfaceY, inside, empty);
         }
+
+        private static float Clamp(float v, float lo, float hi)
+        {
+            return v < lo ? lo : v > hi ? hi : v;
+        }
+
 
         /// <summary>
         /// The same colour, at the gauge's opacity.
@@ -659,123 +922,9 @@ namespace Fumes.UI
             }
         }
 
-        /// <summary>Set once a frame by Tick. See Motion.</summary>
-        private float _motion = 1f;
 
-        /// <summary>How tall the waves are, 0 to 1. See Sway.</summary>
-        private float _sway = 1f;
 
-        /// <summary>How hard the fuel is still sloshing from a hit, 1 down to 0.</summary>
-        private float _slosh;
 
-        /// <summary>Its own clock, so the swing starts at the moment of the impact.</summary>
-        private float _sloshClock;
-
-        /// <summary>Last frame's speed, in metres a second, for working out deceleration.</summary>
-        private float _lastSpeed;
-
-        /// <summary>
-        /// Starts the fuel swinging when the car stops suddenly.
-        ///
-        /// DECELERATION, NOT COLLISION. HasCollided is true for kerbs, hedges and the underside
-        /// of a speed bump -- every one of which would set the gauge swinging for nothing. How
-        /// hard the car stopped is the thing actually being modelled, it comes free from a speed
-        /// we already read, and it scales: a scrape barely registers and hitting a wall at
-        /// eighty throws the fuel across the tank.
-        ///
-        /// Divided by dt to get an acceleration rather than testing the raw drop, because a
-        /// speed change is only a crash relative to the time it took. Twenty metres a second
-        /// lost over a second is heavy braking; over a frame it is a wall.
-        /// </summary>
-        private void Impact(Vehicle v, float dt)
-        {
-            // Decay first, so a hit landing this frame is not immediately faded.
-            if (_slosh > 0.0005f)
-            {
-                _sloshClock += dt;
-
-                if (_cfg.GaugeSloshSeconds > 0.01f)
-                    _slosh *= (float)Math.Exp(-dt / _cfg.GaugeSloshSeconds);
-            }
-            else
-            {
-                _slosh = 0f;
-            }
-
-            float speed;
-            try { speed = v == null ? 0f : Math.Abs(v.Speed); }
-            catch { speed = 0f; }
-
-            var was = _lastSpeed;
-            _lastSpeed = speed;
-
-            if (!_cfg.GaugeSloshOnImpact || v == null || dt <= 0.0001f) return;
-
-            var decel = (was - speed) / dt;
-            if (decel < _cfg.GaugeSloshTriggerG * 9.81f) return;
-
-            // Scaled by how hard, and never more than full. A new hit while still ringing takes
-            // the larger of the two rather than adding, or a tumble down a hill would stack up
-            // to a surface standing on end.
-            var force = decel / (_cfg.GaugeSloshTriggerG * 9.81f * 3f);
-            if (force > 1f) force = 1f;
-
-            if (force <= _slosh) return;
-
-            _slosh = force;
-            _sloshClock = 0f;
-        }
-
-        /// <summary>
-        /// How far the surface moves up and down, as a fraction of its full travel.
-        ///
-        /// SEPARATE FROM THE RATE, and on a different curve, because they are different things.
-        /// Fuel in a car creeping through town is not moving much OR quickly; fuel in one being
-        /// driven is doing both, and tying the two to one number would have made the surface
-        /// perfectly flat right up to 80 and then start heaving all at once.
-        ///
-        /// It reaches its full height at 120 -- the amplitude everything was authored at -- and
-        /// stops there. Past that only the RATE goes on climbing, which is the right way round:
-        /// a tank being thrown about harder does not slosh higher than the tank is deep, it
-        /// slops back and forth faster.
-        /// </summary>
-        private float Sway(Vehicle v)
-        {
-            if (v == null) return _cfg.GaugeSwayIdle;
-
-            try
-            {
-                var full = _cfg.GaugeSwayFullKmh;
-                if (full <= 1f) return 1f;
-
-                var t = Math.Abs(v.Speed) * 3.6f / full;
-                if (t < 0f) t = 0f;
-                if (t > 1f) t = 1f;
-
-                return _cfg.GaugeSwayIdle + (1f - _cfg.GaugeSwayIdle) * t;
-            }
-            catch
-            {
-                return 1f;
-            }
-        }
-
-        /// <summary>
-        /// The clock the fuel moves on. ACCUMULATED, never computed from the wall clock.
-        ///
-        /// This was TickCount/1000 * _motion, and that is wrong in a way that only shows when
-        /// the multiplier moves. TickCount is milliseconds since the machine booted -- a number
-        /// in the millions -- so multiplying it by a factor that changes from 1.0 to 1.5 does
-        /// not speed the wave up, it advances the clock by hours between one frame and the
-        /// next. The sine of a number that has jumped by hours is an arbitrary value, so the
-        /// surface teleported to a new shape every time the speed changed and only looked
-        /// smooth while the speed was constant.
-        ///
-        /// Adding dt * motion each frame makes the PHASE continuous and the RATE the only thing
-        /// the multiplier touches, which is what was meant all along -- and it is what lets the
-        /// speed-up wind back down gradually instead of snapping.
-        /// </summary>
-        private float _clock;
 
         /// <summary>
         /// Advances the clock, and eases the rate toward what the car is doing.
@@ -796,7 +945,6 @@ namespace Fumes.UI
             if (dt <= 0f || dt > 0.5f) dt = dt > 0.5f ? 0.5f : 0f;
 
             var target = Motion(vehicle);
-            var swayTarget = Sway(vehicle);
 
             var seconds = target > _motion ? _cfg.GaugeMotionRiseSeconds
                                            : _cfg.GaugeMotionFallSeconds;
@@ -805,24 +953,22 @@ namespace Fumes.UI
             {
                 // Exponential easing, so the approach is the same on any framerate rather than
                 // however many times a second this happens to be called.
-                var k = 1f - (float)Math.Exp(-dt / seconds);
-
-                _motion += (target - _motion) * k;
-
-                // The height of the waves eases on the SAME clock as their speed. Two
-                // independent lags would let the surface be flat and frantic, or tall and
-                // slow -- states that belong to no real liquid and look like a bug.
-                _sway += (swayTarget - _sway) * k;
+                _motion += (target - _motion) * (1f - (float)Math.Exp(-dt / seconds));
             }
             else
             {
                 _motion = target;
-                _sway = swayTarget;
             }
 
-            Impact(vehicle, dt);
+            // THE SPRING AND THE CLOCK, on the same step. The clock runs at Bare Minimum's pace
+            // -- forty-two of its units a second -- times the road-speed lift, which is the one
+            // thing kept from the old gauge: fuel in a moving car is livelier than a parked one.
+            Momentum(_tickFraction, _tickFilling, dt);
 
-            _clock += dt * _motion;
+            var pace = _cfg.GaugePace < 0.05f ? 0.05f : _cfg.GaugePace;
+            _clock += dt * pace * _motion;
+
+            if (_clock > 1000000f) _clock -= 1000000f;
         }
 
         private static bool InThisVehicle(Vehicle v)

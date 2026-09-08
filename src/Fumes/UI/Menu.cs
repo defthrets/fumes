@@ -273,7 +273,13 @@ namespace Fumes.UI
                                  0.02f, 0.15f, 1f, "0.00", "HUD", "Opacity",
                                  "The whole gauge at once, border and fuel and all."));
             hud.Items.Add(Toggle("Liquid fuel", () => _cfg.GaugeLiquid, v => _cfg.GaugeLiquid = v,
-                                 "HUD", "GaugeLiquid", "A moving surface and rising bubbles."));
+                                 "HUD", "GaugeLiquid", "The surface moves the way Bare Minimum's bars do."));
+            hud.Items.Add(Number("Wave", () => _cfg.GaugeWave, v => _cfg.GaugeWave = v, 0.05f, 0f, 1f, "0.00",
+                                 "HUD", "Wave", "How far the surface travels."));
+            hud.Items.Add(Number("Slosh", () => _cfg.GaugeSlosh, v => _cfg.GaugeSlosh = v, 0.05f, 0f, 1f, "0.00",
+                                 "HUD", "Slosh", "How hard a fill or a drain kicks it."));
+            hud.Items.Add(Number("Lean", () => _cfg.GaugeLean, v => _cfg.GaugeLean = v, 0.05f, 0f, 1f, "0.00",
+                                 "HUD", "Lean", "How much braking throws it up a wall."));
             hud.Items.Add(Toggle("Pump icon", () => _cfg.ShowGaugeIcon, v => _cfg.ShowGaugeIcon = v,
                                  "HUD", "ShowGaugeIcon", "The little pump inside the bar."));
             hud.Items.Add(Number("Pump icon size", () => _cfg.GaugeIconScale,

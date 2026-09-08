@@ -1245,8 +1245,9 @@ namespace Fumes.Core
 
         public float GaugeX = 0.1330f;
         public float GaugeY = 0.8100f;
-        public float GaugeWidth = 0.0046f;
-        public float GaugeHeight = 0.1678f;
+        // BARE MINIMUM'S BarWidth AND BarLength, so the two instruments are one row.
+        public float GaugeWidth = 0.0048f;
+        public float GaugeHeight = 0.18f;
 
         public Units Units = Units.Litres;
         public bool ShowNumbers = false;
@@ -1289,6 +1290,15 @@ namespace Fumes.Core
         /// </summary>
         public bool GaugeLiquid = true;
 
+        // BARE MINIMUM'S FIVE, at Bare Minimum's defaults. Wave is how far the surface moves,
+        // Slosh how hard a fill or a drain kicks it, Lean how much braking throws it up a wall,
+        // Drift how fast the crumbs sink, Pace the clock everything above runs on.
+        public float GaugeWave = 1f;
+        public float GaugeSlosh = 1f;
+        public float GaugeLean = 1f;
+        public float GaugeDrift = 1f;
+        public float GaugePace = 42f;
+
         /// <summary>
         /// How much faster the fuel moves at speed, and the speed it gets there at.
         ///
@@ -1315,46 +1325,10 @@ namespace Fumes.Core
         public float GaugeMotionIdle = 0.70f;
         public float GaugeMotionRestKmh = 12f;
 
-        /// <summary>
-        /// How long the animation takes to reach a new speed, going up and coming down.
-        ///
-        /// ASYMMETRIC. Winding up follows the throttle closely because that is something you
-        /// did; winding down takes several seconds because fuel that has been thrown about does
-        /// not settle the moment you lift off -- and because dropping under 120 for a corner
-        /// should not slam the animation back and out again.
-        /// </summary>
-        /// <summary>
-        /// How far the surface moves up and down when the car is not moving, as a fraction of
-        /// its full travel -- and the speed at which it reaches that full travel.
-        ///
-        /// A separate curve from the rate, because they are separate things: fuel creeping
-        /// through town is not moving much OR quickly. Full height at 120 km/h, which is the
-        /// amplitude the waves were authored at, and no higher -- past that only the rate keeps
-        /// climbing, which is the right way round. A tank thrown about harder does not slosh
-        /// deeper than the tank is deep; it slops back and forth faster.
-        /// </summary>
-        public float GaugeSwayIdle = 0.35f;
-        public float GaugeSwayFullKmh = 120f;
 
-        /// <summary>
-        /// The fuel swings to one side when the car stops suddenly, and settles.
-        ///
-        /// Triggered on DECELERATION rather than on collision: HasCollided is true for kerbs
-        /// and hedges, and a gauge that swings every time you clip a bollard is noise. How hard
-        /// the car stopped is the thing being modelled, and it scales -- a scrape barely
-        /// registers, a wall at eighty throws the fuel across the tank.
-        /// </summary>
-        public bool GaugeSloshOnImpact = true;
 
-        /// <summary>How hard a stop counts as one, in g. 4 is a real crash, not hard braking.</summary>
-        public float GaugeSloshTriggerG = 4.0f;
 
-        /// <summary>How far the surface leans at full force, as a fraction of the screen.</summary>
-        public float GaugeSloshTilt = 0.010f;
 
-        /// <summary>How fast it swings back and forth, and how long it takes to settle.</summary>
-        public float GaugeSloshHertz = 1.6f;
-        public float GaugeSloshSeconds = 1.1f;
 
         public float GaugeMotionRiseSeconds = 0.8f;
         public float GaugeMotionFallSeconds = 4.0f;
@@ -1670,16 +1644,14 @@ namespace Fumes.Core
                 s.ShowGaugeLabel = ini.GetBool("HUD", "ShowGaugeLabel", s.ShowGaugeLabel);
                 s.ShowGaugeIcon = ini.GetBool("HUD", "ShowGaugeIcon", s.ShowGaugeIcon);
                 s.GaugeLiquid = ini.GetBool("HUD", "GaugeLiquid", s.GaugeLiquid);
+                s.GaugeWave = ini.GetFloat("HUD", "Wave", s.GaugeWave, 0f, 1f);
+                s.GaugeSlosh = ini.GetFloat("HUD", "Slosh", s.GaugeSlosh, 0f, 1f);
+                s.GaugeLean = ini.GetFloat("HUD", "Lean", s.GaugeLean, 0f, 1f);
+                s.GaugeDrift = ini.GetFloat("HUD", "Drift", s.GaugeDrift, 0f, 1f);
+                s.GaugePace = ini.GetFloat("HUD", "Pace", s.GaugePace, 0.05f, 200f);
                 s.GaugeMotionMax = ini.GetFloat("HUD", "MotionMax", s.GaugeMotionMax, 1f, 10f);
                 s.GaugeMotionIdle = ini.GetFloat("HUD", "MotionIdle", s.GaugeMotionIdle, 0.05f, 1f);
                 s.GaugeMotionRestKmh = ini.GetFloat("HUD", "MotionRestKmh", s.GaugeMotionRestKmh, 0f, 100f);
-                s.GaugeSwayIdle = ini.GetFloat("HUD", "SwayIdle", s.GaugeSwayIdle, 0f, 1f);
-                s.GaugeSloshOnImpact = ini.GetBool("HUD", "SloshOnImpact", s.GaugeSloshOnImpact);
-                s.GaugeSloshTriggerG = ini.GetFloat("HUD", "SloshTriggerG", s.GaugeSloshTriggerG, 0.5f, 30f);
-                s.GaugeSloshTilt = ini.GetFloat("HUD", "SloshTilt", s.GaugeSloshTilt, 0f, 0.1f);
-                s.GaugeSloshHertz = ini.GetFloat("HUD", "SloshHertz", s.GaugeSloshHertz, 0.1f, 10f);
-                s.GaugeSloshSeconds = ini.GetFloat("HUD", "SloshSeconds", s.GaugeSloshSeconds, 0.05f, 10f);
-                s.GaugeSwayFullKmh = ini.GetFloat("HUD", "SwayFullKmh", s.GaugeSwayFullKmh, 1f, 400f);
                 s.GaugeMotionRiseSeconds = ini.GetFloat("HUD", "MotionRiseSeconds", s.GaugeMotionRiseSeconds, 0f, 30f);
                 s.GaugeMotionFallSeconds = ini.GetFloat("HUD", "MotionFallSeconds", s.GaugeMotionFallSeconds, 0f, 60f);
                 s.GaugeMotionFromKmh = ini.GetFloat("HUD", "MotionFromKmh", s.GaugeMotionFromKmh, 0f, 400f);
