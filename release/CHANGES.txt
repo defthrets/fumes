@@ -1,6 +1,50 @@
 FUMES -- changes
 
 
+0.1.7
+=====
+
+  * FIXED: THE NOZZLE COULD NOT BE HUNG BACK UP. The prompt stuck on "Fill" at the
+    pump. The walk back from the car forces the fill prompt for its whole length,
+    so you arrived already latched to it -- and from there the old rule wanted the
+    filler to be further than the pump by half a metre before it would offer
+    hanging up. At a pump the two distances sit twenty to thirty centimetres apart,
+    so on a snug park it was unreachable at any stance. Hang-up now wins the moment
+    the pump is the nearer thing; the half-metre only guards the way back, which is
+    what it was ever for. Reported by susipupi44.
+
+  * Fixed: a jerry can or a fire extinguisher flashed into his hand for a frame when
+    the nozzle was taken. Those are the two weapons the nozzle is held with -- one is
+    equipped and hidden, and the nozzle hangs off the hand. The hide was applied
+    before the weapon's object existed, so it hid nothing for a frame. The asset is
+    now loaded before the weapon is selected.
+
+  * Fixed: the same two showed in his hand during the grade card and the fill, and
+    went when the nozzle was hung up. The hide was only being re-asserted while
+    carrying the nozzle; anything that reselected a weapon during the fill -- another
+    mod, usually -- left it visible for the rest of it. Kept hidden for as long as the
+    nozzle is out. Reported by Gta5gamer__.
+
+  * ELECTRIC VEHICLES ARE DETECTED BY THE MODEL'S OWN FLAG, not by a list of names.
+    The list was nineteen names and already short an I-Wagen and two Inductors; it
+    would have been short one car per DLC forever, and it could never have known an
+    add-on car. The game's own FLAG_IS_ELECTRIC is read now, and it is on every
+    ScriptHookVDotNet build this mod runs on -- checked, not assumed. The list stays
+    underneath it as a safety net. Suggested by MaitreSystem.
+
+  * Fixed: holding the fire button while pouring the can into a car poured a second
+    stream onto the road from the same can. Every other stage with a can or a nozzle
+    in his hand locked that button; this one did not.
+
+  * Fixed: a pump can-fill interrupted part way -- a death, getting into a car --
+    could leave the next can-fill off the nozzle crouched over a can on the floor.
+
+  * The can's level is saved every ten seconds rather than only at shutdown, which is
+    the one moment a crash never reaches. Same cadence as the tanks.
+
+  * 217 settings in the ini, unchanged.
+
+
 0.1.6
 =====
 

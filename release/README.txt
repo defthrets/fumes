@@ -1,4 +1,4 @@
-FUMES 0.1.6
+FUMES 0.1.7
 Persistent vehicle fuel for GTA V, with a refuel you walk through.
 by spitmux
 
