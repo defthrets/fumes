@@ -2406,9 +2406,30 @@ namespace Fumes.Station
             if (!canFill && !atPump) choice = 0;
             else if (canFill && !atPump) choice = 1;
             else if (!canFill) choice = 2;
-            else if (_prompt == 1) choice = toFiller < toPump + margin ? 1 : 2;
+
+            // THE PUMP WINS AS SOON AS IT IS THE NEARER THING, with nothing to beat.
+            //
+            // The margin cannot defend this direction, and this is the bug people could not
+            // hang the nozzle up through. The branch above forces "fill" for the entire walk
+            // back from the car, so you arrive at the pump already latched to 1 -- and from 1
+            // the old rule wanted the filler to be further than the pump BY THE WHOLE MARGIN
+            // before it would offer hanging up. At a pump the two distances sit twenty to
+            // thirty centimetres apart. Half a metre is wider than the whole spread it was
+            // arbitrating, so on a snug park hang-up was unreachable at any stance while the
+            // tank still had room. The margin had been sized off the gap between the two
+            // distances, mistaken for jitter; the drift of a standing ped is centimetres.
+            //
+            // Hanging up is the end of the errand. It does not have to out-argue a prompt you
+            // have already walked away from.
+            else if (toPump < toFiller) choice = 2;
+
+            // COMING BACK THE OTHER WAY STILL HAS TO BE EARNED, and that is what kills the
+            // strobe the margin was put in for: once hang-up is showing, the filler has to be
+            // clearly nearer to take the button back, so a step or a sway cannot flip it. From
+            // 1 this flips to 2 once and then wants a real half-metre to flip back -- a
+            // per-frame coin toss never produces that.
             else if (_prompt == 2) choice = toFiller < toPump - margin ? 1 : 2;
-            else choice = toFiller < toPump ? 1 : 2;
+            else choice = 1;
 
             _prompt = choice;
 
