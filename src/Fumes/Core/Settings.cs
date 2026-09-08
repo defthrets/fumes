@@ -1247,7 +1247,7 @@ namespace Fumes.Core
         public float GaugeY = 0.8100f;
         // BARE MINIMUM'S BarWidth AND BarLength, so the two instruments are one row.
         public float GaugeWidth = 0.0048f;
-        public float GaugeHeight = 0.18f;
+        public float GaugeHeight = 0.206f;
 
         public Units Units = Units.Litres;
         public bool ShowNumbers = false;
