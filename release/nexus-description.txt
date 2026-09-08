@@ -1,5 +1,5 @@
 ================================================================================
-  FUMES 0.1.7 -- copy for the mod page
+  FUMES 0.1.8 -- copy for the mod page
 ================================================================================
 
 MARKUP: the page allows <b> <i> <u> <a> <ul> <ol> <li> and nothing else. No
@@ -11,7 +11,7 @@ Paste from the next divider down.
 
 --------------------------------------------------------------------------------
 
-<b>⛽ FUMES 0.1.7</b>
+<b>⛽ FUMES 0.1.8</b>
 <i>Persistent vehicle fuel for GTA V, with a refuel you walk through.</i>
 by spitmux
 
@@ -80,11 +80,20 @@ To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 </ul>
 
 
+<b>📋 CHANGELOG — 0.1.8</b>
+
+<ul>
+<li>🔧 <b>Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies</b> — "Could not load file or assembly 'ScriptHookVDotNet3, Version=3.9.0.0'". It was built against the 3.9 Enhanced fork, so the dll asked for 3.9 by name, and an older host will not hand a script a ScriptHookVDotNet newer than itself. Every report that it ran on 3.6 was from somebody on the 3.9 fork. Built against 3.6.0 now, so the one dll runs on 3.6, the nightlies and the Enhanced fork. <i>Reported by RReu and Van_Zandt.</i> 0.1.7 went up before this was built — if you are on 3.6 or a nightly, <b>0.1.8 is the first version that loads at all.</b></li>
+
+<li>🔧 <b>Four members that 3.6.0 lacks were replaced</b> with ones every supported build has. Nothing changes on the 3.9 fork.</li>
+
+<li>⚙️ <b>217 settings in the ini</b>, unchanged.</li>
+</ul>
+
+
 <b>📋 CHANGELOG — 0.1.7</b>
 
 <ul>
-<li>🔧 <b>Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies</b> — "Could not load file or assembly 'ScriptHookVDotNet3, Version=3.9.0.0'". It was built against the 3.9 Enhanced fork, so the dll asked for 3.9 by name, and an older host will not hand a script a ScriptHookVDotNet newer than itself. Every report that it ran on 3.6 was from somebody on the 3.9 fork. Built against 3.6.0 now, so the one dll runs on 3.6, the nightlies and the Enhanced fork. <i>Reported by RReu and Van_Zandt.</i></li>
-
 <li>⛽ <b>Fixed: the nozzle could not be hung back up.</b> The prompt stuck on "Fill" at the pump. You arrive from the car already latched to it, and from there the old rule wanted the filler further than the pump by half a metre before offering hang-up — at a pump the two sit twenty to thirty centimetres apart, so on a snug park it was unreachable. Hang-up now wins the moment the pump is the nearer thing. <i>Reported by susipupi44.</i></li>
 
 <li>🧯 <b>Fixed: a jerry can or fire extinguisher flashed into his hand when taking the nozzle.</b> Those are the two weapons the nozzle is held with — one is equipped and hidden. The hide was applied before the weapon's object existed. The asset is now loaded first.</li>

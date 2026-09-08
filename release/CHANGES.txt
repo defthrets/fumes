@@ -1,7 +1,7 @@
 FUMES -- changes
 
 
-0.1.7
+0.1.8
 =====
 
   * FIXED: THE MOD DID NOT LOAD ON SCRIPTHOOKVDOTNET 3.6 OR ON THE NIGHTLIES.
@@ -14,6 +14,19 @@ FUMES -- changes
     Built against 3.6.0 now, so every host is newer than the reference -- the case
     every script loader handles -- and the same dll runs on 3.6, the nightlies and
     the Enhanced fork. Reported by RReu and Van_Zandt, both on nightly 3.7.0.189.
+
+    0.1.7 went up before this was built, so if you are on 3.6 or a nightly, 0.1.8 is
+    the first version of this mod that loads at all.
+
+  * Four members that 3.6.0 does not have were replaced with ones every supported
+    build has -- the compile against 3.6.0 found them; the API check never knew to
+    look. Nothing changes on the 3.9 fork.
+
+  * 217 settings in the ini, unchanged.
+
+
+0.1.7
+=====
 
   * FIXED: THE NOZZLE COULD NOT BE HUNG BACK UP. The prompt stuck on "Fill" at the
     pump. The walk back from the car forces the fill prompt for its whole length,
