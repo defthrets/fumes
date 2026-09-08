@@ -56,7 +56,7 @@ ROOT = os.path.dirname(HERE)
 WATCH = {
     "GTA.Game": ["SetControlValueNormalized", "IsControlJustPressed", "IsControlPressed",
                  "IsKeyPressed", "GenerateHash", "LastFrameTime", "GameTime",
-                 "IsMissionActive", "DisableControlThisFrame", "Player"],
+                 "IsMissionActive", "DisableControlThisFrame", "Player", "IsPaused"],
     "GTA.Ped": ["IsInStealthMode", "Bones", "Weapons", "CurrentVehicle", "LastVehicle", "IsInVehicle"],
     "GTA.Entity": ["GetOffsetPosition", "AttachTo", "Detach", "IsAttached", "Model",
                    "Velocity", "ForwardVector", "Handle"],

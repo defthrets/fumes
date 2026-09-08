@@ -167,6 +167,11 @@ namespace Fumes.UI
             // Gone when the game's own HUD or radar is. A bar beside a minimap that is not
             // there is worse than no bar, and this way a screenshot key or a cinematic mod
             // takes it with them without knowing Fumes exists.
+            // TWO TESTS, NOT ONE. Gone is the set of moments no HUD of ours belongs on screen
+            // at all -- dead, a cutscene, a fade, a character switch, the pause menu -- and it
+            // is not a preference. HudHidden is the game's own HUD being off, which somebody
+            // may want to ignore, and it stays behind the setting it always had.
+            if (Gone()) return;
             if (_cfg.GaugeFollowsHud && HudHidden()) return;
 
             Measure();
@@ -861,6 +866,38 @@ namespace Fumes.UI
             if (a > 255) a = 255;
 
             return Color.FromArgb(a, c.R, c.G, c.B);
+        }
+
+        /// <summary>
+        /// Whether this is a moment the gauge should not exist: the wasted screen, a cutscene,
+        /// a fade, a character switch, the pause menu.
+        ///
+        /// ASKED OUTRIGHT RATHER THAN INFERRED FROM THE RADAR. The radar going away covers most
+        /// of these, but not every cutscene hides it and the wasted screen takes a beat to --
+        /// and in that beat a fuel gauge sat over "WASTED" in a film-grain frame, which is the
+        /// report. Bare Minimum's bars ask the same set, so the row goes and comes back as one.
+        /// </summary>
+        private static bool Gone()
+        {
+            try
+            {
+                if (Game.IsPaused) return true;
+                if (Function.Call<bool>(Hash.IS_PAUSE_MENU_ACTIVE)) return true;
+                if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return true;
+                if (Function.Call<bool>(Hash.IS_PLAYER_SWITCH_IN_PROGRESS)) return true;
+                if (Function.Call<bool>(Hash.IS_CUTSCENE_ACTIVE)) return true;
+                if (Function.Call<bool>(Hash.IS_PLAYER_DEAD, Game.Player.Handle)) return true;
+
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists() || !me.IsAlive) return true;
+
+                return false;
+            }
+            catch
+            {
+                // If it cannot be asked, draw -- same rule as HudHidden.
+                return false;
+            }
         }
 
         /// <summary>Whether the game is currently hiding its own HUD or radar.</summary>
