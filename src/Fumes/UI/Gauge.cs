@@ -437,7 +437,7 @@ namespace Fumes.UI
 
             private const float Omega = 7.4f;    // 2 pi over 0.85 seconds
             private const float Damping = 2.1f;  // 2 zeta omega, zeta about 0.14
-            private const float Reach = 0.12f;
+            private const float Reach = 0.09f;
 
             public void Kick(float velocity) { V += velocity; }
 
@@ -532,8 +532,8 @@ namespace Fumes.UI
             {
                 var delta = fraction - _lastFraction;
 
-                if (delta > 0.001f) _spring.Kick(0.40f * Math.Min(1f, delta * 4f) * k);
-                else if (delta < -0.001f) _spring.Kick(-(0.35f + 0.65f * Math.Min(1f, -delta * 4f)) * k);
+                if (delta > 0.001f) _spring.Kick(0.32f * Math.Min(1f, delta * 4f) * k);
+                else if (delta < -0.001f) _spring.Kick(-(0.28f + 0.52f * Math.Min(1f, -delta * 4f)) * k);
                 else if (filling && delta > 0f)
                 {
                     _fillSince += delta;
@@ -603,9 +603,10 @@ namespace Fumes.UI
                 _accel += (a - _accel) * Math.Min(1f, dt * 12f);
                 _heave += (az - _heave) * Math.Min(1f, dt * 12f);
 
-                // Braking lifts it and a landing drops it, both through the spring, so they
-                // ring down rather than snapping back.
-                return (-_accel * 0.6f - _heave) * LeanGain * motion;
+                // BRAKING DROPS IT, ACCELERATING LIFTS IT, and a landing drops it -- the same
+                // way round as Bare Minimum's bars beside this one, which were felt as backwards
+                // the other way. All through the spring, so they ring down rather than snap.
+                return (_accel * 0.6f - _heave) * LeanGain * motion;
             }
             catch
             {
@@ -631,14 +632,18 @@ namespace Fumes.UI
             var bow = (float)Math.Sin(t * (2.0 * Math.PI / 144.0)) * swing;
             var lift = (float)Math.Sin(t * (2.0 * Math.PI / 208.0)) * swing * 0.40f;
 
-            var tilt = (float)Math.Sin((t + phase) * (2.0 * Math.PI / 298.0)) * 0.20f * thickH * wave;
+            // BARELY MOVING AT REST, the same as Bare Minimum's five beside it: a fifth of the
+            // idle tilt it had, and the swing above is a quarter of its first figure. The
+            // movement you see is the spring -- a fill, a brake, a landing.
+            var tilt = (float)Math.Sin((t + phase) * (2.0 * Math.PI / 298.0)) * 0.04f * thickH * wave;
 
             // Up is negative on screen: a surface thrown upward heaps in the middle.
-            bow -= speed * 0.55f * thickH;
-            tilt += speed * 0.35f * thickH;
+            bow -= speed * 0.40f * thickH;
+            tilt += speed * 0.25f * thickH;
 
-            // Braking leans the liquid up one wall; accelerating, the other.
-            tilt += Clamp(_accel / 10f, -1f, 1f) * 0.35f * thickH * Clamp01(_cfg.GaugeLean);
+            // Braking leans the liquid up one wall; accelerating, the other. The same way round
+            // as the throw, so a stop reads as one motion and not two.
+            tilt -= Clamp(_accel / 10f, -1f, 1f) * 0.30f * thickH * Clamp01(_cfg.GaugeLean);
 
             var columns = Columns(w);
             if (_tops.Length != columns) _tops = new float[columns];
@@ -776,7 +781,7 @@ namespace Fumes.UI
 
             var surfaceY = Clamp(y + h - level - thrown, y, y + h);
 
-            var swing = h * 0.018f * Clamp01(_cfg.GaugeWave) * (0.35f + 0.65f * empty);
+            var swing = h * 0.004f * Clamp01(_cfg.GaugeWave) * (0.35f + 0.65f * empty);
 
             var floor = y + h;
 
