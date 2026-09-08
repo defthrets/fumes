@@ -139,7 +139,9 @@ namespace Fumes.UI
 
             if (_movie == null)
             {
-                _movie = Scaleform.RequestMovie(MovieName);
+                // THE CONSTRUCTOR, NOT Scaleform.RequestMovie. The factory arrived after 3.6.0;
+                // the constructor requests the same movie and is in every build this runs on.
+                _movie = new Scaleform(MovieName);
                 _askedAt = Game.GameTime;
             }
 

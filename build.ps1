@@ -47,13 +47,28 @@ $outDll = Join-Path $outDir 'Fumes.dll'
 if (-not (Test-Path $csc))    { throw "Compiler missing: $csc  (see tools\README.md)" }
 if (-not (Test-Path $refDir)) { throw "net48 reference assemblies missing: $refDir" }
 
-# SHVDN is taken from whichever install is actually there. It is the same file in both.
-$shvdn = $null
-foreach ($dir in @($GtaDir, $EnhancedDir)) {
-    $candidate = Join-Path $dir 'ScriptHookVDotNet3.dll'
-    if (Test-Path $candidate) { $shvdn = $candidate; break }
+# THE REFERENCE IS THE OLDEST SHVDN THE MOD SUPPORTS, vendored, not whichever one the
+# installs happen to hold. Building against the installed 3.9 fork stamped a reference
+# to Version=3.9.0.0 into the dll, and a genuine 3.6 or nightly 3.7 host will not resolve
+# a script that asks for a NEWER ScriptHookVDotNet than itself -- FileNotFoundException,
+# naming 3.9.0.0, reported twice on the page. A plain CLR bind ignores the version for an
+# unsigned assembly, which is why the compat check passed; the game's own script loader
+# is stricter, and that is the one that counts.
+#
+# Built against 3.6.0.0, every host is newer than the reference, which is the case every
+# script loader handles. tools/check_api.py proves the members exist there.
+$shvdn = Join-Path $root 'tools\shvdn\3.6.0\ScriptHookVDotNet3.dll'
+if (-not (Test-Path $shvdn)) {
+    Write-Host "WARN  vendored SHVDN 3.6.0 reference missing at $shvdn -- falling back to an install, which will stamp that install's version into the dll" -ForegroundColor Yellow
+    $shvdn = $null
+    foreach ($dir in @($GtaDir, $EnhancedDir)) {
+        $candidate = Join-Path $dir 'ScriptHookVDotNet3.dll'
+        if (Test-Path $candidate) { $shvdn = $candidate; break }
+    }
+    if (-not $shvdn) { throw "ScriptHookVDotNet3.dll not found vendored or in either install." }
 }
-if (-not $shvdn) { throw "ScriptHookVDotNet3.dll not found in either install." }
+$shvdnVer = [Reflection.AssemblyName]::GetAssemblyName($shvdn).Version
+Write-Host "Reference ScriptHookVDotNet3 $shvdnVer  ($shvdn)"
 
 New-Item -ItemType Directory -Force $outDir | Out-Null
 

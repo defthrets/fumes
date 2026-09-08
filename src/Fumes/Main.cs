@@ -174,9 +174,9 @@ namespace Fumes
 
             try
             {
-                GTA.UI.Notification.PostTicker(
+                GTA.UI.Notification.Show(
                     "~b~" + Build.Name + "~s~ " + Build.Version + " - by " + Build.By +
-                    " loaded.  Press ~b~" + MenuKeyName() + "~s~ for settings.", false, false);
+                    " loaded.  Press ~b~" + MenuKeyName() + "~s~ for settings.", false);
             }
             catch
             {
@@ -555,8 +555,8 @@ namespace Fumes
 
             try
             {
-                GTA.UI.Notification.PostTicker(
-                    "~r~" + Build.Name + " stopped~s~ - see Fumes.log.", false, false);
+                GTA.UI.Notification.Show(
+                    "~r~" + Build.Name + " stopped~s~ - see Fumes.log.", false);
             }
             catch
             {

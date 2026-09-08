@@ -658,10 +658,10 @@ namespace Fumes.UI
 
             try
             {
-                GTA.UI.Notification.PostTicker(written == _changed.Count
+                GTA.UI.Notification.Show(written == _changed.Count
                     ? "~g~" + written + " setting(s) saved~s~ to Fumes.ini."
                     : "~y~Only " + written + " of " + _changed.Count +
-                      " settings saved~s~ - see Fumes.log.", false, false);
+                      " settings saved~s~ - see Fumes.log.", false);
             }
             catch { /* the log already has it */ }
 

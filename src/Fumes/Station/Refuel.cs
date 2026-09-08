@@ -183,7 +183,12 @@ namespace Fumes.Station
 
             // Getting into a car, dying, being arrested, a cutscene starting -- all of them
             // end the same way, and none of them should leave a hose hanging in the air.
-            if (!me.IsAlive || me.IsInVehicle() || me.IsEnteringVehicle)
+            // THE NATIVE, NOT Ped.IsEnteringVehicle: that property arrived after 3.6.0 and this
+            // has to build against 3.6.0 -- see build.ps1 for why the reference is the oldest
+            // build and not the newest. IS_PED_GETTING_INTO_A_VEHICLE is in every Hash enum
+            // this runs on, checked rather than assumed.
+            if (!me.IsAlive || me.IsInVehicle() ||
+                Function.Call<bool>(Hash.IS_PED_GETTING_INTO_A_VEHICLE, me.Handle))
             {
                 // DROPPED, NOT DELETED. Getting into a car with the nozzle still in your hand
                 // used to make it vanish, which quietly made "put it back" optional -- you
@@ -2357,7 +2362,9 @@ namespace Fumes.Station
 
             if (_cfg.ShowFillerMarker && vehicle != null)
             {
-                World.DrawMarker(MarkerType.Cylinder,
+                // VerticalCylinder is the 3.6.0 name for marker 1; newer builds carry both
+                // names for the same value, so this is the one that exists everywhere.
+                World.DrawMarker(MarkerType.VerticalCylinder,
                                  filler - new Vector3(0f, 0f, 0.45f),
                                  Vector3.Zero, Vector3.Zero,
                                  new Vector3(0.22f, 0.22f, 0.22f),
@@ -3411,7 +3418,7 @@ namespace Fumes.Station
 
         private static void Notify(string text)
         {
-            try { GTA.UI.Notification.PostTicker(text, false, false); }
+            try { GTA.UI.Notification.Show(text, false); }
             catch { /* not worth a crash */ }
         }
     }

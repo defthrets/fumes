@@ -258,7 +258,7 @@ namespace Fumes.Fuel
 
         private static void Say(string text)
         {
-            try { GTA.UI.Notification.PostTicker(text, false, false); }
+            try { GTA.UI.Notification.Show(text, false); }
             catch { /* a missing ticker is not worth a crash */ }
         }
 

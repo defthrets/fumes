@@ -117,7 +117,7 @@ namespace Fumes.Station
 
             try
             {
-                GTA.UI.Notification.PostTicker("~r~The pump went up~s~ - " + why + ".", false, false);
+                GTA.UI.Notification.Show("~r~The pump went up~s~ - " + why + ".", false);
             }
             catch
             {

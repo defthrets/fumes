@@ -4,6 +4,17 @@ FUMES -- changes
 0.1.7
 =====
 
+  * FIXED: THE MOD DID NOT LOAD ON SCRIPTHOOKVDOTNET 3.6 OR ON THE NIGHTLIES.
+    "Could not load file or assembly 'ScriptHookVDotNet3, Version=3.9.0.0'". It was
+    built against the 3.9 Enhanced fork, so the dll asked for 3.9 by name, and a
+    3.6 or 3.7 host will not hand a script a ScriptHookVDotNet newer than itself.
+    Every build since 0.1.3 said it ran on 3.6 and up; every report that it did
+    was from somebody on the 3.9 fork.
+
+    Built against 3.6.0 now, so every host is newer than the reference -- the case
+    every script loader handles -- and the same dll runs on 3.6, the nightlies and
+    the Enhanced fork. Reported by RReu and Van_Zandt, both on nightly 3.7.0.189.
+
   * FIXED: THE NOZZLE COULD NOT BE HUNG BACK UP. The prompt stuck on "Fill" at the
     pump. The walk back from the car forces the fill prompt for its whole length,
     so you arrived already latched to it -- and from there the old rule wanted the

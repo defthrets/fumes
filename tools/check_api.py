@@ -1,14 +1,24 @@
 """
 Checks every ScriptHookVDotNet API the mod calls against other builds of SHVDN.
 
-WHY THIS EXISTS. SHVDN is not strong-named -- its PublicKeyToken is null -- so the
-CLR binds it by simple name and ignores the version entirely. A build compiled
-against the 3.9.0.0 Enhanced fork therefore LOADS quite happily under 3.6.0 stable
-or a 3.7.0 nightly. Nothing complains, and the mod appears to work.
+WHY THIS EXISTS. SHVDN is not strong-named -- its PublicKeyToken is null -- so a
+plain CLR bind ignores the version. THE GAME'S SCRIPT LOADER DOES NOT. This file
+used to claim that a build compiled against 3.9.0.0 "loads quite happily" under
+3.6.0 or a 3.7.0 nightly; two users on nightly 3.7.0.189 got
+"Could not load file or assembly 'ScriptHookVDotNet3, Version=3.9.0.0'", and a
+bind test in a bare PowerShell process passed on all three builds -- which is
+exactly why the claim survived. SHVDN resolves script references in its own
+AppDomain and declines a reference NEWER than itself.
 
-It appears to work until a line runs that calls a method the installed build does
-not have, and then it throws MissingMethodException at that moment and only that
-moment. Model.GetDimensions was in five places here: the nozzle, the filler guess,
+So build.ps1 now compiles against the OLDEST supported build, vendored at
+tools/shvdn/3.6.0, and the compile itself is the real check: a member 3.6.0
+lacks is a build error, not a runtime surprise. This script is the second line --
+it says which members are relied on, and confirms they exist in the newer builds
+the dll will bind against at runtime.
+
+It also catches the other direction. A dll that DOES load can still call a
+method the installed build does not have, and then it throws
+MissingMethodException at that moment and only that moment. Model.GetDimensions was in five places here: the nozzle, the filler guess,
 the can going down, the can in his hand, the pump anchor. On stable that is not one
 bug, it is five, each turning up somewhere unrelated, none of them at start-up, and
 none of them saying what they have in common.
@@ -60,6 +70,11 @@ WATCH = {
     "GTA.Native.OutputArgument": ["GetResult"],
     "GTA.Rope": ["Length", "VertexCount", "GetVertexCoord", "ActivatePhysics"],
     "GTA.Prop": ["IsPositionFrozen"],
+    # The four that 3.6.0 lacked and this list never knew about. The build against 3.6.0 is
+    # what actually catches these now; they are here so the report says what is relied on.
+    "GTA.UI.Notification": ["Show"],
+    "GTA.Scaleform": ["Handle", "IsLoaded", "Render2D", "Dispose"],
+    "GTA.MarkerType": ["VerticalCylinder"],
 }
 
 DUMP = r"""
