@@ -387,6 +387,23 @@ namespace Fumes.Station
                     return;
                 }
 
+                // THE WEAPON'S ASSET BEFORE THE WEAPON, and this is the flash. Selecting a
+                // weapon whose asset is not yet streamed creates its object a frame or two
+                // LATER, and SET_PED_CURRENT_WEAPON_VISIBLE hides the object that exists NOW --
+                // so the hide below landed on nothing, the extinguisher or the can drew for a
+                // frame, and only then did the per-frame re-hide above catch it. That frame is
+                // what people saw pop into his hand.
+                //
+                // With the asset resident the object is created inside the select call itself,
+                // and the hide has something to take hold of. Until then, wait: Take() asks
+                // again next frame for as long as the nozzle is out, so nothing is lost by
+                // not posing yet except the frame that used to show a fire extinguisher.
+                if (!Function.Call<bool>(Hash.HAS_WEAPON_ASSET_LOADED, (uint)want))
+                {
+                    Function.Call(Hash.REQUEST_WEAPON_ASSET, (uint)want, 31, 0);
+                    return;
+                }
+
                 // UNARMED FIRST, and this is the part that was missing. Going straight from a
                 // pistol to the extinguisher can leave the pistol's movement and strafe clipsets
                 // in place, which is what the gunman's stance actually was -- the weapon had
