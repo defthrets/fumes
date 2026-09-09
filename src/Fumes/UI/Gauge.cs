@@ -200,12 +200,12 @@ namespace Fumes.UI
                 var w = _cfg.GaugeWidth;
                 var h = _cfg.GaugeHeight;
 
-                // IN LINE WITH THE BARS, if they are there. Bare Minimum publishes where its row
-                // stands and how big its bars are, and this takes the width, the height and the
-                // foot from it -- not the X, which is the one number that is this mod's own.
-                // See Neighbour, and Settings.GaugeMatchBars for why it is asked rather than
-                // copied into the ini by hand.
-                Neighbour.Match(_cfg, ref y, ref w, ref h);
+                // IN LINE WITH THE BARS, if they are there. Bare Minimum publishes where its
+                // row stands and how big its bars are, and this takes the width, the height,
+                // the foot AND the side from it. The side used to be this mod's own decision,
+                // and stopped being one the day that row could stand on either half of the
+                // minimap: see Neighbour.Match. Settings.GaugeManualX turns that half back off.
+                Neighbour.Match(_cfg, ref x, ref y, ref w, ref h);
 
                 var fraction = Clamp01(tank.Fraction);
 

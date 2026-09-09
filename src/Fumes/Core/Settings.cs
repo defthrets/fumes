@@ -1261,6 +1261,17 @@ namespace Fumes.Core
         public bool GaugeMatchBars = true;
 
         public float GaugeX = 0.1330f;
+
+        /// <summary>
+        /// Whether GaugeX is used even when Bare Minimum is there to say where the gauge goes.
+        ///
+        /// OFF, so the gauge follows that mod's row to the opposite side of the minimap and
+        /// keeps doing so if the row is moved. On, GaugeX wins and the gauge stays where it is
+        /// put -- for anybody who wants it somewhere else on the screen entirely, and for the
+        /// case this cannot cover, which is Bare Minimum not being installed at all: there is
+        /// nobody to ask then and GaugeX is the answer whatever this says.
+        /// </summary>
+        public bool GaugeManualX = false;
         public float GaugeY = 0.8100f;
         // BARE MINIMUM'S BarWidth AND BarLength, so the two instruments are one row.
         public float GaugeWidth = 0.0048f;
@@ -1661,6 +1672,7 @@ namespace Fumes.Core
                 s.GaugeFollowsHud = ini.GetBool("HUD", "FollowsHud", s.GaugeFollowsHud);
                 s.GaugeMatchBars = ini.GetBool("HUD", "MatchBars", s.GaugeMatchBars);
                 s.GaugeX = ini.GetFloat("HUD", "X", s.GaugeX, 0f, 1f);
+                s.GaugeManualX = ini.GetBool("HUD", "ManualX", s.GaugeManualX);
                 s.GaugeY = ini.GetFloat("HUD", "Y", s.GaugeY, 0f, 1f);
                 s.GaugeWidth = ini.GetFloat("HUD", "Width", s.GaugeWidth, 0.0010f, 0.8f);
                 s.GaugeHeight = ini.GetFloat("HUD", "Height", s.GaugeHeight, 0.004f, 0.6f);

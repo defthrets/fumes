@@ -36,7 +36,7 @@ namespace Fumes.UI
         private const string TypeName = "BareMinimum.Api.Rack";
 
         /// <summary>The contract this code was written against.</summary>
-        private const int WantApi = 1;
+        private const int WantApi = 2;
 
         private const int GiveUpAfterMs = 30000;
         private const int RetryEveryMs = 2000;
@@ -48,6 +48,7 @@ namespace Fumes.UI
         private static bool _said;
 
         private static PropertyInfo _ready, _bottom, _barWidth, _barLength, _opacity, _plateHeight;
+        private static PropertyInfo _spareX, _rowOnLeft;
 
         /// <summary>Whether the other mod is here, has laid its row out, and is drawing bars.</summary>
         public static bool Ready
@@ -82,6 +83,38 @@ namespace Fumes.UI
         /// under the minimap. Nought if that mod is too old to say, and then the square is used.
         /// </summary>
         public static float PlateHeight { get { return Read(_plateHeight); } }
+
+        /// <summary>
+        /// Where that mod says a bar belonging to somebody else should stand: the side of the
+        /// minimap its own row is not on. A fraction of screen width, and the left edge of the
+        /// channel -- the same thing GaugeX is.
+        ///
+        /// ASKED, BECAUSE THIS MOD CANNOT WORK IT OUT. Where the minimap sits depends on the
+        /// player's safe-zone slider, and the only way to find out is to ask the game for HUD
+        /// component 13's position -- and then to know that the answer is wrong for a resized
+        /// radar and to do the alignment arithmetic instead, and to know how far that mod's
+        /// frame reaches past the map on each side. That is three things this script has no
+        /// business knowing, and it would have to keep knowing them every time that mod's frame
+        /// changed. Which is the same argument as Bottom, BarWidth and the rest: one mod owns
+        /// the answer.
+        ///
+        /// Nought when nobody is there, and then GaugeX is the answer, as it always was.
+        /// </summary>
+        public static float SpareX { get { return Read(_spareX); } }
+
+        /// <summary>Whether that mod's row is on the LEFT, so this can name the side in its log.</summary>
+        public static bool RowOnLeft
+        {
+            get
+            {
+                try
+                {
+                    if (_rowOnLeft == null || Resolve() == null) return false;
+                    return (bool)_rowOnLeft.GetValue(null, null);
+                }
+                catch { return false; }
+            }
+        }
 
         private static float Read(PropertyInfo p)
         {
@@ -137,6 +170,8 @@ namespace Fumes.UI
                     _barLength = type.GetProperty("BarLength", BindingFlags.Public | BindingFlags.Static);
                     _opacity = type.GetProperty("Opacity", BindingFlags.Public | BindingFlags.Static);
                     _plateHeight = type.GetProperty("PlateHeight", BindingFlags.Public | BindingFlags.Static);
+                    _spareX = type.GetProperty("SpareX", BindingFlags.Public | BindingFlags.Static);
+                    _rowOnLeft = type.GetProperty("RowOnLeft", BindingFlags.Public | BindingFlags.Static);
 
                     _type = type;
 
@@ -165,12 +200,17 @@ namespace Fumes.UI
         /// <summary>
         /// This frame's size and position for the gauge, taken from the row when there is one.
         ///
-        /// THE X IS NEVER TAKEN. The row stands on the far side of the minimap and this gauge
-        /// stands on the near side of it -- that is the arrangement, and it is the one thing
-        /// here that is genuinely this mod's own decision. Everything else is a matter of the
-        /// two matching, and matching means copying.
+        /// THE X IS TAKEN NOW TOO, WHICH IT NEVER USED TO BE. The comment here said the side
+        /// was "the one thing here that is genuinely this mod's own decision" -- and it was,
+        /// right up until that mod's row could stand on either side. Two mods each privately
+        /// certain which half of the minimap is theirs is two mods drawing on top of each other
+        /// the first time one of them moves, and the one that moved is the one that knows.
+        ///
+        /// So the side follows the row: that mod publishes where the far edge of the map is, in
+        /// this mod's units, and the gauge goes there. GaugeSide = Manual keeps the old
+        /// behaviour and GaugeX, for anybody who wants it somewhere else entirely.
         /// </summary>
-        public static bool Match(Settings cfg, ref float y, ref float w, ref float h)
+        public static bool Match(Settings cfg, ref float x, ref float y, ref float w, ref float h)
         {
             if (!cfg.GaugeMatchBars || !Ready) return false;
 
@@ -186,12 +226,24 @@ namespace Fumes.UI
             h = length;
             y = bottom - length;
 
+            var spare = SpareX;
+            var took = false;
+
+            // NOUGHT IS "NOT SAID", not a position: a gauge at 0 is hard against the left edge
+            // of the screen, which is exactly where an older Bare Minimum with no SpareX to
+            // give would have put it.
+            if (!cfg.GaugeManualX && spare > 0.0005f) { x = spare; took = true; }
+
             if (!_said)
             {
                 _said = true;
                 Log.Info("The gauge is standing in Bare Minimum's row: width " +
                          w.ToString("0.0000") + ", height " + h.ToString("0.0000") +
-                         ", top " + y.ToString("0.0000") + ".");
+                         ", top " + y.ToString("0.0000") +
+                         (took ? ", x " + x.ToString("0.0000") + " -- the " +
+                                 (RowOnLeft ? "right" : "left") + " of the minimap, opposite " +
+                                 "its row."
+                               : ", x " + x.ToString("0.0000") + " from this mod's own ini."));
             }
 
             return true;
