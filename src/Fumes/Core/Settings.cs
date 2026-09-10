@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using GTA;
@@ -146,7 +146,10 @@ namespace Fumes.Core
         // ---- general ----------------------------------------------------------
         public bool Enabled = true;
         public LogLevel LogLevel = LogLevel.Info;
-        public bool AnnounceOnLoad = true;
+        // FALSE, BECAUSE THE SEAL ROW SAYS IT NOW. See UI.Splash. Still a switch rather
+        // than a deletion: somebody who wants the old ticker line back has one word
+        // to change and no rebuild.
+        public bool AnnounceOnLoad = false;
 
         /// <summary>
         /// The key that opens the settings menu, and what has to be held with it.

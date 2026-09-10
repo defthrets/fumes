@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -101,6 +101,10 @@ namespace Fumes
 
         private void OnTick(object sender, EventArgs e)
         {
+            // The set's mark, for a few seconds after load. Bows out on its own and
+            // costs a comparison thereafter; see UI.Splash.
+            UI.Splash.Render();
+
             if (_parked || !_cfg.Enabled) return;
 
             try
