@@ -5,7 +5,13 @@ using GTA;
 namespace Fumes.UI
 {
     /// <summary>
-    /// The mark, the mod's name and its version, in the corner for a few seconds after load.
+    /// One mark, and everything installed listed beside it, for a few seconds after load.
+    ///
+    /// ONE SEAL, NOT ONE EACH. It drew a mark per row to begin with, and a column of eight
+    /// identical spinning seals is not a set of mods, it is a column of eight spinning seals.
+    /// The mark is the thing you recognise and it only needs to be there once -- so it is
+    /// drawn big, once, centred on the whole column, and each mod contributes nothing but its
+    /// own line of text beside it. Which is also what makes the list read as a list.
     ///
     /// One of these ships in every mod in the set, which is the whole point -- six mods that
     /// each announce themselves differently are six mods; six that announce themselves the
@@ -39,11 +45,22 @@ namespace Fumes.UI
         /// </summary>
         private const int NotBeforeMs = 6000;
 
-        /// <summary>Row geometry, in fractions of the screen.</summary>
-        private const float RightEdge = 0.974f;
-        private const float BottomRow = 0.906f;
-        private const float RowPitch = 0.060f;
-        private const float MarkHeight = 0.046f;
+        /// <summary>
+        /// Row geometry, in fractions of the screen.
+        ///
+        /// THE PITCH IS TIGHT AND THE TEXT IS SMALL, because this is a LIST now rather than a
+        /// stack of separate announcements. Eight names set close together read as one thing
+        /// with eight items in it; the same eight spread out read as eight things that happen
+        /// to be near each other.
+        ///
+        /// And the mark is twice what it was. There is only one of it on screen now, so it can
+        /// afford to be the size somebody would actually recognise it at.
+        /// </summary>
+        private const float RightEdge = 0.980f;
+        private const float BottomRow = 0.930f;
+        private const float RowPitch = 0.032f;
+        private const float MarkHeight = 0.092f;
+        private const float TextSize = 0.30f;
 
         /// <summary>
         /// Call once per tick from Main. Costs a comparison once it has had its turn.
@@ -84,7 +101,17 @@ namespace Fumes.UI
             // The mark sits hard against the right edge and the name is set to its left, so a
             // long name grows leftwards into empty screen rather than pushing the mark about.
             var markCx = RightEdge - ToX(MarkHeight) * 0.5f;
-            Seal.Draw(markCx, y, MarkHeight, Color.FromArgb(a, Ink));
+
+            // ONE OF US DRAWS IT, AND IT IS CENTRED ON ALL OF US. The count is read every
+            // frame rather than at the start: the others claim their rows within a tick or two
+            // of this one, so a height worked out on the first frame would be the height of
+            // however many had got there first.
+            if (OwnsSeal())
+            {
+                var middle = BottomRow - (Rows() - 1) * RowPitch * 0.5f;
+
+                Seal.Draw(markCx, middle, MarkHeight, Color.FromArgb(a, Ink));
+            }
 
             var text = Core.Build.Name + "  " + Core.Build.Version;
             Text(text, markCx - ToX(MarkHeight) * 0.5f - 0.008f, y, a);
@@ -180,7 +207,61 @@ namespace Fumes.UI
             }
         }
 
+        /// <summary>How many rows there are, which is how tall the column is.</summary>
+        private static int Rows()
+        {
+            try
+            {
+                var many = AppDomain.CurrentDomain.GetData(RowKey) as int?;
+                return many.HasValue && many.Value > 0 ? many.Value : 1;
+            }
+            catch
+            {
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// Whether this mod is the one drawing the mark.
+        ///
+        /// CLAIMED BY THE FIRST ONE WITH SOMETHING TO DRAW, not by the first one to load. A
+        /// mod that cannot find the art would otherwise take the claim and then draw nothing,
+        /// and the whole set would go without a seal because of whichever assembly SHVDN
+        /// happened to construct first. A source script compiled at runtime has no file on
+        /// disk to look next to at all, so this is not a corner case -- it is Street Golf.
+        ///
+        /// Asked every frame rather than settled once, so a mod that resolves its folder late
+        /// can still take a claim nobody else has.
+        /// </summary>
+        private static bool OwnsSeal()
+        {
+            if (Seal.Folder == null) return false;
+
+            try
+            {
+                var domain = AppDomain.CurrentDomain;
+                var who = domain.GetData(SealKey) as string;
+
+                if (who == null)
+                {
+                    domain.SetData(SealKey, Me);
+                    return true;
+                }
+
+                return who == Me;
+            }
+            catch
+            {
+                // On its own, then, which is the right answer for a single mod.
+                return true;
+            }
+        }
+
+        /// <summary>This assembly, as a name the others can compare against.</summary>
+        private static readonly string Me = typeof(Splash).Assembly.FullName;
+
         private const string RowKey = "spitmux.splash.rows";
+        private const string SealKey = "spitmux.splash.seal";
 
         /// <summary>
         /// The name, right-aligned so it ends at the mark.
@@ -194,8 +275,8 @@ namespace Fumes.UI
             {
                 var t = new GTA.UI.TextElement(
                     s,
-                    new PointF(rightX * GTA.UI.Screen.ScaledWidth, middleY * 720f - 14f),
-                    0.36f,
+                    new PointF(rightX * GTA.UI.Screen.ScaledWidth, middleY * 720f - 11f),
+                    TextSize,
                     Color.FromArgb(a, Ink),
                     GTA.UI.Font.ChaletComprimeCologne,
                     GTA.UI.Alignment.Right);
