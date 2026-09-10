@@ -24,3 +24,7 @@ desktop.ini
 # Contact sheets and scratch renders. meter.gif and meter_full.png are kept as
 # documentation; anything else under preview/ is something I made to squint at once.
 preview/meter_sheet.png
+
+# Python's own build noise. One .pyc was tracked for a while; it is nobody's business.
+__pycache__/
+*.pyc

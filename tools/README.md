@@ -34,3 +34,20 @@ Produces:
 
 The only other thing the build needs is `ScriptHookVDotNet3.dll`, which it takes from
 whichever GTA V install is present. Both editions ship the identical file.
+
+## shvdn/3.6.0/ScriptHookVDotNet3.dll
+
+**This is not ours.** It is a stock ScriptHookVDotNet 3.6.0 release binary, kept here
+because the build references it rather than whichever ScriptHookVDotNet happens to be
+installed on the machine doing the building.
+
+That matters more than it sounds. Compiling against the 3.9 Enhanced fork stamps a
+reference to `Version=3.9.0.0` into `Fumes.dll`, and ScriptHookVDotNet will not hand a
+script a version of itself NEWER than the one running — so the mod simply refused to load
+for everybody on 3.6 or a nightly, with an exception naming a version they had never heard
+of. Building against the OLDEST supported release means every host is newer than the
+reference, which is the case every loader handles. See the note at the top of
+`build.ps1`.
+
+Upstream: <https://github.com/scripthookvdotnet/scripthookvdotnet> — zlib licence, which
+permits redistribution. The file is unmodified.
