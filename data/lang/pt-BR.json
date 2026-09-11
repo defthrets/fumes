@@ -1,7 +1,7 @@
 {
  "language": "Português (Brasil)",
  "code": "pt-BR",
- "by": "community translation (from a PT-BR build of Fumes 0.1.1); later strings by the mod author (assisted)",
+ "by": "lirounando (from their PT-BR build of Fumes 0.1.1); strings added since 0.1.1 by the mod author (assisted)",
  "note": "English on the left, Português (Brasil) on the right. Keep the ~y~ colour codes and the leading and trailing spaces exactly as they are: the mod glues fragments together. Anything not listed here shows in English.",
  "strings": {
   " station(s), interact key ": " posto(s), tecla de interação ",

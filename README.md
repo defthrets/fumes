@@ -189,6 +189,14 @@ by spitmux
 
 ---
 
+## Translations
+
+Eight languages, one json each in `data/lang/`, switched from the settings menu.
+The Brazilian Portuguese is **lirounando's** -- they translated 0.1.1 in full and
+sent it back, and it is the reason the language setting exists at all. The other
+six are the author's own and have not been checked by a native speaker: a
+correction is one line in one file, and `tools/lang/README.md` says how.
+
 ## Licence
 
 MIT. See `LICENSE`. The mod ships no Rockstar assets and does not bundle

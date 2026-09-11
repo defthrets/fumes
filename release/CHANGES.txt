@@ -12,11 +12,11 @@ FUMES -- changes
     and needs no fork, and anything a file does not cover shows in English rather
     than going blank. Another language is another json in the same folder.
 
-    The Portuguese began as a full PT-BR build of 0.1.1 that somebody made and
-    sent back as a modified dll; its three hundred strings were recovered from the
-    assembly and read through, and everything since 0.1.1 filled in after. The
-    other six are the mod author's own and have not yet been checked by a native
-    speaker -- corrections are one line in one file.
+    The Portuguese is lirounando's. They built a full PT-BR translation of 0.1.1
+    and sent it back as a modified dll; its three hundred strings were recovered
+    from the assembly and read through, and everything since 0.1.1 filled in
+    after. The other six are the mod author's own and have not yet been checked by
+    a native speaker -- corrections are one line in one file.
 
     Choosing a language on the menu also sets Units to what its speakers expect:
     gallons for English (US), litres for everyone else. The Units row is still

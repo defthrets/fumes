@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Brazilian Portuguese for what arrived after 0.1.1, in the community translator's own
-vocabulary: bico, bomba, galão, posto, mangueira. The generator takes a string from here
-ONLY when the community file does not have it, so nothing of theirs is overwritten."""
+"""Brazilian Portuguese for what arrived after 0.1.1, in lirounando's own vocabulary:
+bico, bomba, galão, posto, mangueira. The generator takes a string from here ONLY when
+their file does not have it, so nothing of theirs is overwritten."""
 
 LANGUAGE = 'Português (Brasil)'
 CODE = 'pt-BR'
-BY = 'community translation (from a PT-BR build of Fumes 0.1.1); later strings by the mod author (assisted)'
+BY = 'lirounando (from their PT-BR build of Fumes 0.1.1); strings added since 0.1.1 by the mod author (assisted)'
 
 T = {
 "Language": "Idioma",

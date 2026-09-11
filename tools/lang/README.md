@@ -11,4 +11,4 @@ went missing, edge whitespace that changed, a key written twice, and reports cov
 `uikeys.json`, which `uikeys.py` rebuilds from the source.
 
 `usheap.py` reads a .NET assembly's user-string heap; `align3.py` pairs two heaps (an English
-build and a translated one) -- how the Portuguese was recovered from a community dll.
+build and a translated one) -- how lirounando's Portuguese was recovered from the dll they sent.
