@@ -1,4 +1,4 @@
-# Fumes
+﻿# Fumes
 
 A fuel mod for GTA V. Every vanilla and online vehicle carries a real tank that
 empties as you drive and is still empty when you come back to it tomorrow.
@@ -62,17 +62,19 @@ ScriptHookVDotNet, no asset mods, no OpenIV, nothing to install into an RPF.
 ## Install
 
 1. You need [ScriptHookV](http://www.dev-c.com/gtav/scripthookv/) and
-   [ScriptHookVDotNetEnhanced](https://www.gta5-mods.com/tools/script-hook-v-net-enhanced)
-   v1.1.0.6 or later.
+   **ScriptHookVDotNet 3, any build from 3.6.0 up** — the
+   [releases](https://github.com/scripthookvdotnet/scripthookvdotnet/releases),
+   the nightlies, or on GTA V Enhanced the
+   [Enhanced fork](https://www.gta5-mods.com/tools/script-hook-v-net-enhanced).
 
-   **The version numbers do not match, and that is what stops most installs.**
-   Fumes needs `ScriptHookVDotNet3.dll` with an assembly version of **3.9.0.0** —
-   which is not a release you can download. There is no "3.9". The build that
-   contains it is the Enhanced fork, released as **v1.1.x**. People search for a
-   3.9, find nothing, install the newest thing labelled 3, and the mod silently
-   does not load. Check the dll itself: right-click, Properties, Details.
-2. Drop the contents of the zip over your GTA V folder. That puts
-   `Fumes.dll`, `Fumes.ini` and `scripts\Fumes\stations.json` where they belong.
+   **There is no "3.9" to download.** The Enhanced fork reports an assembly
+   version of 3.9.0.0 but is released as **v1.1.x**; people search for a 3.9,
+   find nothing, and give up. Since 0.1.8 the dll is built against 3.6.0, so
+   every host from there up loads it. To see what you have: right-click
+   `ScriptHookVDotNet3.dll`, Properties, Details.
+2. Drop the contents of the zip over your GTA V folder. That puts `Fumes.dll`,
+   `Fumes.ini` and the `scripts\Fumes\` folder (`stations.json` and the HUD's
+   icons) where they belong.
 
 Nothing else. No RPF edits, no limit adjuster, no gameconfig.
 
