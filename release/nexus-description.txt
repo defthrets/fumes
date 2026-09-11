@@ -1,144 +1,154 @@
 ================================================================================
-  FUMES 0.1.9 -- copy for the mod page
+  FUMES -- copy for the mod page
 ================================================================================
 
-MARKUP: the page allows <b> <i> <u> <a> <ul> <ol> <li> and nothing else. No
-headings, no <br>, no <pre>, no tables -- headings are bold lines, breaks are
-real newlines, every list is a <ul>.
+MARKUP, CONFIRMED AGAINST THE LIVE PAGE (read out of its own DOM, 2026-09-11):
 
-ASCII ART: the page is not monospace and it COLLAPSES whitespace -- runs of
-spaces become one, leading spaces vanish. So every line of art here is
-left-flush with no padding spaces, and the rules are repeated characters. It
-will not line up to the pixel in a proportional font; it is drawn so that it
-does not need to.
+  * EVERY <br> YOU TYPE IS STRIPPED. The page does the line breaking itself.
+  * ONE REAL NEWLINE becomes one <br>. A BLANK LINE becomes two -- that, and
+    only that, is how you get a gap between sections. Typing <br><br> gets you
+    a single break, because the tags go and the one newline after them stays.
+  * NEWLINES INSIDE A <ul> PRODUCE NOTHING, so list items can sit on their own
+    lines and the list stays tight.
+  * <pre> IS STRIPPED TOO, and with it any monospacing. The banner survives
+    only because it is drawn from Block Elements (U+2580-259F), which every
+    font gives the same advance width. Nothing else will line up: the page
+    collapses runs of spaces and drops leading ones.
+  * SURVIVES: <b> <i> <u> <a> <ul> <ol> <li>. Nothing else -- no headings, no
+    tables, no <pre>, no <br>.
+
+So: no <br> anywhere below, and every gap is a real blank line.
 
 Paste from the next divider down.
 
 --------------------------------------------------------------------------------
 
-<b>=========================================================</b>
-<b>F U M E S   v0.1.9   ~   (o)==~~~~~~~~~~~~~~~~~~~==&gt;</b>
-<b>=========================================================</b>
-<i>Persistent vehicle fuel for GTA V, with a refuel you walk through.</i>
-by spitmux
+░█▀▀░█░█░█▄█░█▀▀░█▀▀
+░█▀▀░█░█░█░█░█▀▀░▀▀█
+░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀
 
-
-<b>[ WHAT IT IS ]-------------------------------------------</b>
+<b>Persistent vehicle fuel for GTA V, with a refuel you walk through.</b>
 
 Every vehicle carries a real fuel tank. It empties as you drive, and it is still empty when you come back to that car tomorrow.
 
-<b>Refuelling is not a menu.</b>
-Walk to the pump -&gt; take the nozzle -&gt; walk it to the filler -&gt; fill -&gt; walk it back -&gt; hang it up.
-The hose comes with you. Walk too far and it pulls the nozzle out of your hands. &gt;_&lt;
+<b>Free.</b> Open source under MIT. Nightly builds at <a href="https://spitmux.me">spitmux.me</a> if you want it before it lands here.
+
+===================================
+
+<b>WHAT IT IS</b>
+
+<b>Refuelling is not a menu.</b> Walk to the pump, take the nozzle. It goes in your hand and the hose comes with you. Walk round to that model's filler, fill up, walk the nozzle back and hang it up. Walk too far and the hose pulls it out of your hands.
 
 Runs on <b>Legacy and Enhanced from one build</b>.
 
+===================================
 
-<b>[ WHAT ELSE IS IN THERE ]--------------------------------</b>
+<b>WHAT ELSE IS IN THERE</b>
 
 <ul>
-<li><b>[+] Siphon</b> fuel out of any car with a jerry can, or fill the can at a pump.</li>
-<li><b>[+] Overflow.</b> A full can does not stop it. The spill pools at your feet, and it ignites. (o)</li>
-<li><b>[+] Grades</b> -- Regular, Plus, Premium. The grade stays in the tank. A card at the pump shows what each costs there.</li>
-<li><b>[+] Diesel</b> for trucks, buses, tractors and the fire engine. Costs more, goes further.</li>
-<li><b>[+] Bikes</b> get a bike's tank -- about $17 to fill, same range as a car.</li>
-<li><b>[+] Electric</b> vehicles are left alone entirely. No tank, no gauge, no fuel burned.</li>
-<li><b>[+] Traffic</b> pulls into forecourts when it is low and already nearby.</li>
-<li><b>[+] The gauge</b> sloshes with speed, chimes on reserve, and hides with the game's HUD.</li>
-<li><b>[+] 25 stations</b> on the map, one legend entry between them.</li>
+<li><b>Siphon fuel out of any car</b> with a jerry can, or fill the can at a pump;</li>
+<li><b>A full can does not stop it.</b> The overflow pools at your feet, and it ignites;</li>
+<li><b>Fuel grades: Regular, Plus, Premium.</b> The grade stays in the tank. A card at the pump shows what each costs there;</li>
+<li><b>Diesel</b> for trucks, buses, tractors and the fire engine. Costs more, goes further;</li>
+<li><b>Bikes get a bike's tank</b>, about seventeen dollars to fill, same range as a car;</li>
+<li><b>Electric vehicles are left alone entirely.</b> No tank, no gauge, no fuel burned. Detected by the model's own flag, so DLC and add-on electrics too;</li>
+<li><b>Traffic pulls into forecourts</b> when it is low and already nearby;</li>
+<li><b>The gauge sloshes with speed</b>, chimes on reserve, and hides with the game's HUD, in cutscenes and through fades;</li>
+<li><b>Twenty-five stations on the map</b>, one legend entry between them. Refuelling itself does not use the list: the mod finds the pump you are stood at by its prop, so a station missing from the map still works.</li>
 </ul>
 
+===================================
 
-<b>[ REQUIREMENTS ]-----------------------------------------</b>
+<b>REQUIREMENTS</b>
 
 <ul>
-<li><b>[*] Script Hook V</b> for your edition.</li>
-<li><b>[*] ScriptHookVDotNet 3</b> -- any build from <b>3.6.0</b> up. Nightlies and the Enhanced fork included.</li>
+<li><b>Script Hook V</b> for your edition;</li>
+<li><b>ScriptHookVDotNet 3</b>, any build from <b>3.6.0</b> up. Nightlies and the Enhanced fork included.</li>
 </ul>
 
 On <b>GTA V Enhanced</b> it must be the Enhanced fork: <a href="https://www.gta5-mods.com/tools/script-hook-v-net-enhanced">script-hook-v-net-enhanced</a>
 
-<b>[!] There is no "3.9" to download.</b> The Enhanced fork reports 3.9.0.0 but is released as v1.1.x. To see what you have: right-click <i>ScriptHookVDotNet3.dll</i> -&gt; Properties -&gt; Details.
+The Enhanced fork reports 3.9.0.0 but is released as v1.1.x. To see what you have: right-click <i>ScriptHookVDotNet3.dll</i>, Properties, Details.
 
-Nothing else is needed. <b>[!] Remove any other fuel mod first.</b>
+Nothing else is needed. <b>Remove any other fuel mod first.</b> Two fuel mods will both cut your engine and both charge you, and neither will know about the other.
 
+<b>Compatibility.</b> No game files are touched, so graphics, map and vehicle packs are fine. Built alongside <b>Posted Up</b> and <b>Bare Minimum</b> and tested with both running. If you run Vehicle Tweaks as well, its ignition and this mod's empty-tank stall are both pulling on the same engine; turn one of them off on an empty tank.
 
-<b>[ INSTALLING ]-------------------------------------------</b>
+<b>Bare Minimum is not required.</b> If it is there the gauge joins its row of bars as a sixth bar, matched to it and moving with it. If it is not, the gauge stands on its own exactly as it always did. Nothing is referenced by name at build time, so an absent, older or newer Bare Minimum cannot stop this mod loading.
 
-Copy the <i>scripts</i> folder from the zip into your GTA V folder:
+===================================
 
-<b>GTA V\</b>
-<b>+-- scripts\</b>
-<b>....+-- Fumes.dll</b>
-<b>....+-- Fumes.ini</b>
-<b>....+-- Fumes\</b>
-<b>........+-- stations.json</b>
-<b>........+-- icons\ ...... the HUD's pictures. Keep it.</b>
+<b>INSTALLING</b>
+
+Copy the <i>scripts</i> folder from the zip into your GTA V folder. You end up with <i>Fumes.dll</i>, <i>Fumes.ini</i> and a <i>Fumes</i> folder inside <i>scripts</i>. The <i>Fumes\icons</i> folder is the HUD's pictures, keep it.
 
 To uninstall, delete those. Nothing else is written and nothing in the game's files is touched.
 
+<b>No log at all?</b> The mod writes <i>scripts\Fumes\Fumes.log</i> on startup. If it is not there the DLL never ran, which is nearly always ScriptHookVDotNet 3 missing or older than 3.6.0.
 
-<b>[ CONTROLS ]---------------------------------------------</b>
+===================================
+
+<b>CONTROLS</b>
 
 <ul>
-<li><b>[SHIFT]+[F]</b> ... the settings menu, 218 of them. <b>[LB]+[D-pad Down]</b> on a controller.</li>
-<li><b>[E]</b> ... take the nozzle, fill, hang up, pour the can.</li>
-<li><b>[Q]</b> ... siphon, or fill the can at a pump.</li>
+<li><b>SHIFT + F</b>: the settings menu, 218 of them. <b>LB + D-pad Down</b> on a controller;</li>
+<li><b>E</b>: take the nozzle, fill, hang up, pour the can. <b>Q</b>: siphon, or fill the can at a pump.</li>
 </ul>
 
+===================================
 
-<b>[ CHANGELOG 0.1.9 ]--------------------------------------</b>
+<b>CHANGELOG</b>
+
+<b>0.1.9</b>
 
 <ul>
-<li><b>[+] A licence.</b> MIT. The repo went public without one, which means all rights reserved by default -- nobody could legally fork it or read it into their own mod. LICENSE at the root, LICENCE.txt in the zip.</li>
-<li><b>[x] The README stopped asking for ScriptHookVDotNet 3.9.0.0.</b> That stopped being true in 0.1.8 and the install step never followed; it is where every "I cannot find a 3.9" message came from. Any ScriptHookVDotNet 3 from 3.6.0 up.</li>
-<li><b>[ ] No code changed.</b> On 0.1.8 and happy? Nothing here you need.</li>
+<li><b>A licence, at last.</b> MIT. The repo went public without one, which means all rights reserved by default whatever a mod page says, so nobody could legally fork it or read it into their own mod. <i>LICENSE</i> at the root of the repo, <i>LICENCE.txt</i> in the zip. The 0.1.8 zip carried neither;</li>
+<li><b>The README stopped asking for ScriptHookVDotNet 3.9.0.0.</b> That stopped being true in 0.1.8 and the install step never followed the build down. It is where every "I cannot find a 3.9 anywhere" message came from. Any ScriptHookVDotNet 3 from 3.6.0 up;</li>
+<li><b>No code changed from 0.1.8.</b> If you are on 0.1.8 and happy, there is nothing here you need.</li>
 </ul>
 
-
-<b>[ CHANGELOG 0.1.8 ]--------------------------------------</b>
+<b>0.1.8</b>
 
 <ul>
-<li><b>[+] The gauge is one of Bare Minimum's bars.</b> Same size, same surround, same mark underneath -- and it stands <i>in</i> that row beside the health, food, thirst and sleep bars, and follows them to the other side of the minimap. Without Bare Minimum it sits where it always did.</li>
-<li><b>[+] The fuel moves like the bars beside it.</b> Settles at a stop, leans the right way round under braking, and the specks rise through it instead of falling. A bevel down each side gives the column depth. (o)</li>
-<li><b>[+] The gauge hides on the wasted screen and through cutscenes</b>, with the rest of the HUD.</li>
-<li><b>[x] Fixed: the gauge was pushing other mods' panels off the screen.</b> Rectangles come out of one list the whole machine shares, and whoever draws last pays for a busy frame -- another mod's phone came up in a car with no background. The gradient costs a fraction of what it did.</li>
-<li><b>[x] Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies.</b> It was built against the 3.9 fork and asked for 3.9 by name. Built against 3.6.0 now. <b>If you are on 3.6 or a nightly, this is the first version that loads at all.</b> \o/ <i>RReu, Van_Zandt.</i></li>
+<li><b>The fuel gauge is one of Bare Minimum's bars now.</b> The same width, the same height, the same surround and the same mark beneath it, and it stands <i>in</i> that row as a sixth bar rather than beside it, among health, food, thirst and sleep, following the row to whichever side of the minimap it is on. Nothing to set up, and nothing to lose: without Bare Minimum the gauge stands on its own exactly as before;</li>
+<li><b>The fuel moves the way the bars beside it do.</b> It settles at a stop and leans the right way round under braking, and the specks rise through it instead of falling, slower and wider than they used to. A bevel down each side gives the column its depth;</li>
+<li><b>The gauge hides on the wasted screen and through cutscenes</b>, with the rest of the HUD;</li>
+<li><b>Fixed: the gauge was pushing other mods' panels off the screen.</b> Rectangles come out of one list the whole machine shares, and once it is full everything handed over after that is dropped, so the script that pays for a busy frame is whichever draws last. Another mod's phone was coming up in a car with no background. The gradient costs a fraction of what it did;</li>
+<li><b>Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies.</b> It was built against the 3.9 fork and asked for 3.9 by name, and no loader hands a script a ScriptHookVDotNet newer than itself. Built against 3.6.0 now. <b>If you are on 3.6 or a nightly, this is the first version that loads at all.</b> <i>RReu, Van_Zandt.</i></li>
 </ul>
 
-
-<b>[ CHANGELOG 0.1.7 ]--------------------------------------</b>
+<b>0.1.7</b>
 
 <ul>
-<li><b>[x] Fixed: the nozzle could not be hung back up</b> -- the prompt stuck on "Fill". <i>susipupi44.</i></li>
-<li><b>[x] Fixed: a jerry can or fire extinguisher flashed into his hand</b> when taking the nozzle, and showed during the grade card and fill. <i>Gta5gamer__.</i></li>
-<li><b>[+] Electric vehicles are detected by the model's own flag</b>, so DLC and add-on electrics are left alone too. <i>MaitreSystem.</i></li>
-<li><b>[x] Fixed: the fire button poured a second stream</b> while pouring the can into a car.</li>
-<li><b>[+] The can's level is saved every ten seconds</b>, not only at shutdown.</li>
+<li><b>Fixed: the nozzle could not be hung back up</b>, the prompt stuck on "Fill". <i>susipupi44.</i></li>
+<li><b>Fixed: a jerry can or fire extinguisher flashed into his hand</b> when taking the nozzle, and showed during the grade card and fill. <i>Gta5gamer__.</i></li>
+<li><b>Electric vehicles are detected by the model's own flag</b>, so DLC and add-on electrics are left alone too. <i>MaitreSystem.</i></li>
+<li><b>Fixed: the fire button poured a second stream</b> while pouring the can into a car.</li>
+<li><b>The can's level is saved every ten seconds</b>, not only at shutdown.</li>
 </ul>
 
-
-<b>[ CHANGELOG 0.1.6 ]--------------------------------------</b>
+<b>0.1.6</b>
 
 <ul>
-<li><b>[x] Fixed: the jerry can stuck at 0 litres in 0.1.5.</b> Nothing to delete. <i>AliG_15.</i></li>
-<li><b>[x] Fixed: you could not siphon from a full car.</b></li>
-<li><b>[+] An empty can can be put down and picked back up</b> -- it used to do nothing at all.</li>
-<li><b>[+] Fill the can at a pump by walking up holding it.</b> He stands it down, takes the nozzle and crouches over it.</li>
-<li><b>[+] The grade card can be switched off from the settings menu.</b></li>
+<li><b>Fixed: the jerry can stuck at 0 litres in 0.1.5.</b> Nothing to delete. <i>AliG_15.</i></li>
+<li><b>Fixed: you could not siphon from a full car.</b></li>
+<li><b>An empty can can be put down and picked back up</b>, it used to do nothing at all.</li>
+<li><b>Fill the can at a pump by walking up holding it.</b> He stands it down, takes the nozzle and crouches over it.</li>
+<li><b>The grade card can be switched off from the settings menu.</b></li>
 </ul>
 
-
-<b>[ EARLIER ]----------------------------------------------</b>
+<b>EARLIER</b>
 
 <ul>
-<li><b>0.1.5</b> ... Fixed bikes spluttering at half a tank. The jerry can keeps what is in it across respawns and reloads. Siphon prompt fixed.</li>
-<li><b>0.1.4</b> ... Fixed a full tank after a save load. Bikes get a bike's tank. Electric vehicles excluded. One legend entry for all stations. Fixed filling with the wrong hand.</li>
-<li><b>0.1.3</b> ... Siphoning. Fuel grades and diesel. The grade card. Controller support. Traffic refuels. Runs on any ScriptHookVDotNet 3.</li>
+<li><b>0.1.5</b>: fixed bikes spluttering at half a tank. The jerry can keeps what is in it across respawns and reloads. Siphon prompt fixed.</li>
+<li><b>0.1.4</b>: fixed a full tank after a save load. Bikes get a bike's tank. Electric vehicles excluded. One legend entry for all stations. Fixed filling with the wrong hand.</li>
+<li><b>0.1.3</b>: siphoning. Fuel grades and diesel. The grade card. Controller support. Traffic refuels. Runs on any ScriptHookVDotNet 3.</li>
 </ul>
 
 Every fix above has a full explanation in <i>CHANGES.txt</i>, inside the zip.
 
-<b>=========================================================</b>
-<b>(o)==~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~==&gt;  :)</b>
-<b>=========================================================</b>
+===================================
+
+<b>Something wrong?</b> Attach <b>scripts\Fumes\Fumes.log</b>. A report with the log is worth ten without.
+
+<b>Licence:</b> MIT.
