@@ -1,5 +1,17 @@
-FUMES -- changes
+﻿FUMES -- changes
 
+
+Unreleased
+==========
+
+  * ONE LIST OF RECTANGLES, COUNTED FOR THE WHOLE MACHINE. The game keeps one
+    list a frame for every script and drops the rest past about three hundred
+    and fifty, so the mod that draws last pays for everybody's frame. The set
+    now counts into one shared tally, and this log says what the busiest frame
+    cost and who spent it.
+
+  * THE LOG SAYS WHEN THE TICK YIELDED. A frame the script hands back is a
+    frame with no gauge on it; that is now a line, with how many frames.
 
 1.0.0
 =====

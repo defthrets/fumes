@@ -47,6 +47,9 @@ namespace Fumes.UI
 
         private static void Counted()
         {
+            // The machine's tally as well as this mod's. See Ledger.
+            Ledger.Count();
+
             int frame;
 
             try { frame = Game.FrameCount; }
