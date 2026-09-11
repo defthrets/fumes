@@ -30,7 +30,8 @@ namespace Fumes.Station
         /// <summary>Seconds spent standing on this coordinate with no pump in sight.</summary>
         public float Doubt;
 
-        public string Title => Brand + " - " + Name;
+        // The name in the player's language; the brand is a name and stays as it is.
+        public string Title => Brand + " - " + Lang.T(Name);
     }
 
     /// <summary>
@@ -372,7 +373,7 @@ namespace Fumes.Station
 
         private static void Notify(string text)
         {
-            try { GTA.UI.Notification.Show(text, false); }
+            try { GTA.UI.Notification.Show(Lang.T(text), false); }
             catch { /* not worth a crash */ }
         }
 
@@ -381,11 +382,11 @@ namespace Fumes.Station
             try
             {
                 var name = World.GetZoneLocalizedName(at);
-                return string.IsNullOrEmpty(name) ? "Gas Station" : name;
+                return string.IsNullOrEmpty(name) ? Lang.T("Gas Station") : name;
             }
             catch
             {
-                return "Gas Station";
+                return Lang.T("Gas Station");
             }
         }
 

@@ -384,6 +384,9 @@ namespace Fumes.UI
         {
             if (string.IsNullOrEmpty(text)) return;
 
+            // In the player's language, looked up here so no caller has to know there is one.
+            text = Lang.T(text);
+
             try
             {
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_HELP, "STRING");

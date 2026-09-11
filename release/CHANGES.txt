@@ -1,6 +1,28 @@
 FUMES -- changes
 
 
+0.1.10 (not yet released)
+=========================
+
+  * A LANGUAGE SETTING, AND PORTUGUESE (BRAZIL) TO GO IN IT. [General] Language,
+    top row of the HUD page, English by default. Somebody built a full PT-BR
+    translation of 0.1.1 and sent it back as a modified dll; this folds it in as
+    a data file instead -- scripts\Fumes\lang\pt-BR.json, English on the left,
+    Portuguese on the right, about three hundred strings -- so it survives every
+    update and needs no fork. Anything the file does not cover shows in English
+    rather than going blank: the siphon and jerry-can prompts and the grade card
+    arrived after 0.1.1 and are still English until somebody translates them.
+    Another language is another json in the same folder, no rebuild.
+
+    The log stays English whatever the setting, so a bug report reads the same
+    from anybody.
+
+  * Nothing in the game changed. Gallons were already there -- HUD.Units -- and
+    still are.
+
+  * 219 settings in the ini.
+
+
 0.1.9
 =====
 

@@ -113,7 +113,7 @@ namespace Fumes.UI
         {
             Open = true;
             _price = basePrice;
-            _brand = string.IsNullOrEmpty(brand) ? "PUMP" : brand;
+            _brand = string.IsNullOrEmpty(brand) ? Lang.T("PUMP") : brand;
 
             _at = Array.IndexOf(Petrol, _cfg.Grade);
             if (_at < 0) _at = 0;

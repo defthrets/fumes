@@ -189,6 +189,20 @@ namespace Fumes.Core
             }
         }
 
+        /// <summary>
+        /// Translations, one json per language, beside the icons for the same reason: content
+        /// that ships with the mod and that nothing writes. See Lang.
+        /// </summary>
+        public static string Lang
+        {
+            get
+            {
+                var d = Path.Combine(Data, "lang");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
         // WRITTEN, so these follow the writability fallback rather than sitting next to the dll.
         public static string LogFile => Path.Combine(Writable, "Fumes.log");
         public static string TanksFile => Path.Combine(Writable, "tanks.json");

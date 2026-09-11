@@ -88,9 +88,11 @@ with:
   Grand Theft Auto V\scripts\Fumes.ini
   Grand Theft Auto V\scripts\Fumes\stations.json
   Grand Theft Auto V\scripts\Fumes\icons\*.png
+  Grand Theft Auto V\scripts\Fumes\lang\pt-BR.json
 
 The icons folder is not optional decoration -- without it the HUD still works
-but has no pictures in it.
+but has no pictures in it. The lang folder holds the translations the settings
+menu can switch to; without it the mod is simply English.
 
 To uninstall, delete those. Nothing is written anywhere else, and nothing in the
 game's own files is touched.

@@ -54,6 +54,7 @@ Runs on <b>Legacy and Enhanced from one build</b>.
 <li><b>Electric vehicles are left alone entirely.</b> No tank, no gauge, no fuel burned. Detected by the model's own flag, so DLC and add-on electrics too;</li>
 <li><b>Traffic pulls into forecourts</b> when it is low and already nearby;</li>
 <li><b>The gauge sloshes with speed</b>, chimes on reserve, and hides with the game's HUD, in cutscenes and through fades;</li>
+<li><b>Português (BR)</b>, from the settings menu. English by default; anything the translation does not cover yet shows in English. Other languages are one json file each, no rebuild needed;</li>
 <li><b>Twenty-five stations on the map</b>, one legend entry between them. Refuelling itself does not use the list: the mod finds the pump you are stood at by its prop, so a station missing from the map still works.</li>
 </ul>
 
@@ -91,7 +92,7 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <b>CONTROLS</b>
 
 <ul>
-<li><b>SHIFT + F</b>: the settings menu, 218 of them. <b>LB + D-pad Down</b> on a controller;</li>
+<li><b>SHIFT + F</b>: the settings menu, 219 of them. <b>LB + D-pad Down</b> on a controller;</li>
 <li><b>E</b>: take the nozzle, fill, hang up, pour the can. <b>Q</b>: siphon, or fill the can at a pump.</li>
 </ul>
 

@@ -205,7 +205,7 @@ namespace Fumes.UI
             const float placeScale = 0.28f;
             const float scriptLift = 0.0062f;
 
-            if (string.IsNullOrEmpty(brand)) brand = "PUMP";
+            if (string.IsNullOrEmpty(brand)) brand = Lang.T("PUMP");
 
             var tail = string.IsNullOrEmpty(place) ? "" : "  -  " + place.ToUpperInvariant();
 
@@ -240,18 +240,18 @@ namespace Fumes.UI
             var value = Color.FromArgb(238, 240, 240, 240);
 
             // TOTAL -- the big one, because it is what you are actually watching.
-            Hud.Text("TOTAL", lx, Top + 0.048f, 0.25f, label, Plain);
-            Hud.Text(free ? "FREE" : "$" + owed.ToString("0.00", CultureInfo.InvariantCulture),
+            Hud.Text(Lang.T("TOTAL"), lx, Top + 0.048f, 0.25f, label, Plain);
+            Hud.Text(free ? Lang.T("FREE") : "$" + owed.ToString("0.00", CultureInfo.InvariantCulture),
                      rx, Top + 0.036f, 0.62f, Color.FromArgb(245, 245, 175, 55), Plain, false, true);
 
-            Hud.Text("VOLUME", lx, Top + 0.085f, 0.25f, label, Plain);
+            Hud.Text(Lang.T("VOLUME"), lx, Top + 0.085f, 0.25f, label, Plain);
             Hud.Text(_gauge.Volume(litres), rx, Top + 0.079f, 0.38f, value, Plain, false, true);
 
             var unit = _cfg.Units == Units.Gallons
                 ? "$" + (pricePerLitre / Gauge.GallonsPerLitre).ToString("0.00", CultureInfo.InvariantCulture) + "/gal"
                 : "$" + pricePerLitre.ToString("0.00", CultureInfo.InvariantCulture) + "/L";
 
-            Hud.Text("PRICE", lx, Top + 0.112f, 0.25f, label, Plain);
+            Hud.Text(Lang.T("PRICE"), lx, Top + 0.112f, 0.25f, label, Plain);
             Hud.Text(unit, rx, Top + 0.109f, 0.30f, Color.FromArgb(215, 215, 215, 218),
                      Plain, false, true);
 

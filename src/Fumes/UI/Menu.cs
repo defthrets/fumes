@@ -144,7 +144,7 @@ namespace Fumes.UI
                 Hint = hint,
                 Section = section,
                 Key = key,
-                Show = () => get() ? "ON" : "OFF",
+                Show = () => Lang.T(get() ? "ON" : "OFF"),
                 Written = () => get() ? "true" : "false",
             };
 
@@ -237,7 +237,7 @@ namespace Fumes.UI
                 Hint = hint,
                 Section = section,
                 Key = key,
-                Show = () => get().ToString().ToUpperInvariant(),
+                Show = () => Lang.T(get().ToString().ToUpperInvariant()),
                 Written = () => get().ToString(),
             };
 
@@ -259,6 +259,17 @@ namespace Fumes.UI
         private void Build()
         {
             var hud = Add("HUD", "icon_hud.png");
+
+            // FIRST, because it is the one row that changes every other row. The value reads
+            // as the language names itself, not as the enum spells it, and switching it takes
+            // effect on the menu you are looking at.
+            var language = Choice("Language", () => _cfg.Language,
+                                  v => { _cfg.Language = v; Lang.Use(v); },
+                                  "General", "Language",
+                                  "Menu, prompts and notices. English fills in anything untranslated.");
+            language.Show = () => Lang.NameOf(_cfg.Language);
+            hud.Items.Add(language);
+
             hud.Items.Add(Action_("Move and size the gauge", () => Placing = true,
                                   "Arrows or DPAD move it, Shift or RB resizes, Enter or A keeps it."));
             hud.Items.Add(Toggle("Show the gauge", () => _cfg.ShowGauge, v => _cfg.ShowGauge = v,
@@ -894,7 +905,10 @@ namespace Fumes.UI
                 var y = top + i * RowH;
                 var selected = index == _row;
 
-                var label = item.Show == null ? item.Label.ToUpperInvariant() : item.Label;
+                // TRANSLATED AS IT IS DRAWN, not when the row was built, so changing the
+                // language on the row below changes this row too.
+                var label = Lang.T(item.Label);
+                if (item.Show == null) label = label.ToUpperInvariant();
 
                 Draw.Text(label, left + 0.012f, y + 0.0044f, 0.295f,
                           A(selected ? Ink : Color.FromArgb(200, 205, 205, 208)), Plain);
@@ -950,12 +964,12 @@ namespace Fumes.UI
 
             var hint = page.Items[_row].Hint;
 
-            Draw.Text(string.IsNullOrEmpty(hint) ? "" : hint,
+            Draw.Text(string.IsNullOrEmpty(hint) ? "" : Lang.T(hint),
                       left + 0.012f, foot + 0.008f, 0.26f, A(Dim), Plain);
 
-            Draw.Text(OnKeyboard()
+            Draw.Text(Lang.T(OnKeyboard()
                           ? "TAB page    ARROWS change    BACKSPACE save & close"
-                          : "LB RB page    DPAD change    B save & close",
+                          : "LB RB page    DPAD change    B save & close"),
                       left + 0.012f, foot + 0.024f, 0.24f,
                       A(Color.FromArgb(120, 150, 150, 156)), Plain);
         }
@@ -986,7 +1000,7 @@ namespace Fumes.UI
 
             for (var i = 0; i < _pages.Count; i++)
             {
-                widths[i] = Draw.Width(_pages[i].Title, scale, Plain) + badge + pad;
+                widths[i] = Draw.Width(Lang.T(_pages[i].Title), scale, Plain) + badge + pad;
                 total += widths[i];
             }
 
@@ -1029,7 +1043,7 @@ namespace Fumes.UI
                                               badge, badgeH, A(tint));
                 }
 
-                Draw.Text(_pages[i].Title, starts[i] + badge + pad, y, scale, A(tint), Plain);
+                Draw.Text(Lang.T(_pages[i].Title), starts[i] + badge + pad, y, scale, A(tint), Plain);
             }
         }
 

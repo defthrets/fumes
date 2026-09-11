@@ -146,6 +146,13 @@ namespace Fumes.Core
         // ---- general ----------------------------------------------------------
         public bool Enabled = true;
         public LogLevel LogLevel = LogLevel.Info;
+
+        /// <summary>
+        /// What the menu, the prompts and the notices are written in. English is the code's
+        /// own; anything else is a file in scripts\Fumes\lang\ and shows English for whatever
+        /// that file does not cover. See Lang.
+        /// </summary>
+        public Language Language = Language.English;
         // FALSE, BECAUSE THE SEAL ROW SAYS IT NOW. See UI.Splash. Still a switch rather
         // than a deletion: somebody who wants the old ticker line back has one word
         // to change and no rebuild.
@@ -1498,6 +1505,7 @@ namespace Fumes.Core
                 s.MenuPad = ini.GetBool("General", "MenuPad", s.MenuPad);
                 s.MenuModifier = ParseEnum(ini.GetString("General", "MenuModifier", "Shift"), s.MenuModifier);
                 s.LogLevel = ParseEnum(ini.GetString("General", "LogLevel", "Info"), s.LogLevel);
+                s.Language = ParseEnum(ini.GetString("General", "Language", "English"), s.Language);
 
                 s.ConsumptionMultiplier = ini.GetFloat("Fuel", "ConsumptionMultiplier", s.ConsumptionMultiplier, 0.05f, 20f);
                 s.BikeTankLitres = ini.GetFloat("Fuel", "BikeTankLitres", s.BikeTankLitres, 0f, 200f);

@@ -69,6 +69,9 @@ namespace Fumes
         {
             _cfg = Core.Settings.Load();
 
+            // Before anything is drawn or said: the language the settings asked for.
+            Lang.Use(_cfg.Language);
+
             // Before anything can ask for a rope: picks up a probe file left behind by a
             // session that ended in a crash, and blacklists whatever it was holding.
             RopeProbe.Review(_cfg);

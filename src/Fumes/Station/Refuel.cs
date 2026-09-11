@@ -3418,7 +3418,7 @@ namespace Fumes.Station
 
         private static void Notify(string text)
         {
-            try { GTA.UI.Notification.Show(text, false); }
+            try { GTA.UI.Notification.Show(Lang.T(text), false); }
             catch { /* not worth a crash */ }
         }
     }
