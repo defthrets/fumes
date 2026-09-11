@@ -4,11 +4,23 @@ using System.IO;
 
 namespace Fumes.Core
 {
-    /// <summary>The languages the menu can offer. English is the code's own; the rest are files.</summary>
+    /// <summary>
+    /// The languages the menu can offer. English is the code's own; the rest are files.
+    ///
+    /// English is the British spelling the code is written in. EnglishUS is a file like the
+    /// others -- litres to liters, and the gallon as the unit it defaults to.
+    /// </summary>
     internal enum Language
     {
         English,
-        PortugueseBR
+        EnglishUS,
+        PortugueseBR,
+        Spanish,
+        French,
+        German,
+        Russian,
+        Polish,
+        ChineseSimplified
     }
 
     /// <summary>
@@ -58,7 +70,14 @@ namespace Fumes.Core
         {
             switch (language)
             {
+                case Language.EnglishUS: return "en-US.json";
                 case Language.PortugueseBR: return "pt-BR.json";
+                case Language.Spanish: return "es.json";
+                case Language.French: return "fr.json";
+                case Language.German: return "de.json";
+                case Language.Russian: return "ru.json";
+                case Language.Polish: return "pl.json";
+                case Language.ChineseSimplified: return "zh-CN.json";
                 default: return null;
             }
         }
@@ -68,9 +87,26 @@ namespace Fumes.Core
         {
             switch (language)
             {
+                case Language.EnglishUS: return "ENGLISH (US)";
                 case Language.PortugueseBR: return "PORTUGUÊS (BR)";
-                default: return "ENGLISH";
+                case Language.Spanish: return "ESPAÑOL";
+                case Language.French: return "FRANÇAIS";
+                case Language.German: return "DEUTSCH";
+                case Language.Russian: return "РУССКИЙ";
+                case Language.Polish: return "POLSKI";
+                case Language.ChineseSimplified: return "中文（简体）";
+                default: return "ENGLISH (UK)";
             }
+        }
+
+        /// <summary>
+        /// The volume unit a language's speakers expect. Chosen when the language is chosen
+        /// on the menu, and only then -- the ini's own Units line is never overruled, so
+        /// an American who wants litres keeps them.
+        /// </summary>
+        public static Units UnitsFor(Language language)
+        {
+            return language == Language.EnglishUS ? Units.Gallons : Units.Litres;
         }
 
         /// <summary>

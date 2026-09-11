@@ -263,8 +263,11 @@ namespace Fumes.UI
             // FIRST, because it is the one row that changes every other row. The value reads
             // as the language names itself, not as the enum spells it, and switching it takes
             // effect on the menu you are looking at.
+            // THE UNIT FOLLOWS THE LANGUAGE, here and only here: choosing English (US)
+            // brings gallons with it, choosing anything else brings litres, and the Units
+            // row below is still there for whoever wants the other one.
             var language = Choice("Language", () => _cfg.Language,
-                                  v => { _cfg.Language = v; Lang.Use(v); },
+                                  v => { _cfg.Language = v; _cfg.Units = Lang.UnitsFor(v); Lang.Use(v); },
                                   "General", "Language",
                                   "Menu, prompts and notices. English fills in anything untranslated.");
             language.Show = () => Lang.NameOf(_cfg.Language);

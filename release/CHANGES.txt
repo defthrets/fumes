@@ -4,15 +4,27 @@ FUMES -- changes
 0.1.10 (not yet released)
 =========================
 
-  * A LANGUAGE SETTING, AND PORTUGUESE (BRAZIL) TO GO IN IT. [General] Language,
-    top row of the HUD page, English by default. Somebody built a full PT-BR
-    translation of 0.1.1 and sent it back as a modified dll; this folds it in as
-    a data file instead -- scripts\Fumes\lang\pt-BR.json, English on the left,
-    Portuguese on the right, about three hundred strings -- so it survives every
-    update and needs no fork. Anything the file does not cover shows in English
-    rather than going blank: the siphon and jerry-can prompts and the grade card
-    arrived after 0.1.1 and are still English until somebody translates them.
-    Another language is another json in the same folder, no rebuild.
+  * A LANGUAGE SETTING, AND EIGHT LANGUAGES TO GO IN IT. [General] Language, top
+    row of the HUD page, English by default: English (UK and US), Portugues
+    (Brasil), Espanol, Francais, Deutsch, Russkiy, Polski and Chinese
+    (Simplified). Each one is a data file -- scripts\Fumes\lang\<code>.json,
+    English on the left, the language on the right -- so it survives every update
+    and needs no fork, and anything a file does not cover shows in English rather
+    than going blank. Another language is another json in the same folder.
+
+    The Portuguese began as a full PT-BR build of 0.1.1 that somebody made and
+    sent back as a modified dll; its three hundred strings were recovered from the
+    assembly and read through, and everything since 0.1.1 filled in after. The
+    other six are the mod author's own and have not yet been checked by a native
+    speaker -- corrections are one line in one file.
+
+    Choosing a language on the menu also sets Units to what its speakers expect:
+    gallons for English (US), litres for everyone else. The Units row is still
+    there for whoever wants the other one, and the ini's own Units line is never
+    overruled.
+
+    Chinese needs the game itself set to Chinese; GTA V has no CJK glyphs in any
+    other game language and the strings draw as nothing.
 
     The log stays English whatever the setting, so a bug report reads the same
     from anybody.

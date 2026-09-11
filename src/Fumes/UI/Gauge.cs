@@ -419,7 +419,7 @@ namespace Fumes.UI
 
                 if (!_cfg.ShowNumbers) return;
 
-                var label = stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun;
+                var label = Lang.T(stalled ? (tank.Electric ? "FLAT" : "DRY") : tank.Noun);
                 var reading = label + "   " + Volume(tank.Litres) + " / " + Volume(tank.Capacity);
 
                 Draw.Text(reading, x + w / 2f, y - 0.0008f, 0.215f,

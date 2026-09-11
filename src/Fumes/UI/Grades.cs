@@ -226,9 +226,9 @@ namespace Fumes.UI
 
             Cards(top);
 
-            Hud.Text(OnKeyboard()
+            Hud.Text(Lang.T(OnKeyboard()
                          ? "ARROWS choose     ENTER fill     BACKSPACE cancel"
-                         : "DPAD choose     A fill     B cancel",
+                         : "DPAD choose     A fill     B cancel"),
                      0.5f, top + PanelH - 0.024f, 0.26f,
                      Fade(180, 195, 195, 200), Plain, true);
 
@@ -300,7 +300,7 @@ namespace Fumes.UI
             _pump.DrawSized(centre, y + 0.024f, iconW, iconH,
                             Fade(on ? 255 : 130, accent.R, accent.G, accent.B));
 
-            Hud.Text(Fumes.Fuel.Diesel.Name(grade), centre, y + 0.040f, 0.30f,
+            Hud.Text(Lang.T(Fumes.Fuel.Diesel.Name(grade)), centre, y + 0.040f, 0.30f,
                      Fade(on ? 255 : 190, accent.R, accent.G, accent.B), Plain, true);
 
             var per = _price * _cfg.PriceFor(grade);
@@ -313,7 +313,7 @@ namespace Fumes.UI
             // a glance; "10% further" is the reason to pay for it.
             var further = (int)Math.Round((1f - _cfg.EconomyFor(grade)) * 100f);
 
-            Hud.Text(further <= 0 ? "standard" : further + "% further",
+            Hud.Text(Lang.T(further <= 0 ? "standard" : further + "% further"),
                      centre, y + 0.078f, 0.25f,
                      Fade(on ? 215 : 140, 190, 195, 200), Plain, true);
         }

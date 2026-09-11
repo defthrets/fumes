@@ -1,0 +1,22 @@
+{
+ "language": "English (US)",
+ "code": "en-US",
+ "by": "the mod author",
+ "note": "English on the left, English (US) on the right. Keep the ~y~ colour codes and the leading and trailing spaces exactly as they are: the mod glues fragments together. Anything not listed here shows in English.",
+ "strings": {
+  "Idling, litres an hour": "Idling, liters an hour",
+  "Price a litre": "Price a liter",
+  "Litres a second": "Liters a second",
+  "LITRES": "LITERS",
+  "Gunfire at the pumps can set the vapour off.": "Gunfire at the pumps can set the vapor off.",
+  "Forecourt hazard": "Station hazard",
+  "Low cars already near a forecourt pull in and fill up.": "Low cars already near a station pull in and fill up.",
+  "PETROLCAN": "GAS CAN",
+  "Menu, prompts and notices. English fills in anything untranslated.": "Menu, prompts and notices. British English fills in anything untranslated.",
+  "Reach: the filler": "Reach: the fuel door",
+  "Marker on the filler": "Marker on the fuel door",
+  "Take the nozzle to the filler on the ": "Take the nozzle to the fuel door on the ",
+  "Walk the nozzle to the filler on the side of your vehicle.": "Walk the nozzle to the fuel door on the side of your vehicle.",
+  "you moved away from the filler": "you moved away from the fuel door"
+ }
+}

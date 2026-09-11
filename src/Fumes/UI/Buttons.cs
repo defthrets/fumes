@@ -59,7 +59,8 @@ namespace Fumes.UI
         {
             if (string.IsNullOrEmpty(label)) return;
 
-            _pending.Add(new ButtonPrompt(control, label));
+            // The other route a prompt takes; Draw.Help translates the help-text one.
+            _pending.Add(new ButtonPrompt(control, Lang.T(label)));
             _wanted = true;
         }
 
