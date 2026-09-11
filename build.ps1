@@ -325,9 +325,10 @@ if ($Package) {
         if (Test-Path $p) { Copy-Item $p $stage }
     }
 
-    # The licence lives at the root as LICENSE, where GitHub looks for it; the zip gets it
-    # under the spelling the other docs use. Without this the 0.1.8 zip went out with a mod
-    # page that said MIT and nothing inside it that did.
+    # Belt and braces for the licence. release\LICENCE.txt is the copy the loop above takes;
+    # the root LICENSE is the same text under the name GitHub reads. If the release copy is
+    # ever dropped, the root one goes in under the zip's spelling rather than the zip going
+    # out saying MIT on the page and nothing inside it.
     if (-not (Test-Path (Join-Path $stage 'LICENCE.txt'))) {
         $lic = Join-Path $root 'LICENSE'
         if (Test-Path $lic) { Copy-Item $lic (Join-Path $stage 'LICENCE.txt') }
