@@ -1,7 +1,7 @@
 FUMES -- changes
 
 
-1.1.2
+1.0.0
 =====
 
   * A LANGUAGE SETTING, AND EIGHT LANGUAGES TO GO IN IT. [General] Language, top

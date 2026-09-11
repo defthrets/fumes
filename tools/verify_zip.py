@@ -4,7 +4,7 @@ What is in the release zip, and what must never be.
 
     python tools\verify_zip.py [release\Fumes-x.y.z.zip]      defaults to the newest zip
 
-Run before anything is uploaded. It caught 1.1.2's first zip going out with no
+Run before anything is uploaded. It caught 1.0.0's first zip going out with no
 language files in it, which is the whole point: the machine that builds the zip is
 the one machine on which a missing file cannot be noticed by playing, because the
 files are already in place from being deployed.
