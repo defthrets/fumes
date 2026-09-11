@@ -1,4 +1,4 @@
-FUMES 0.1.9
+FUMES 0.1.10
 Persistent vehicle fuel for GTA V, with a refuel you walk through.
 by spitmux
 
@@ -156,7 +156,7 @@ Everything the menu shows also lives in scripts\Fumes.ini, along with a great
 deal it does not, and every entry is commented in place.
 The sections are:
 
-  [General]      units, whether the mod logs
+  [General]      language, the menu key, how much the mod logs
   [Fuel]         tank sizes, how fast things drink, prices
   [Engine]       what an empty tank does to the car
   [Station]      how close you have to be, refuel speed
