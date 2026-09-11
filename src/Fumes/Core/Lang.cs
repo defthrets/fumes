@@ -20,6 +20,7 @@ namespace Fumes.Core
         German,
         Russian,
         Polish,
+        Hindi,
         ChineseSimplified
     }
 
@@ -77,6 +78,7 @@ namespace Fumes.Core
                 case Language.German: return "de.json";
                 case Language.Russian: return "ru.json";
                 case Language.Polish: return "pl.json";
+                case Language.Hindi: return "hi.json";
                 case Language.ChineseSimplified: return "zh-CN.json";
                 default: return null;
             }
@@ -100,6 +102,8 @@ namespace Fumes.Core
                 case Language.German: return "DEUTSCH";
                 case Language.Russian: return "РУССКИЙ";
                 case Language.Polish: return "POLSKI";
+                // Latin script on purpose: the font has no Devanagari in any game language.
+                case Language.Hindi: return "HINDI";
                 case Language.ChineseSimplified: return GameCanDraw(language) ? "中文（简体）" : "CHINESE (SIMPLIFIED)";
                 default: return "ENGLISH (UK)";
             }

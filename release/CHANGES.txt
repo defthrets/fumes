@@ -13,6 +13,16 @@ Unreleased
   * THE LOG SAYS WHEN THE TICK YIELDED. A frame the script hands back is a
     frame with no gauge on it; that is now a line, with how many frames.
 
+  * HINDI, IN LATIN SCRIPT. The ninth language, and the script is not a choice
+    of style: GTA V's font has no Devanagari in any game language, and unlike
+    Chinese there is no game setting that ever loads it, so a Devanagari file
+    would draw as boxes on every install in the world. Romanised Hindi -- the
+    Hindi Indian players already read game UI in -- draws on all of them. Nozzle,
+    pump, tank and can stay as they are, which is how they are said; a station
+    is a petrol pump. Unreviewed by a native speaker, like the other six of the
+    author's own.
+
+
 1.0.0
 =====
 

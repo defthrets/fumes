@@ -31,7 +31,7 @@ REQUIRED = [
 ]
 # Every language the code can offer must be in the zip; see Lang.FileFor.
 REQUIRED += ['lang/' + f for f in ('en-US.json', 'pt-BR.json', 'es.json', 'fr.json',
-                                     'de.json', 'ru.json', 'pl.json', 'zh-CN.json')]
+                                     'de.json', 'ru.json', 'pl.json', 'hi.json', 'zh-CN.json')]
 
 SEP = chr(92)
 z = zipfile.ZipFile(ZIP)

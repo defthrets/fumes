@@ -85,7 +85,7 @@ fatal = False
 print("%-8s %8s %9s %8s  %s" % ('file', 'strings', 'required', 'missing', ''))
 
 # ---- the six authored languages + US English ---------------------------------------------
-for name in ('tr_enus', 'tr_es', 'tr_fr', 'tr_de', 'tr_ru', 'tr_pl', 'tr_zh'):
+for name in ('tr_enus', 'tr_es', 'tr_fr', 'tr_de', 'tr_ru', 'tr_pl', 'tr_hi', 'tr_zh'):
     m = load(name)
     table = collections.OrderedDict((k, v) for k, v in m.T.items() if k != v)
     d = duplicates(name)
