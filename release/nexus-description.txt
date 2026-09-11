@@ -54,7 +54,7 @@ Runs on <b>Legacy and Enhanced from one build</b>.
 <li><b>Electric vehicles are left alone entirely.</b> No tank, no gauge, no fuel burned. Detected by the model's own flag, so DLC and add-on electrics too;</li>
 <li><b>Traffic pulls into forecourts</b> when it is low and already nearby;</li>
 <li><b>The gauge sloshes with speed</b>, chimes on reserve, and hides with the game's HUD, in cutscenes and through fades;</li>
-<li><b>Eight languages</b> from the settings menu: English (UK, US), Português (BR), Español, Français, Deutsch, Русский, Polski, 中文. English by default; anything a translation does not cover shows in English. Picking one sets the units its speakers expect. Each is one json file, so corrections and new languages need no rebuild;</li>
+<li><b>Nine languages</b> from the settings menu: English (UK, US), Português (BR), Español, Français, Deutsch, Русский, Polski, Hindi, 中文. English by default; anything a translation does not cover shows in English. Picking one sets the units its speakers expect. Each is one json file, so corrections and new languages need no rebuild;</li>
 <li><b>Twenty-five stations on the map</b>, one legend entry between them. Refuelling itself does not use the list: the mod finds the pump you are stood at by its prop, so a station missing from the map still works.</li>
 </ul>
 
@@ -99,6 +99,15 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 ===================================
 
 <b>CHANGELOG</b>
+
+<b>1.0.1</b>
+
+<ul>
+<li><b>Hindi.</b> The ninth language, in Latin script, and that is not a choice of style: GTA V's font has no Devanagari in any game language, and unlike Chinese there is no game setting that ever loads it, so a Devanagari file would be boxes on every install. Romanised Hindi, the Hindi Indian players already read game UI in, draws on all of them. Unreviewed by a native speaker; corrections are one line in one file;</li>
+<li><b>The draw budget is counted for the whole machine.</b> The game keeps one list of rectangles a frame for every script and drops the rest past about 350, so whichever mod draws last pays for everybody. Fumes, Bare Minimum and the rest now count into one shared tally, and the log says what the busiest frame cost and who spent it, and when a tick was handed back with no gauge on it;</li>
+<li><b>No more notice when Chinese is picked on a non-Chinese game.</b> The row reads CHINESE (SIMPLIFIED) over an English menu, which says it;</li>
+<li><b>Nothing in the fuel changed.</b> 219 settings.</li>
+</ul>
 
 <b>1.0.0</b>
 
