@@ -1,4 +1,4 @@
-<#
+﻿<#
   Fumes build script.
 
   Drives the self-contained Roslyn compiler in tools\ rather than `dotnet build`, because the
@@ -320,7 +320,7 @@ if ($Package) {
     $icons = Join-Path $root 'data\icons'
     if (Test-Path $icons) { Copy-Item $icons $dataOut -Recurse }
 
-    foreach ($doc in @('README.txt', 'CHANGES.txt')) {
+    foreach ($doc in @('README.txt', 'CHANGES.txt', 'LICENCE.txt')) {
         $p = Join-Path $relDir $doc
         if (Test-Path $p) { Copy-Item $p $stage }
     }

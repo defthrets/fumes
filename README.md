@@ -186,3 +186,10 @@ twice. Fix a bug in one and copy it to the other.
 ---
 
 by spitmux
+
+---
+
+## Licence
+
+MIT. See `LICENSE`. The mod ships no Rockstar assets and does not bundle
+ScriptHookV or ScriptHookVDotNet, which carry their own licences.
