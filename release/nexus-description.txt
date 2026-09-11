@@ -100,7 +100,7 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 
 <b>CHANGELOG</b>
 
-<b>0.1.10</b>
+<b>1.1.2</b>
 
 <ul>
 <li><b>Eight languages, from the settings menu.</b> English (UK and US), Português (Brasil), Español, Français, Deutsch, Русский, Polski and 中文 (简体). Top row of the HUD page, English by default. Each is one json in <i>Fumes\lang</i> with the English on the left, so a correction or a new language needs no rebuild, and anything a file does not cover shows in English rather than going blank;</li>

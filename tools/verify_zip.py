@@ -4,7 +4,7 @@ What is in the release zip, and what must never be.
 
     python tools\verify_zip.py [release\Fumes-x.y.z.zip]      defaults to the newest zip
 
-Run before anything is uploaded. It caught 0.1.10's first zip going out with no
+Run before anything is uploaded. It caught 1.1.2's first zip going out with no
 language files in it, which is the whole point: the machine that builds the zip is
 the one machine on which a missing file cannot be noticed by playing, because the
 files are already in place from being deployed.
@@ -107,7 +107,7 @@ for n in names:
     f = n.replace(SEP, '/')
     if f.endswith('README.txt') or f.endswith('CHANGES.txt'):
         t = z.read(n).decode('utf-8', 'replace')
-        m = re.search(r'0\.1\.\d+', t)
+        m = re.search(r'\d+\.\d+\.\d+', t)
         v = m.group(0) if m else '??'
         seen.add(v)
         print("    %-22s %s" % (os.path.basename(f), v))

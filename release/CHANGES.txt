@@ -1,8 +1,8 @@
 FUMES -- changes
 
 
-0.1.10
-======
+1.1.2
+=====
 
   * A LANGUAGE SETTING, AND EIGHT LANGUAGES TO GO IN IT. [General] Language, top
     row of the HUD page, English by default: English (UK and US), Portugues
