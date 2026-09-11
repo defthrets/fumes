@@ -24,7 +24,10 @@ FUMES -- changes
     overruled.
 
     Chinese needs the game itself set to Chinese; GTA V has no CJK glyphs in any
-    other game language and the strings draw as nothing.
+    other game language and every character draws as a box -- including the menu
+    row you would use to switch back. So the mod asks the game what language it
+    is running: on anything but Chinese it keeps the setting, shows English, and
+    says why, once, in a language that renders.
 
     The log stays English whatever the setting, so a bug report reads the same
     from anybody.

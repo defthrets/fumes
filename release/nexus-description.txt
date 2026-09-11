@@ -106,7 +106,7 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <li><b>Eight languages, from the settings menu.</b> English (UK and US), Português (Brasil), Español, Français, Deutsch, Русский, Polski and 中文 (简体). Top row of the HUD page, English by default. Each is one json in <i>Fumes\lang</i> with the English on the left, so a correction or a new language needs no rebuild, and anything a file does not cover shows in English rather than going blank;</li>
 <li><b>The Portuguese is by lirounando.</b> They built a full PT-BR translation of 0.1.1 and sent it back as a modified dll; its strings were recovered from the assembly, read through, and everything since 0.1.1 filled in. The other six are the author's own and have not yet been checked by a native speaker: corrections welcome, one line in one file;</li>
 <li><b>Picking a language sets the units its speakers expect</b>, gallons for English (US), litres for the rest. The Units row is still there for whoever wants the other one;</li>
-<li><b>Chinese needs the game itself set to Chinese.</b> GTA V has no Chinese glyphs in any other game language;</li>
+<li><b>Chinese needs the game itself set to Chinese.</b> GTA V has no Chinese glyphs in any other game language, so on any other one the mod keeps your choice, shows English, and tells you why;</li>
 <li><b>Nothing in the game changed.</b> Fumes.log stays English whatever the setting, so a bug report reads the same from anyone. 219 settings.</li>
 </ul>
 

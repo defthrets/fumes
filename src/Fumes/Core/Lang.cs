@@ -82,7 +82,13 @@ namespace Fumes.Core
             }
         }
 
-        /// <summary>How the language names itself on the menu row.</summary>
+        /// <summary>
+        /// How the language names itself on the menu row.
+        ///
+        /// Chinese names itself in Chinese only when the game can draw Chinese. Otherwise the
+        /// row would read as a run of boxes -- the one row that has to stay legible, because
+        /// it is the way back out.
+        /// </summary>
         public static string NameOf(Language language)
         {
             switch (language)
@@ -94,8 +100,33 @@ namespace Fumes.Core
                 case Language.German: return "DEUTSCH";
                 case Language.Russian: return "РУССКИЙ";
                 case Language.Polish: return "POLSKI";
-                case Language.ChineseSimplified: return "中文（简体）";
+                case Language.ChineseSimplified: return GameCanDraw(language) ? "中文（简体）" : "CHINESE (SIMPLIFIED)";
                 default: return "ENGLISH (UK)";
+            }
+        }
+
+        /// <summary>
+        /// Whether the game's own font can draw this language at all.
+        ///
+        /// GTA V loads Latin and Cyrillic glyphs whatever language it is set to, and loads
+        /// CJK glyphs ONLY when it is set to a CJK language: on an English game every Chinese
+        /// character draws as a box, including the menu row you would use to switch back. So
+        /// Chinese is only offered for real when the game itself is in Chinese; otherwise the
+        /// setting is kept, English is shown, and the reason is said once in a language that
+        /// renders.
+        /// </summary>
+        public static bool GameCanDraw(Language language)
+        {
+            if (language != Language.ChineseSimplified) return true;
+
+            try
+            {
+                var game = GTA.Game.Language;
+                return game == GTA.Language.Chinese || game == GTA.Language.ChineseSimplified;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -122,6 +153,22 @@ namespace Fumes.Core
 
             var file = FileFor(language);
             if (file == null) return;
+
+            if (!GameCanDraw(language))
+            {
+                // The setting stays as chosen -- it is written to the ini and works the day
+                // the game is switched -- but nothing is loaded, so every string on screen is
+                // the English the font can draw.
+                Log.Warn(language + " needs the game itself set to that language; its glyphs are not in the " +
+                         "font otherwise. Showing English.");
+                try
+                {
+                    GTA.UI.Notification.Show("~y~Chinese needs GTA V itself set to Chinese~s~ - " +
+                                             "its characters are not in the font otherwise. Showing English.", false);
+                }
+                catch { /* the log has it */ }
+                return;
+            }
 
             try
             {
