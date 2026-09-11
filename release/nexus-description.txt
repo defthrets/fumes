@@ -1,5 +1,5 @@
 ================================================================================
-  FUMES 0.1.8 -- copy for the mod page
+  FUMES 0.1.9 -- copy for the mod page
 ================================================================================
 
 MARKUP: the page allows <b> <i> <u> <a> <ul> <ol> <li> and nothing else. No
@@ -17,7 +17,7 @@ Paste from the next divider down.
 --------------------------------------------------------------------------------
 
 <b>=========================================================</b>
-<b>F U M E S   v0.1.8   ~   (o)==~~~~~~~~~~~~~~~~~~~==&gt;</b>
+<b>F U M E S   v0.1.9   ~   (o)==~~~~~~~~~~~~~~~~~~~==&gt;</b>
 <b>=========================================================</b>
 <i>Persistent vehicle fuel for GTA V, with a refuel you walk through.</i>
 by spitmux
@@ -81,9 +81,18 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <b>[ CONTROLS ]---------------------------------------------</b>
 
 <ul>
-<li><b>[SHIFT]+[F]</b> ... the settings menu, 217 of them. <b>[LB]+[D-pad Down]</b> on a controller.</li>
+<li><b>[SHIFT]+[F]</b> ... the settings menu, 218 of them. <b>[LB]+[D-pad Down]</b> on a controller.</li>
 <li><b>[E]</b> ... take the nozzle, fill, hang up, pour the can.</li>
 <li><b>[Q]</b> ... siphon, or fill the can at a pump.</li>
+</ul>
+
+
+<b>[ CHANGELOG 0.1.9 ]--------------------------------------</b>
+
+<ul>
+<li><b>[+] A licence.</b> MIT. The repo went public without one, which means all rights reserved by default -- nobody could legally fork it or read it into their own mod. LICENSE at the root, LICENCE.txt in the zip.</li>
+<li><b>[x] The README stopped asking for ScriptHookVDotNet 3.9.0.0.</b> That stopped being true in 0.1.8 and the install step never followed; it is where every "I cannot find a 3.9" message came from. Any ScriptHookVDotNet 3 from 3.6.0 up.</li>
+<li><b>[ ] No code changed.</b> On 0.1.8 and happy? Nothing here you need.</li>
 </ul>
 
 

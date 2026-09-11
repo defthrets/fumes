@@ -1,4 +1,25 @@
-﻿FUMES -- changes
+FUMES -- changes
+
+
+0.1.9
+=====
+
+  * A LICENCE, AT LAST. The repo went public with none, which means all rights
+    reserved by default whatever the mod page says -- so nobody could legally fork
+    it, read it into their own mod, or do the obvious thing with a mod's source.
+    MIT now, stated in LICENSE at the root of the repo and shipped as LICENCE.txt
+    in this zip, which the 0.1.8 zip did not carry.
+
+  * The README no longer tells you to install ScriptHookVDotNet 3.9.0.0. That
+    requirement stopped being true in 0.1.8 -- the build vendors 3.6.0 so the mod
+    loads on 3.6 and every nightly since -- but the install step never followed the
+    build down, and every "I cannot find a 3.9 anywhere" message traces back to it.
+    It says what is actually needed now: any ScriptHookVDotNet 3 from 3.6.0 up.
+
+  * No code changed. The dll in this zip does the same thing 0.1.8's did; if you
+    are running 0.1.8 happily there is nothing here you need.
+
+  * 218 settings in the ini, unchanged.
 
 
 0.1.8
@@ -35,7 +56,11 @@
     build has -- the compile against 3.6.0 found them; the API check never knew to
     look. Nothing changes on the 3.9 fork.
 
-  * 217 settings in the ini, unchanged.
+  * 218 settings in the ini.
+
+    (That line read 217 when 0.1.8 went out and the file held 218 -- the setting
+    that matches the row to Bare Minimum's arrived without the count following it.
+    Corrected here rather than left to be found by somebody counting.)
 
 
 0.1.7
