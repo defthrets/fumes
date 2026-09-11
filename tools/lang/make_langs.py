@@ -15,7 +15,7 @@ pt-BR: the community file is read first and wins; tr_ptgap only fills what it la
 """
 import io, os, re, sys, json, importlib.util, collections
 
-SP = r'C:\Users\mmidd\AppData\Local\Temp\claude\C--\427f7b77-478f-4049-8eb6-541ed5fbfb49\scratchpad'
+SP = os.path.dirname(os.path.abspath(__file__))
 OUT = r'C:\projects\fumes\data\lang'
 sys.path.insert(0, SP)
 

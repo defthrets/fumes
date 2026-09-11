@@ -15,9 +15,9 @@ handed Aeronaves.
   4. Only keys that exist verbatim in the 0.1.9 heap are kept: every entry in the
      shipped file must do something.
 """
-import json, io, re, difflib
+import os, json, io, re, difflib
 
-SP = r'C:\Users\mmidd\AppData\Local\Temp\claude\C--\427f7b77-478f-4049-8eb6-541ed5fbfb49\scratchpad'
+SP = os.path.dirname(os.path.abspath(__file__))
 en = [s or '' for s in json.load(io.open(SP + r'\en.json', encoding='utf-8'))]
 pt_all = [s or '' for s in json.load(io.open(SP + r'\pt.json', encoding='utf-8'))]
 now = set(s for s in json.load(io.open(SP + r'\en019.json', encoding='utf-8')) if s)

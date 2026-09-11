@@ -10,7 +10,7 @@ Log.* is not collected. The log stays English by design.
 import re, io, os, json, glob, collections
 
 ROOT = r'C:\projects\fumes\src\Fumes'
-OUT = r'C:\Users\mmidd\AppData\Local\Temp\claude\C--\427f7b77-478f-4049-8eb6-541ed5fbfb49\scratchpad\uikeys.json'
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uikeys.json')
 STR = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
 keys = collections.OrderedDict()
