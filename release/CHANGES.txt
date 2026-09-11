@@ -13,6 +13,10 @@ Unreleased
   * THE LOG SAYS WHEN THE TICK YIELDED. A frame the script hands back is a
     frame with no gauge on it; that is now a line, with how many frames.
 
+  * The notice that came up when Chinese was chosen on a non-Chinese game is
+    gone. The menu row reads CHINESE (SIMPLIFIED) over an English menu, which
+    says it; the log keeps the why.
+
   * HINDI, IN LATIN SCRIPT. The ninth language, and the script is not a choice
     of style: GTA V's font has no Devanagari in any game language, and unlike
     Chinese there is no game setting that ever loads it, so a Devanagari file

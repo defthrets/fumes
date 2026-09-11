@@ -116,8 +116,7 @@ namespace Fumes.Core
         /// CJK glyphs ONLY when it is set to a CJK language: on an English game every Chinese
         /// character draws as a box, including the menu row you would use to switch back. So
         /// Chinese is only offered for real when the game itself is in Chinese; otherwise the
-        /// setting is kept, English is shown, and the reason is said once in a language that
-        /// renders.
+        /// setting is kept, English is shown, and the reason is in the log.
         /// </summary>
         public static bool GameCanDraw(Language language)
         {
@@ -162,15 +161,10 @@ namespace Fumes.Core
             {
                 // The setting stays as chosen -- it is written to the ini and works the day
                 // the game is switched -- but nothing is loaded, so every string on screen is
-                // the English the font can draw.
+                // the English the font can draw. No notice: the menu row reads CHINESE
+                // (SIMPLIFIED) over an English menu, which says it, and the log has the why.
                 Log.Warn(language + " needs the game itself set to that language; its glyphs are not in the " +
                          "font otherwise. Showing English.");
-                try
-                {
-                    GTA.UI.Notification.Show("~y~Chinese needs GTA V itself set to Chinese~s~ - " +
-                                             "its characters are not in the font otherwise. Showing English.", false);
-                }
-                catch { /* the log has it */ }
                 return;
             }
 

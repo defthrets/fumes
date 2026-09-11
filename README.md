@@ -194,7 +194,7 @@ by spitmux
 Nine languages, one json each in `data/lang/`, switched from the settings menu.
 Hindi is in Latin script because the game's font has no Devanagari in any
 language; Chinese only draws when the game itself is set to Chinese, and the mod
-shows English and says so otherwise.
+shows English otherwise.
 The Brazilian Portuguese is **lirounando's** -- they translated 0.1.1 in full and
 sent it back, and it is the reason the language setting exists at all. The other
 six are the author's own and have not been checked by a native speaker: a

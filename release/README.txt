@@ -94,7 +94,7 @@ The icons folder is not optional decoration -- without it the HUD still works
 but has no pictures in it. The lang folder holds the translations the settings
 menu can switch to -- nine of them -- and without it the mod is simply English.
 Chinese only renders when the game itself is set to Chinese; the mod shows
-English and says so otherwise. Hindi is in Latin script, because the game's
+English otherwise. Hindi is in Latin script, because the game's
 font has no Devanagari in any language at all.
 
 To uninstall, delete those. Nothing is written anywhere else, and nothing in the
