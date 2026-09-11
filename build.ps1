@@ -325,6 +325,14 @@ if ($Package) {
         if (Test-Path $p) { Copy-Item $p $stage }
     }
 
+    # The licence lives at the root as LICENSE, where GitHub looks for it; the zip gets it
+    # under the spelling the other docs use. Without this the 0.1.8 zip went out with a mod
+    # page that said MIT and nothing inside it that did.
+    if (-not (Test-Path (Join-Path $stage 'LICENCE.txt'))) {
+        $lic = Join-Path $root 'LICENSE'
+        if (Test-Path $lic) { Copy-Item $lic (Join-Path $stage 'LICENCE.txt') }
+    }
+
     # Belt and braces: a save or a log in a release zip would overwrite the first thing a
     # player did with the mod.
     Get-ChildItem $stage -Recurse -Include 'tanks.json', '*.log', '*.bak' |
