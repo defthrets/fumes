@@ -99,6 +99,10 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <b>[ CHANGELOG 0.1.8 ]--------------------------------------</b>
 
 <ul>
+<li><b>[+] The gauge is one of Bare Minimum's bars.</b> Same size, same surround, same mark underneath -- and it stands <i>in</i> that row beside the health, food, thirst and sleep bars, and follows them to the other side of the minimap. Without Bare Minimum it sits where it always did.</li>
+<li><b>[+] The fuel moves like the bars beside it.</b> Settles at a stop, leans the right way round under braking, and the specks rise through it instead of falling. A bevel down each side gives the column depth. (o)</li>
+<li><b>[+] The gauge hides on the wasted screen and through cutscenes</b>, with the rest of the HUD.</li>
+<li><b>[x] Fixed: the gauge was pushing other mods' panels off the screen.</b> Rectangles come out of one list the whole machine shares, and whoever draws last pays for a busy frame -- another mod's phone came up in a car with no background. The gradient costs a fraction of what it did.</li>
 <li><b>[x] Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies.</b> It was built against the 3.9 fork and asked for 3.9 by name. Built against 3.6.0 now. <b>If you are on 3.6 or a nightly, this is the first version that loads at all.</b> \o/ <i>RReu, Van_Zandt.</i></li>
 </ul>
 

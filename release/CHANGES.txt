@@ -25,6 +25,30 @@ FUMES -- changes
 0.1.8
 =====
 
+  * THE FUEL GAUGE IS ONE OF BARE MINIMUM'S BARS NOW. The same width, the same
+    height, the same black surround and the same mark beneath it -- and it stands
+    IN that row rather than beside it, taking its place among the health, food,
+    thirst and sleep bars and following them if the row moves to the other side of
+    the minimap. Nothing to set up. Without Bare Minimum installed the gauge sits
+    where it always did, and HUD.ManualX = true pins it by hand whatever else is
+    running.
+
+    (Written up after the fact: 0.1.8's notes listed the two fixes below and said
+    nothing about the rework, which is most of what went into it.)
+
+  * The fuel moves the way the bars beside it do. It settles at a stop and leans
+    the right way round under braking, and the specks rise through it instead of
+    falling -- slower and wider than they used to. A bevel down each side gives the
+    column its depth; HUD.Relief = 0 takes it off. Nothing sweeps over the fuel
+    itself: the depth and the rising specks are the whole of it.
+
+  * The gauge hides on the wasted screen and through cutscenes, with the rest of
+    the HUD.
+
+  * On a bar this narrow the stepped surface quantised into a staircase that
+    crawled as the level changed. Under sixteen pixels wide it is one column now,
+    which is the honest answer at that size.
+
   * THE GAUGE STOPPED TAKING OTHER MODS' PANELS OFF THE SCREEN. Rectangles come
     out of one list the game keeps for the whole machine, and once it is full
     everything handed over after that is dropped -- so the script that pays for a
