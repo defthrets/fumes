@@ -2416,6 +2416,8 @@ namespace Fumes.Station
             // only thing on screen while it pours is what is pouring.
             if (Spray(me, dt, vehicle != null && inReach)) return;
 
+            HoseEndEditor();
+
             // AND IT STICKS ONCE IT HAS DECIDED. Nearer-wins was right and not enough.
             //
             // Reported from the wild: "it'll bounce between filling up the car and hanging up
@@ -3116,6 +3118,113 @@ namespace Fumes.Station
                       " L.  Let go to stop.");
 
             return true;
+        }
+
+        private bool _hoseEndSaved;
+        private float _hoseWasX, _hoseWasY, _hoseWasZ;
+        private bool _hoseEditing;
+
+        /// <summary>
+        /// Move the hose's joint on the nozzle by looking at it.
+        ///
+        /// WHERE A HOSE MEETS A NOZZLE IS NOT WHERE THE BOUNDING BOX ENDS. The joint is worked
+        /// out by taking the longest axis of the model and going to one end of it, which puts
+        /// it underneath the handle -- so the hose drops vertically out of the bottom of his
+        /// fist. A real one leaves the side and carries its own weight out sideways. That is
+        /// half a centimetre of offset nobody can compute from a box, and three numbers
+        /// against a model whose origin is invisible, which is exactly the case the spray
+        /// editor was written for.
+        ///
+        /// Runs while the nozzle is out and nothing is pouring, so it never fights the spray
+        /// editor for the arrows.
+        /// </summary>
+        private void HoseEndEditor()
+        {
+            if (!_cfg.HoseEndEdit || _spraying) return;
+
+            try
+            {
+                if (!_hoseEditing)
+                {
+                    _hoseEditing = true;
+                    _hoseEndSaved = false;
+                    _hoseWasX = _cfg.HoseEndX;
+                    _hoseWasY = _cfg.HoseEndY;
+                    _hoseWasZ = _cfg.HoseEndZ;
+                }
+
+                var step = _cfg.HoseEndStep;
+
+                if (Game.IsControlJustPressed(Control.PhoneUp)) _cfg.HoseEndY += step;
+                if (Game.IsControlJustPressed(Control.PhoneDown)) _cfg.HoseEndY -= step;
+                if (Game.IsControlJustPressed(Control.PhoneLeft)) _cfg.HoseEndX -= step;
+                if (Game.IsControlJustPressed(Control.PhoneRight)) _cfg.HoseEndX += step;
+                if (Game.IsControlJustPressed(Control.Jump)) _cfg.HoseEndZ += step;
+                if (Game.IsControlJustPressed(Control.Duck)) _cfg.HoseEndZ -= step;
+
+                World.DrawMarker(MarkerType.DebugSphere, _nozzle.HoseEnd(), Vector3.Zero, Vector3.Zero,
+                                 new Vector3(0.02f, 0.02f, 0.02f), Color.FromArgb(220, 120, 220, 255));
+
+                var line = "HOSE JOINT   x " + _cfg.HoseEndX.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   y " + _cfg.HoseEndY.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   z " + _cfg.HoseEndZ.ToString("0.000", CultureInfo.InvariantCulture);
+
+                Draw.Rect(0.5f, 0.115f, 0.34f, 0.055f, Color.FromArgb(190, 8, 8, 10));
+                Draw.Text(line, 0.5f, 0.098f, 0.36f, Color.FromArgb(240, 160, 210, 255), 4, true);
+                Draw.Text(_hoseEndSaved
+                              ? "saved and locked"
+                              : "arrows move it, space/ctrl raise it, ENTER saves and locks",
+                          0.5f, 0.128f, 0.26f, Color.FromArgb(200, 200, 200, 205), 4, true);
+
+                if (Game.IsControlJustPressed(Control.FrontendAccept)) SaveHoseEnd(true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hose-end-edit", "The hose joint editor fell over: " + ex.Message);
+            }
+        }
+
+        private void SaveHoseEnd(bool andLock)
+        {
+            if (!_cfg.HoseEndEdit) return;
+
+            var moved = Math.Abs(_cfg.HoseEndX - _hoseWasX) > 0.0005f
+                        || Math.Abs(_cfg.HoseEndY - _hoseWasY) > 0.0005f
+                        || Math.Abs(_cfg.HoseEndZ - _hoseWasZ) > 0.0005f;
+
+            if (!moved && !andLock) return;
+
+            try
+            {
+                var ok = IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndX",
+                                          _cfg.HoseEndX.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndY",
+                                          _cfg.HoseEndY.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndZ",
+                                          _cfg.HoseEndZ.ToString("0.000", CultureInfo.InvariantCulture));
+
+                if (ok && andLock)
+                {
+                    IniFile.SetValue(Paths.Ini, "Nozzle", "HoseEndEdit", "false");
+                    _cfg.HoseEndEdit = false;
+                }
+
+                _hoseEndSaved = ok;
+                _hoseWasX = _cfg.HoseEndX;
+                _hoseWasY = _cfg.HoseEndY;
+                _hoseWasZ = _cfg.HoseEndZ;
+
+                Log.Info(ok
+                    ? "Hose joint saved" + (andLock ? " and locked" : "") + ": x " +
+                      _cfg.HoseEndX.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", y " + _cfg.HoseEndY.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", z " + _cfg.HoseEndZ.ToString("0.000", CultureInfo.InvariantCulture) + "."
+                    : "Could not write the hose joint to Fumes.ini.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hose-end-save", "Could not save the hose joint: " + ex.Message);
+            }
         }
 
         /// <summary>Where the offsets were when the editor was entered, so a nudge can be noticed.</summary>

@@ -391,6 +391,16 @@ namespace Fumes.Core
         public bool NozzleSprayEdit;
         public float NozzleSprayStep = 0.01f;
 
+        /// <summary>Move the hose's joint on the nozzle with the arrows. See Refuel.HoseEndEditor.</summary>
+        public bool HoseEndEdit;
+        public float HoseEndStep = 0.01f;
+
+        // SIDE-ON, not out of the bottom. The computed joint takes the model's longest axis
+        // and goes to one end, which is underneath the handle, so the hose dropped vertically
+        // out of his fist. These carry it round to the side, where a real one leaves and
+        // holds its own weight out sideways. Put here as a starting point; HoseEndEdit is
+        // how it gets finished.
+
 
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
         public float DryRestartSeconds = 1.6f;
@@ -994,7 +1004,14 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Painted;
+        /// <summary>
+        /// A REAL ROPE, wearing its own texture. Painted is the only route to a BLACK hose --
+        /// it draws a flat camera-facing strip along the rope's vertices, because a rope's
+        /// colour is baked in and cannot be tinted -- but that strip is a band running through
+        /// the hose when you look along it, and a thick rope with the right texture reads
+        /// better than a thin one with a stripe painted on. See HoseRopeType.
+        /// </summary>
+        public HoseMode Hose = HoseMode.Rope;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -1011,15 +1028,14 @@ namespace Fumes.Core
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
         /// <summary>
-        /// Which of GTA's nine ropes does the physics. 5 is the thin dark wire.
+        /// Which of GTA's eight ropes the hose is. Chosen with the in-game picker.
         ///
-        /// IT HAS TO BE THE THIN ONE, because Painted mode draws our black hose along the
-        /// rope's vertices and the rope itself still draws its own texture underneath -- a
-        /// rope cannot be tinted or hidden. At 4 that texture is a fat braided hawser lying
-        /// beside our ribbon, which reads as two hoses. At 5 it is a wire thin enough to
-        /// disappear under it.
+        /// 4 IS THE ONE, picked by cycling them at a pump rather than argued about. The mode
+        /// below is Rope, so this texture IS the hose -- nothing is drawn over it. The rope
+        /// cannot be tinted, so its look is entirely this number; the physics is the same
+        /// solver whichever it is.
         /// </summary>
-        public int HoseRopeType = 5;
+        public int HoseRopeType = 4;
 
         /// <summary>
         /// The in-game rope picker: NumPad * to cycle, NumPad 0 to keep.
@@ -1117,9 +1133,9 @@ namespace Fumes.Core
         ///
         /// Negative Y is behind it. Dial it in with the tuner like the rest of the placement.
         /// </summary>
-        public float HoseEndX = 0f;
+        public float HoseEndX = 0.050f;
         public float HoseEndY = 0f;
-        public float HoseEndZ = 0.035f;
+        public float HoseEndZ = 0.180f;
 
         /// <summary>
         /// How far STRAIGHT UP IN THE WORLD the hose joins, in metres.
@@ -1651,6 +1667,8 @@ namespace Fumes.Core
                 s.NozzleSprayPitch = ini.GetFloat("Nozzle", "SprayPitch", s.NozzleSprayPitch, -180f, 180f);
                 s.NozzleSprayYaw = ini.GetFloat("Nozzle", "SprayYaw", s.NozzleSprayYaw, -180f, 180f);
                 s.NozzleSprayRoll = ini.GetFloat("Nozzle", "SprayRoll", s.NozzleSprayRoll, -180f, 180f);
+                s.HoseEndEdit = ini.GetBool("Nozzle", "HoseEndEdit", s.HoseEndEdit);
+                s.HoseEndStep = ini.GetFloat("Nozzle", "HoseEndStep", s.HoseEndStep, 0.001f, 0.2f);
                 s.NozzleSprayEdit = ini.GetBool("Nozzle", "SprayEdit", s.NozzleSprayEdit);
                 s.NozzleSprayStep = ini.GetFloat("Nozzle", "SprayStep", s.NozzleSprayStep, 0.001f, 0.2f);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);

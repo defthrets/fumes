@@ -82,11 +82,21 @@ Unreleased
     onto, is a computed curve with no rope behind it at all: it cannot fail and
     it cannot swing either. Sag 1.22 to 1.45.
 
-    ON ROPE TYPE 5, the thin dark wire, which this mode has always wanted and
-    was not getting. A rope draws its own texture whatever you do -- it cannot
-    be tinted or hidden -- so the one under our black ribbon has to be thin
-    enough to disappear. At 4 it is a braided hawser lying alongside, which
-    reads as two hoses.
+    AND IT ENDED UP ON ROPE, NOT PAINTED. Painted is the only route to a BLACK
+    hose -- it draws a flat camera-facing strip along the rope's vertices,
+    because a rope's colour is baked into its texture and cannot be tinted --
+    but looked along, that strip is a band running through the hose. A real rope
+    with the right texture reads better than a thin one with a stripe painted
+    on. Type 4, chosen with the in-game picker at a pump rather than argued
+    about: NumPad * cycles all eight, NumPad 0 keeps one. The physics is the
+    same solver whichever it is; the type is only the look.
+
+  * THE HOSE LEAVES THE NOZZLE SIDEWAYS. The joint was worked out by taking the
+    model's longest axis and going to one end of it, which is underneath the
+    handle -- so the hose dropped vertically out of the bottom of his fist. A
+    real one leaves the side and carries its weight out sideways. [Nozzle]
+    HoseEndEdit places it by eye, the same way the spray is placed: take the
+    nozzle, arrows move it, ENTER saves and locks.
 
     The mode is on the HOSE page of the menu now, beside Sag, rather than being
     an ini line nobody would find. The C# default said Line while the ini's own
@@ -158,7 +168,7 @@ Unreleased
     A waypoint YOU have already set is never taken away -- you were going
     somewhere. [Fuel] RouteOnReserve.
 
-  * 242 settings in the ini.
+  * 244 settings in the ini.
 
 
 1.0.2
