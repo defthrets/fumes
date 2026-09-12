@@ -187,4 +187,10 @@ T = {
 "Spray litres a second": "Litry na sekundę na ziemię",
 "How fast it comes out when you hold fire.": "Jak szybko leci, gdy trzymasz ogień.",
 "Fuel on the ground   ": "Paliwo na ziemi   ",
+"Smoke amount": "Ilość dymu",
+"1.0 is a wisp off the pipe. It gets big quickly.": "1.0 to smużka z rury. Szybko robi się dużo.",
+"Engine stumbles when low": "Silnik krztusi się przy rezerwie",
+"It loses power for a moment, more often the emptier it is. Never a gear change.": "Na moment traci moc, tym częściej im mniej paliwa. Nigdy nie zmienia biegu.",
+"Route to a station": "Trasa do stacji",
+"Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Ustawia GPS przy wejściu na rezerwę. Punkt ustawiony przez ciebie zostaje.",
 }

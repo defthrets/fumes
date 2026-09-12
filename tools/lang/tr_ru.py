@@ -187,4 +187,10 @@ T = {
 "Spray litres a second": "Литров в секунду на землю",
 "How fast it comes out when you hold fire.": "Как быстро льётся, пока удерживаешь огонь.",
 "Fuel on the ground   ": "Топливо на земле   ",
+"Smoke amount": "Количество дыма",
+"1.0 is a wisp off the pipe. It gets big quickly.": "1.0 — струйка из трубы. Растёт быстро.",
+"Engine stumbles when low": "Двигатель троит на остатке",
+"It loses power for a moment, more often the emptier it is. Never a gear change.": "Он на мгновение теряет тягу, тем чаще, чем пустее бак. Никаких переключений передач.",
+"Route to a station": "Маршрут до АЗС",
+"Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Ставит точку на GPS при переходе на резерв. Твою собственную метку не трогает.",
 }

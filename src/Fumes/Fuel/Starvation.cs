@@ -33,9 +33,17 @@ namespace Fumes.Fuel
 
         private static readonly string[] SmokeLadder = { "veh_exhaust", "ent_amb_smoke_general", "ent_sht_steam" };
 
-        /// <summary>Scale at the reserve mark, and in the last litre, per rung.</summary>
-        private static readonly float[] SmokeAtMark = { 2.0f, 0.30f, 0.10f };
-        private static readonly float[] SmokeAtEmpty = { 5.0f, 0.75f, 0.22f };
+        /// <summary>
+        /// Scale at the reserve mark, and in the last litre, per rung.
+        ///
+        /// SMALL, AND THE FIRST GO WAS NOT. Two of these are ambient effects built to drift
+        /// across a whole street, so at the scale that looked right in a still they trailed
+        /// the length of a block behind the car. A wisp off the pipe is what a starving
+        /// engine gives you. [Engine] LowFuelSmokeScale multiplies them for anybody who
+        /// wants more, or less.
+        /// </summary>
+        private static readonly float[] SmokeAtMark = { 0.30f, 0.07f, 0.04f };
+        private static readonly float[] SmokeAtEmpty = { 0.70f, 0.18f, 0.09f };
 
         /// <summary>The rung of SmokeLadder the game accepted, or -1 while unknown.</summary>
         private int _smoke = -1;
@@ -127,18 +135,25 @@ namespace Fumes.Fuel
                                 ? "~y~Low charge.~s~ Find somewhere to plug in."
                                 : "~y~Low fuel.~s~ Next station is on the map.");
                         Beep();
+
+                        // The map already has the blips; this puts a line on it. Main owns
+                        // the station list, so it owns the route -- see Reserve.
+                        if (!tank.Electric && Reserve != null) Reserve();
                     }
 
                     var span = reserve - SputterAt(tank);
                     var depth = span > 0.01f ? 1f - (tank.Litres - SputterAt(tank)) / span : 1f;
 
                     Sparks(v, depth);
+                    Cutout(v, depth);
                     return;
                 }
 
                 // Above the reserve mark: everything resets, including the warnings, so a
                 // tank filled and run down again warns again.
                 Quench();
+                Restore();
+                _nextCut = 0;
                 _nextCough = 0;
                 _coughLogged = false;
                 _toldEmpty = false;
@@ -187,6 +202,8 @@ namespace Fumes.Fuel
             // The vehicle he got out of keeps nothing of ours.
             Unground();
             Quench();
+            Restore();
+            _nextCut = 0;
 
             _handle = v.Handle;
             _nextCough = 0;
@@ -312,7 +329,8 @@ namespace Fumes.Fuel
 
                 if (_smoke < 0) return;
 
-                var scale = SmokeAtMark[_smoke] + (SmokeAtEmpty[_smoke] - SmokeAtMark[_smoke]) * depth;
+                var scale = (SmokeAtMark[_smoke] + (SmokeAtEmpty[_smoke] - SmokeAtMark[_smoke]) * depth)
+                            * _cfg.LowFuelSmokeScale;
 
                 foreach (var handle in _plumes)
                 {
@@ -367,6 +385,149 @@ namespace Fumes.Fuel
             return 0;
         }
 
+        /// <summary>When the current stumble ends, and when the next one is due.</summary>
+        private int _cutUntil;
+        private int _nextCut;
+
+        /// <summary>The vehicle whose torque this took away, so it can always be given back.</summary>
+        private int _cutVehicle;
+
+        /// <summary>
+        /// A FUEL STARVATION STUMBLE, and not an ignition switch.
+        ///
+        /// The distinction is the whole of it. SET_VEHICLE_ENGINE_ON on a moving car is a
+        /// GEARBOX event before it is an audio one -- the rear wheels lock and it lurches into
+        /// reverse -- which is why every previous attempt at a low-fuel cough had to be taken
+        /// out again. A real engine starved of fuel does not switch off: it stops making
+        /// power for a quarter of a second and then picks up.
+        ///
+        /// So that is what this does. The torque goes to nothing, the throttle is ignored for
+        /// as long as it lasts, and the exhaust pops. Nothing touches the engine's state, the
+        /// gearbox or the brakes, so there is nothing here that can lock a wheel.
+        ///
+        /// They get more frequent the emptier it is: about one every twenty seconds at the
+        /// reserve mark, one every four or five in the last litre.
+        /// </summary>
+        private void Cutout(Vehicle v, float depth)
+        {
+            if (!_cfg.LowFuelCutouts || !v.IsEngineRunning)
+            {
+                Restore();
+                return;
+            }
+
+            var now = Game.GameTime;
+
+            if (now < _cutUntil)
+            {
+                Starve(v);
+                return;
+            }
+
+            if (_cutVehicle != 0) Restore();
+
+            if (_nextCut == 0)
+            {
+                // Not the instant the mark is crossed: the chime has only just gone.
+                _nextCut = now + 6000 + _rng.Next(6000);
+                return;
+            }
+
+            if (now < _nextCut) return;
+
+            var gap = 20000f - depth * 15500f;
+            _cutUntil = now + (int)(_cfg.LowFuelCutoutSeconds * 1000f);
+            _nextCut = _cutUntil + (int)gap + _rng.Next((int)(gap * 0.6f));
+
+            Pop(v);
+            Starve(v);
+        }
+
+        /// <summary>Holds the engine's power at nothing for this frame of the stumble.</summary>
+        private void Starve(Vehicle v)
+        {
+            try
+            {
+                // The player's foot, ignored. On its own this is already most of the feel,
+                // and unlike anything physical it cannot go wrong.
+                Game.DisableControlThisFrame(Control.VehicleAccelerate);
+
+                // And the engine itself makes none, so a car already rolling loses drive
+                // rather than merely stopping gaining it. A MULTIPLIER, not a state: the
+                // gearbox is not told anything.
+                v.EngineTorqueMultiplier = 0.01f;
+                _cutVehicle = v.Handle;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("cutout-fail", "Could not starve the engine: " + ex.Message +
+                                        " - low fuel will not stumble.");
+                _cutVehicle = 0;
+            }
+        }
+
+        /// <summary>
+        /// Gives the torque back. Called on every way out, and safe when nothing was taken --
+        /// a multiplier left at nothing is a car that will not move again.
+        /// </summary>
+        private void Restore()
+        {
+            _cutUntil = 0;
+
+            if (_cutVehicle == 0) return;
+
+            var handle = _cutVehicle;
+            _cutVehicle = 0;
+
+            try
+            {
+                var v = Entity.FromHandle(handle) as Vehicle;
+                if (v != null && v.Exists()) v.EngineTorqueMultiplier = 1f;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("restore-fail", "Could not give the engine its torque back: " + ex.Message);
+            }
+        }
+
+        /// <summary>One backfire out of the exhausts, for the stumble.</summary>
+        private void Pop(Vehicle v)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PtfxAsset))
+                {
+                    Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PtfxAsset);
+                    return;
+                }
+
+                var popped = 0;
+
+                foreach (var bone in ExhaustBones)
+                {
+                    var index = Function.Call<int>(Hash.GET_ENTITY_BONE_INDEX_BY_NAME, v.Handle, bone);
+                    if (index < 0) continue;
+
+                    var world = Function.Call<Vector3>(Hash.GET_WORLD_POSITION_OF_ENTITY_BONE, v.Handle, index);
+                    var off = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS, v.Handle,
+                                                     world.X, world.Y, world.Z);
+
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+                    var ok = Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, Backfire, v.Handle,
+                                                 off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
+                    Log.Once("fx-backfire" + (ok ? "-ok" : "-fail"),
+                             (ok ? "Low-fuel backfire " : "Low-fuel backfire REFUSED: ") + PtfxAsset + "/" +
+                             Backfire + " at " + bone + " of " + v.LocalizedName + ".");
+
+                    if (ok && ++popped >= 2) break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("pop-fail", "Could not backfire: " + ex.Message);
+            }
+        }
+
         /// <summary>Puts the smoke out. Safe to call when there is none.</summary>
         private void Quench()
         {
@@ -397,7 +558,14 @@ namespace Fumes.Fuel
         {
             Quench();
             Unground();
+            Restore();
         }
+
+        /// <summary>
+        /// Called once when the tank crosses into reserve, for whoever wants to do something
+        /// about it. Main routes the GPS to the nearest station with it.
+        /// </summary>
+        public Action Reserve;
 
         /// <summary>
         /// Nothing left.
@@ -411,8 +579,9 @@ namespace Fumes.Fuel
         {
             Stalled = true;
 
-            // A dead engine does not smoke.
+            // A dead engine does not smoke, and does not need its torque taken away.
             Quench();
+            Restore();
 
             // HELD OFF, AND NOTHING ELSE. This used to turn the starter over for a second or
             // two whenever the throttle was pressed, for the feel of somebody trying -- but

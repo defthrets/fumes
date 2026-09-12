@@ -191,4 +191,10 @@ T = {
 "Spray litres a second": "Zameen par litre per second",
 "How fast it comes out when you hold fire.": "Fire dabaye rakhne par kitni tezi se nikalta hai.",
 "Fuel on the ground   ": "Zameen par fuel   ",
+"Smoke amount": "Dhuen ki maatra",
+"1.0 is a wisp off the pipe. It gets big quickly.": "1.0 matlab silencer se halki lakeer. Jaldi bada ho jaata hai.",
+"Engine stumbles when low": "Kam fuel par engine ladkhadata hai",
+"It loses power for a moment, more often the emptier it is. Never a gear change.": "Ek pal ke liye power chali jaati hai, tank jitna khali utni baar. Gear kabhi nahi badalta.",
+"Route to a station": "Petrol pump ka route",
+"Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Reserve par aate hi GPS set karta hai. Tumhara apna waypoint nahi hatata.",
 }

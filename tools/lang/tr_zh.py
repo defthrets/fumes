@@ -188,4 +188,10 @@ T = {
 "Spray litres a second": "每秒放油升数",
 "How fast it comes out when you hold fire.": "按住开火键时的出油速度。",
 "Fuel on the ground   ": "地上的油   ",
+"Smoke amount": "烟雾量",
+"1.0 is a wisp off the pipe. It gets big quickly.": "1.0 为排气管上的一缕。数值稍大就很浓。",
+"Engine stumbles when low": "低油量时发动机抖动",
+"It loses power for a moment, more often the emptier it is. Never a gear change.": "瞬间失去动力，油越少越频繁。绝不换挡。",
+"Route to a station": "导航至加油站",
+"Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "进入备用油量时设置导航。你自己设置的路径点不会被改动。",
 }

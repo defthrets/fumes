@@ -56,9 +56,36 @@ Unreleased
     The smoke is a LOOPED trail out of each exhaust, lit for as long as the tank
     is in reserve and thickening toward empty, rather than a puff a second: a
     puff a second read as a geyser, and the first thing tried was steam shot
-    upward, which is not smoke.
+    upward, which is not smoke. It is a wisp off the pipe at the size it ships
+    -- the effects underneath are ambient ones built to drift across a street,
+    so the first honest-looking figure trailed the length of a block behind the
+    car. LowFuelSmokeScale, and SMOKE AMOUNT on the FUEL page, for anybody who
+    wants more of it.
 
-  * 227 settings in the ini.
+  * THE ENGINE STUMBLES ON THE LAST OF THE FUEL. One every twenty seconds or so
+    at the reserve mark, one every four or five in the last litre: it loses
+    power for a third of a second, the exhaust pops, and it picks up again.
+
+    A STUMBLE, NOT AN IGNITION SWITCH, and that distinction is the whole reason
+    this is back at all. Switching a moving car's engine off is a GEARBOX event
+    before it is an audio one -- the rear wheels lock and it lurches into
+    reverse -- which is why every earlier version of a low-fuel cough had to be
+    taken out again, twice in one day. A real engine starved of fuel does not
+    switch off: it stops making power for a moment. So the torque goes to
+    nothing and the throttle is ignored for as long as it lasts, and nothing
+    here touches the engine's state, the gearbox or the brakes. [Engine]
+    LowFuelCutouts.
+
+  * CROSSING INTO RESERVE SETS THE GPS TO THE NEAREST STATION. "Next station is
+    on the map" has been the warning since the first version, and a map with
+    twenty-five identical blips on it is not an answer to "which one". The
+    game's own waypoint, so the route draws on the minimap and the GPS talks you
+    in exactly as it does for one you set yourself.
+
+    A waypoint YOU have already set is never taken away -- you were going
+    somewhere. [Fuel] RouteOnReserve.
+
+  * 231 settings in the ini.
 
 
 1.0.2

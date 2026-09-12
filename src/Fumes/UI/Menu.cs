@@ -381,6 +381,16 @@ namespace Fumes.UI
             fuel.Items.Add(Choice("Low fuel effect", () => _cfg.LowFuelEffect, v => _cfg.LowFuelEffect = v,
                                   "Engine", "LowFuelEffect",
                                   "What the last litre looks like. None of these touches the engine or the brakes."));
+            fuel.Items.Add(Number("Smoke amount", () => _cfg.LowFuelSmokeScale,
+                                  v => _cfg.LowFuelSmokeScale = v, 0.1f, 0.05f, 10f, "0.0",
+                                  "Engine", "LowFuelSmokeScale",
+                                  "1.0 is a wisp off the pipe. It gets big quickly."));
+            fuel.Items.Add(Toggle("Engine stumbles when low", () => _cfg.LowFuelCutouts,
+                                  v => _cfg.LowFuelCutouts = v, "Engine", "LowFuelCutouts",
+                                  "It loses power for a moment, more often the emptier it is. Never a gear change."));
+            fuel.Items.Add(Toggle("Route to a station", () => _cfg.RouteOnReserve,
+                                  v => _cfg.RouteOnReserve = v, "Fuel", "RouteOnReserve",
+                                  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone."));
 
             // EVERY NUMBER THE BURN IS MADE FROM, on one page, so nothing about what a car
             // drinks needs a text editor. The class table was ini-only through every version

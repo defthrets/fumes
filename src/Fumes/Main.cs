@@ -89,6 +89,9 @@ namespace Fumes
             _buttons = new Buttons();
             _refuel = new Refuel(_cfg, _tanks, _pumps, _stations, _gauge, _meter, _buttons);
 
+            // Both exist by now, which is why it is wired here rather than in a constructor.
+            _starve.Reserve = RouteToStation;
+
             Interval = 0;
             Tick += OnTick;
             Aborted += OnAborted;
@@ -167,6 +170,48 @@ namespace Fumes
             catch (Exception ex)
             {
                 Fail(ex);
+            }
+        }
+
+        /// <summary>
+        /// Crossing into reserve puts a line on the map to the nearest station.
+        ///
+        /// "Next station is on the map" has been the warning since the first version, and a
+        /// map with twenty-five identical blips on it is not an answer to "which one". This
+        /// is: the game's own waypoint, so the route draws on the minimap and the GPS talks
+        /// you in exactly as it does for a waypoint you set yourself.
+        ///
+        /// A WAYPOINT YOU ALREADY SET IS NEVER TAKEN AWAY. You were going somewhere, and a
+        /// mod that silently redirects you because a needle moved is a mod that loses you the
+        /// mission you were driving to. If the map is clear, this puts one down; if it is
+        /// not, the blips are still there to pick from.
+        /// </summary>
+        private void RouteToStation()
+        {
+            if (!_cfg.RouteOnReserve) return;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_WAYPOINT_ACTIVE))
+                {
+                    Log.Info("Low on fuel, but a waypoint is already set - leaving it alone.");
+                    return;
+                }
+
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var near = _stations.Nearest(me.Position, float.MaxValue);
+                if (near == null) return;
+
+                Function.Call(Hash.SET_NEW_WAYPOINT, near.Position.X, near.Position.Y);
+
+                Log.Info("Low on fuel: routed to " + near.Title + ", " +
+                         me.Position.DistanceTo(near.Position).ToString("0") + "m away.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("route-fail", "Could not route to a station: " + ex.Message);
             }
         }
 

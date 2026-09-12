@@ -342,6 +342,16 @@ namespace Fumes.Core
         /// <summary>The low-fuel warning's effect. Backfire is the game's exhaust pop; Smoke a trail out of it.</summary>
         public LowFuelEffect LowFuelEffect = LowFuelEffect.Backfire;
 
+        /// <summary>Multiplies the smoke. The built-in figures are a wisp; this is for anybody who wants more.</summary>
+        public float LowFuelSmokeScale = 1.0f;
+
+        /// <summary>The engine stumbles on the last of the fuel. See Starvation.Cutout.</summary>
+        public bool LowFuelCutouts = true;
+        public float LowFuelCutoutSeconds = 0.35f;
+
+        /// <summary>Crossing into reserve routes the GPS to the nearest station. See Main.RouteToStation.</summary>
+        public bool RouteOnReserve = true;
+
         /// <summary>Hold the fire button with the nozzle in hand and fuel comes out of it. See Refuel.Spray.</summary>
         public bool NozzleSpray = true;
         public float NozzleSprayLitresPerSecond = 1.2f;
@@ -1572,6 +1582,10 @@ namespace Fumes.Core
                 s.SputterMaxLitres = ini.GetFloat("Engine", "SputterMaxLitres", s.SputterMaxLitres, 0f, 40f);
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
                 s.LowFuelEffect = ParseEnum(ini.GetString("Engine", "LowFuelEffect", "Backfire"), s.LowFuelEffect);
+                s.LowFuelSmokeScale = ini.GetFloat("Engine", "LowFuelSmokeScale", s.LowFuelSmokeScale, 0.05f, 10f);
+                s.LowFuelCutouts = ini.GetBool("Engine", "LowFuelCutouts", s.LowFuelCutouts);
+                s.LowFuelCutoutSeconds = ini.GetFloat("Engine", "LowFuelCutoutSeconds", s.LowFuelCutoutSeconds, 0.05f, 3f);
+                s.RouteOnReserve = ini.GetBool("Fuel", "RouteOnReserve", s.RouteOnReserve);
                 s.NozzleSpray = ini.GetBool("Nozzle", "Spray", s.NozzleSpray);
                 s.NozzleSprayLitresPerSecond = ini.GetFloat("Nozzle", "SprayLitresPerSecond", s.NozzleSprayLitresPerSecond, 0.05f, 20f);
                 s.NozzleSprayScale = ini.GetFloat("Nozzle", "SprayScale", s.NozzleSprayScale, 0.05f, 5f);
