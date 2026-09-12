@@ -200,8 +200,14 @@ namespace Fumes.Fuel
                                                      world.X, world.Y, world.Z);
 
                     Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
-                                  off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
+                    var ok = Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
+                                                 off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
+
+                    // SAID ONCE EITHER WAY. A wrong effect name fails in silence, and "they
+                    // aren't showing" cannot be told from "never fired" without this.
+                    Log.Once("fx-" + fx + (ok ? "-ok" : "-fail"),
+                             (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + fx +
+                             " at " + bone + " of " + v.LocalizedName + ".");
 
                     if (++popped >= 2) break;
                 }
@@ -210,8 +216,11 @@ namespace Fumes.Fuel
                 {
                     // No exhaust bone -- some add-ons -- so out of the back, low down.
                     Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
-                                  0f, -2.2f, 0.2f, 0f, 0f, 0f, 1f, false, false, false);
+                    var ok = Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
+                                                 0f, -2.2f, 0.2f, 0f, 0f, 0f, 1f, false, false, false);
+                    Log.Once("fx-" + fx + "-nobone",
+                             (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + fx +
+                             " behind " + v.LocalizedName + ", which has no exhaust bone.");
                 }
             }
             catch (Exception ex)
