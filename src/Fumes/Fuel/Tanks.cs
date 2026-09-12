@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using GTA;
@@ -110,6 +110,21 @@ namespace Fumes.Fuel
 
             try
             {
+                // SCENERY IS OUT FIRST OF ALL. Another mod in the set can mark a car as its
+                // own furniture -- the two at Lamar's party with their engines and radios
+                // held on all night are the case this was written for -- and furniture has
+                // no tank, no gauge, no prompt at a pump and nothing to burn.
+                //
+                // WITHOUT IT THE TWO MODS TAKE TURNS. That mod holds the engine on because
+                // the music is the point; this one empties the tank because an idling engine
+                // burns and then cuts the engine, which is what this one is for; and a tick
+                // later the engine is back on. Off, on, off, on, for as long as anybody
+                // stands there. Neither was wrong. They were answering different questions
+                // about the same car, and now one of them says which. See Core.Petrol --
+                // which refuses for any car the player is sitting in, so a car he takes for
+                // a drive is a car again whatever any list says.
+                if (Core.Petrol.Spared(v)) return false;
+
                 // ELECTRICS ARE OUT BEFORE THE CLASS IS EVEN LOOKED AT, because they are not a
                 // class -- GTA has no notion of a drivetrain, so they are a list of names in
                 // Tank.ElectricNames and they sit in Sports and Sedans alongside petrol cars.
