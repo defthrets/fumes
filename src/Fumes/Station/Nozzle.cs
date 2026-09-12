@@ -220,13 +220,7 @@ namespace Fumes.Station
         {
             try
             {
-                if (Out)
-                {
-                    var back = _cfg.HoseEndAuto ? BackOfNozzle() : Vector3.Zero;
-                    var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ) + back;
-
-                    return _prop.GetOffsetPosition(-local * 1.15f);
-                }
+                if (Out) return _prop.GetOffsetPosition(SpoutOffset());
             }
             catch (Exception ex)
             {
@@ -234,6 +228,29 @@ namespace Fumes.Station
             }
 
             return HoseEnd();
+        }
+
+        /// <summary>
+        /// The spout in the NOZZLE'S OWN SPACE, for anything hung on the prop rather than
+        /// placed in the world -- a looped particle takes an offset, not a position.
+        /// </summary>
+        public Vector3 SpoutOffset()
+        {
+            try
+            {
+                if (!Out) return Vector3.Zero;
+
+                var back = _cfg.HoseEndAuto ? BackOfNozzle() : Vector3.Zero;
+                var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ) + back;
+
+                // A fraction past the end, so what comes out leaves the model rather than
+                // starting inside it.
+                return -local * 1.15f;
+            }
+            catch
+            {
+                return Vector3.Zero;
+            }
         }
 
         /// <summary>Which way the spout points, for a stream that leaves it.</summary>

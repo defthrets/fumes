@@ -39,6 +39,13 @@ Unreleased
     leaving the nozzle under your control. Everything until now disabled that
     trigger; this reads it. [Nozzle] Spray, and two rows on the HOSE page.
 
+    It comes out of the SPOUT -- the far end from the hose, worked out from the
+    same measurement the hose end uses, so it swings with the thing in his hand.
+    SprayX, SprayY and SprayZ nudge it for anybody whose nozzle model sits
+    differently. And it is only offered with NOTHING TO FILL in front of you:
+    standing at a filler the interaction is the fill, and a stream of petrol
+    competing with it is a way to lose the fill.
+
   * FIXED: SIPHONING SOMETIMES DELETED THE CAR. The mod deletes its own props by
     handle on a timer -- the dropped nozzle six seconds later, a put-down can
     two minutes later -- and the game recycles entity handles. A prop streamed

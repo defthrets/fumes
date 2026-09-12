@@ -2351,14 +2351,10 @@ namespace Fumes.Station
             RopePicker();
             LockHands();
 
-            // The trigger, before anything that might return: hold it and fuel comes out of
-            // the nozzle onto the ground. See Spray.
-            var spraying = Spray(me, dt);
-
             var anchor = Anchor();
             _hose.Update(anchor, _nozzle.HoseEnd());
 
-            if (_hazard.Update(_pump.Position, spraying)) { Abandon("the pump went up"); return; }
+            if (_hazard.Update(_pump.Position, _spraying)) { Abandon("the pump went up"); return; }
 
             if (Leash(me, anchor)) return;
 
@@ -2404,6 +2400,13 @@ namespace Fumes.Station
             RangeOnce(toPump, toFiller);
 
             var canFill = vehicle != null && inReach && hasRoom;
+
+            // THE TRIGGER, and only with nothing to fill in front of him. "When it is not
+            // fuelling" was the whole request: standing at a filler the interaction is the
+            // fill, and a stream of petrol competing with it is a way to lose the fill. See
+            // Spray. Returning true takes the rest of this frame's prompts with it, so the
+            // only thing on screen while it pours is what is pouring.
+            if (Spray(me, dt, vehicle != null && inReach)) return;
 
             // AND IT STICKS ONCE IT HAS DECIDED. Nearer-wins was right and not enough.
             //
@@ -2898,7 +2901,9 @@ namespace Fumes.Station
         // ==================================================================
 
         /// <summary>How much has gone on the tarmac this time out, and the pool it has made.</summary>
+        private bool _spraying;
         private float _sprayed;
+        private float _sprayOwed;
         private float _sprayWidth;
         private int _sprayDecals;
         private int _sprayNextAt;
@@ -2938,16 +2943,21 @@ namespace Fumes.Station
         /// game's own petrol decals -- the same ones a jerry can leaves. Returns true while
         /// fuel is actually coming out.
         /// </summary>
-        private bool Spray(Ped me, float dt)
+        private bool Spray(Ped me, float dt, bool atAFiller)
         {
             var held = false;
 
-            if (_cfg.NozzleSpray && dt > 0f)
+            if (_cfg.NozzleSpray && dt > 0f && !atAFiller && !InputBlocked)
             {
                 try
                 {
-                    held = Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.Attack)
-                           || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.Attack2);
+                    // ATTACK ALONE. Attack2 was in here as well and had to go: it is a
+                    // different index on a pad from the one anybody would guess, and a spray
+                    // that will not stop is worse than one that misses a button.
+                    //
+                    // Read through the DISABLED control, because LockHands turns Attack off
+                    // every frame -- which is what stops the extinguisher pose spraying foam.
+                    held = Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.Attack);
                 }
                 catch
                 {
@@ -2960,11 +2970,17 @@ namespace Fumes.Station
                 if (_sprayed > 0.05f)
                 {
                     Log.Info("Sprayed " + _sprayed.ToString("0.0", CultureInfo.InvariantCulture) +
-                             " L out of the nozzle over " + _sprayDecals + " decal(s).");
+                             " L out of the nozzle over " + _sprayDecals + " decal(s), $" +
+                             _sprayOwed.ToString("0.00", CultureInfo.InvariantCulture) + " of it unpaid.");
                 }
 
+                // The part-dollar at the end, the same way a fill settles its own.
+                if (_cfg.ChargeMoney && _sprayOwed >= 0.005f) Charge((int)Math.Ceiling(_sprayOwed - 0.001f));
+
                 StopStream();
+                _spraying = false;
                 _sprayed = 0f;
+                _sprayOwed = 0f;
                 _sprayWidth = 0f;
                 _sprayDecals = 0;
                 _sprayAt = Vector3.Zero;
@@ -2973,20 +2989,32 @@ namespace Fumes.Station
 
             var wanted = _cfg.NozzleSprayLitresPerSecond * dt;
 
+            _spraying = true;
             _sprayed += wanted;
-            _dispensed += wanted;
 
+            // ITS OWN TAB, not the fill's. _dispensed and _owed belong to a fill in progress
+            // and are what the receipt is written from; a stream of petrol adding to them put
+            // litres on a bill that had not been pumped into anything.
             if (_cfg.ChargeMoney && _price > 0f)
             {
-                _owed += wanted * _price;
-                Settle();
+                _sprayOwed += wanted * _price;
+
+                var whole = (int)Math.Floor(_sprayOwed);
+                if (whole >= 1)
+                {
+                    Charge(whole);
+                    _sprayOwed -= whole;
+                }
             }
 
             Stream(me);
             Puddle(me, _nozzle.Spout());
 
-            Prompt(Control.Context, "Fuel on the ground   " +
-                                    _sprayed.ToString("0.0", CultureInfo.InvariantCulture) + " L");
+            // ITS OWN BUTTON TO STOP, which is the one already being held: let go. Nothing
+            // is put on Context, because Context is the fill and the hang-up and this must
+            // never be mistaken for either.
+            Draw.Help("Fuel on the ground   " + _sprayed.ToString("0.0", CultureInfo.InvariantCulture) +
+                      " L.  Let go to stop.");
 
             return true;
         }
@@ -3009,6 +3037,12 @@ namespace Fumes.Station
                 var prop = _nozzle.Prop;
                 if (prop == null || !prop.Exists()) return;
 
+                // AT THE SPOUT, in the nozzle's own space, so it comes out of the end of the
+                // thing and swings with it. Started at the prop's origin to begin with, which
+                // is its middle -- the fuel appeared out of his fist.
+                var at = _nozzle.SpoutOffset()
+                         + new Vector3(_cfg.NozzleSprayX, _cfg.NozzleSprayY, _cfg.NozzleSprayZ);
+
                 var first = _streamRung >= 0 ? _streamRung : 0;
                 var last = _streamRung >= 0 ? _streamRung : SprayLadder.Length - 1;
 
@@ -3020,7 +3054,7 @@ namespace Fumes.Station
                     // hand rather than being restarted at a world position every frame.
                     var handle = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
                                                     SprayLadder[i], prop.Handle,
-                                                    0f, 0f, 0f, 0f, 0f, 0f,
+                                                    at.X, at.Y, at.Z, 0f, 0f, 0f,
                                                     _cfg.NozzleSprayScale, false, false, false);
 
                     if (handle == 0)

@@ -357,6 +357,11 @@ namespace Fumes.Core
         public float NozzleSprayLitresPerSecond = 1.2f;
         public float NozzleSprayScale = 1.0f;
 
+        /// <summary>A nudge on the spout, in the nozzle's own space, for anybody whose model sits differently.</summary>
+        public float NozzleSprayX;
+        public float NozzleSprayY;
+        public float NozzleSprayZ;
+
 
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
         public float DryRestartSeconds = 1.6f;
@@ -1589,6 +1594,9 @@ namespace Fumes.Core
                 s.NozzleSpray = ini.GetBool("Nozzle", "Spray", s.NozzleSpray);
                 s.NozzleSprayLitresPerSecond = ini.GetFloat("Nozzle", "SprayLitresPerSecond", s.NozzleSprayLitresPerSecond, 0.05f, 20f);
                 s.NozzleSprayScale = ini.GetFloat("Nozzle", "SprayScale", s.NozzleSprayScale, 0.05f, 5f);
+                s.NozzleSprayX = ini.GetFloat("Nozzle", "SprayX", s.NozzleSprayX, -2f, 2f);
+                s.NozzleSprayY = ini.GetFloat("Nozzle", "SprayY", s.NozzleSprayY, -2f, 2f);
+                s.NozzleSprayZ = ini.GetFloat("Nozzle", "SprayZ", s.NozzleSprayZ, -2f, 2f);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);
