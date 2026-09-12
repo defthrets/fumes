@@ -82,6 +82,12 @@ Unreleased
     onto, is a computed curve with no rope behind it at all: it cannot fail and
     it cannot swing either. Sag 1.22 to 1.45.
 
+    ON ROPE TYPE 5, the thin dark wire, which this mode has always wanted and
+    was not getting. A rope draws its own texture whatever you do -- it cannot
+    be tinted or hidden -- so the one under our black ribbon has to be thin
+    enough to disappear. At 4 it is a braided hawser lying alongside, which
+    reads as two hoses.
+
     The mode is on the HOSE page of the menu now, beside Sag, rather than being
     an ini line nobody would find. The C# default said Line while the ini's own
     comment said Painted was the default; they agree now.
