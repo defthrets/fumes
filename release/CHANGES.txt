@@ -161,6 +161,23 @@ FUMES -- changes
     A waypoint YOU have already set is never taken away -- you were going
     somewhere. [Fuel] RouteOnReserve.
 
+  * ANOTHER MOD'S SCENERY CAR IS NOT A CAR, AND IS LEFT ALONE. The two parked
+    across the junction at a street takeover have their engines and their radios
+    held on by the mod that put them there, because a car with a dead engine has
+    no radio and the music IS the party. Fumes watches every vehicle in the
+    world and an idling engine burns, so the tank emptied and Fumes cut the
+    engine -- which is exactly what it is for -- and the takeover's own pass
+    turned it straight back on, because the music had stopped. Off, on, off, on,
+    for as long as anybody stood there. Neither mod was wrong; they were
+    answering different questions about the same car.
+
+    So there is a channel for saying which: the mod that put the car there marks
+    it, and Fumes leaves it alone -- no tank, no gauge, no prompt at a pump and
+    no fuel burned. The handle AND the model have to match, because the game
+    reuses handles and a handle on its own would eventually exempt somebody's
+    real car. A car you are sitting in is never exempt whatever any list says,
+    so one you take for a drive buys its own petrol.
+
   * 246 settings in the ini.
 
 
