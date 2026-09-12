@@ -1,4 +1,4 @@
-FUMES 1.0.1
+FUMES 1.0.2
 Persistent vehicle fuel for GTA V, with a refuel you walk through.
 by spitmux
 
@@ -87,6 +87,7 @@ with:
   Grand Theft Auto V\scripts\Fumes.dll
   Grand Theft Auto V\scripts\Fumes.ini
   Grand Theft Auto V\scripts\Fumes\stations.json
+  Grand Theft Auto V\scripts\Fumes\models.json
   Grand Theft Auto V\scripts\Fumes\icons\*.png
   Grand Theft Auto V\scripts\Fumes\lang\*.json
 
@@ -165,7 +166,10 @@ The sections are:
   [Nozzle]       the nozzle prop, the hose, the filling animation
   [HUD]          the gauge and the pump display
   [Hazard]       the odds a shootout at the pumps sets the vapour off
-  [Consumption]  per-class thirst
+  [Consumption]  per-class thirst -- the CLASSES page of the menu, with the three
+                 numbers each vehicle's own figure is worked out from; THIS
+                 VEHICLE on the FUEL page pins the car you are in, and that goes
+                 to models.local.json, which an update never touches
 
 Two of them are worth knowing about up front:
 

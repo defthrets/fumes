@@ -1,8 +1,8 @@
 FUMES -- changes
 
 
-Unreleased
-==========
+1.0.2
+=====
 
   * FIXED: AN EMPTY JERRY CAN COULD NOT BE FILLED AT A PUMP. A can with a tenth
     of a litre in it filled fine; one at exactly nought was offered "put it
@@ -55,7 +55,9 @@ Unreleased
     update never touches them -- and a pinned figure is used as is, whatever
     PerModel says. A new CLASSES page carries the whole class table and the
     three numbers the worked-out figure is made from, saved to the ini like
-    everything else. 223 settings.
+    everything else.
+
+  * 223 settings in the ini.
 
 
 1.0.1
