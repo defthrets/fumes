@@ -30,12 +30,6 @@ namespace Fumes.Fuel
         /// <summary>Whether the engine being off right now is our doing. See Cough.</summary>
         private bool _cutByUs;
 
-        /// <summary>While under this, the starter is turning over on an empty tank.</summary>
-        private int _crankUntil;
-
-        /// <summary>The starter will not engage again before this.</summary>
-        private int _crankAgainAt;
-
         /// <summary>Whether the reserve warning has already been given for this tankful.</summary>
         private bool _warned;
 
@@ -65,6 +59,7 @@ namespace Fumes.Fuel
                 if (tank.Empty && _cfg.StallWhenEmpty) { Dry(v, tank); return; }
 
                 Stalled = false;
+                Unground();
 
                 if (tank.Litres <= SputterAt(tank))
                 {
@@ -149,8 +144,11 @@ namespace Fumes.Fuel
         {
             if (v.Handle == _handle) return;
 
+            // The vehicle he got out of keeps nothing of ours.
+            Unground();
+
             _handle = v.Handle;
-            _coughUntil = _nextCough = _crankUntil = _crankAgainAt = 0;
+            _coughUntil = _nextCough = 0;
             _warned = _toldEmpty = _cutByUs = _coughLogged = false;
             Stalled = false;
         }
@@ -204,16 +202,21 @@ namespace Fumes.Fuel
         {
             Stalled = true;
 
-            var now = Game.GameTime;
-
-            if (now < _crankUntil)
-            {
-                // Turning over, and that is all it is going to do.
-                Engine(v, true, false);
-                return;
-            }
-
+            // HELD OFF, AND NOTHING ELSE. This used to turn the starter over for a second or
+            // two whenever the throttle was pressed, for the feel of somebody trying -- but
+            // SET_VEHICLE_ENGINE_ON(true, instantly=false) is not a starter, it is a start:
+            // the engine caught at the end of the crank, ran until the next frame cut it, and
+            // the car crept forward or back on that moment of power while the on-off-on
+            // backfired sparks out of the exhaust. Reported as "sparks from the exhaust and
+            // it starts moving" by GrandHaven and, earlier, AliG_15. A tank with nothing in
+            // it now does exactly what they asked for: shuts down and stays shut down.
             Engine(v, false, true);
+
+            // A HOVER BIKE DOES NOT RUN ON ITS ENGINE. The Oppressor Mk II kept flying with
+            // the engine held off, because its flight is a thruster the engine flag does not
+            // touch. Hover flight is switched off for as long as the tank is dry, and given
+            // back the moment it is not. Reported by AliG_15.
+            Ground(v);
 
             if (!_toldEmpty)
             {
@@ -222,13 +225,49 @@ namespace Fumes.Fuel
                 Say(tank.Electric ? "~r~Flat battery.~s~" : "~r~Out of fuel.~s~");
                 Beep();
             }
+        }
 
-            if (!IsPlayerDriving(v)) return;
-            if (now < _crankAgainAt) return;
-            if (!Game.IsControlPressed(Control.VehicleAccelerate)) return;
+        /// <summary>The vehicle whose hover flight this took away, so it can be given back.</summary>
+        private int _grounded;
 
-            _crankUntil = now + (int)(_cfg.DryRestartSeconds * 1000f);
-            _crankAgainAt = _crankUntil + 1400;
+        private void Ground(Vehicle v)
+        {
+            if (_grounded == v.Handle) return;
+
+            Unground();
+
+            try
+            {
+                Function.Call(Hash.SET_DISABLE_HOVER_MODE_FLIGHT, v.Handle, true);
+                Function.Call(Hash.SET_SPECIAL_FLIGHT_MODE_ALLOWED, v.Handle, false);
+                _grounded = v.Handle;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("ground-fail", "Could not take hover flight away from a dry vehicle: " + ex.Message);
+            }
+        }
+
+        /// <summary>Gives hover flight back, if it was taken. Safe to call when it was not.</summary>
+        private void Unground()
+        {
+            if (_grounded == 0) return;
+
+            var handle = _grounded;
+            _grounded = 0;
+
+            try
+            {
+                var v = Entity.FromHandle(handle) as Vehicle;
+                if (v == null || !v.Exists()) return;
+
+                Function.Call(Hash.SET_DISABLE_HOVER_MODE_FLIGHT, v.Handle, false);
+                Function.Call(Hash.SET_SPECIAL_FLIGHT_MODE_ALLOWED, v.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("unground-fail", "Could not give hover flight back: " + ex.Message);
+            }
         }
 
         private static bool IsPlayerDriving(Vehicle v)

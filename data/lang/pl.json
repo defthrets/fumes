@@ -175,6 +175,10 @@
   "Walk the nozzle to the filler on the side of your vehicle.": "Podejdź z pistoletem do wlewu z boku pojazdu.",
   "Take the nozzle to the filler on the ": "Podejdź z pistoletem do wlewu: ",
   "The hose is nearly at full stretch.": "Wąż jest prawie do końca napięty.",
-  "The hose will not reach any further.": "Wąż dalej nie sięga."
+  "The hose will not reach any further.": "Wąż dalej nie sięga.",
+  "Follow Bare Minimum's row": "Podążaj za rzędem Bare Minimum",
+  "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Rozmiar i miejsce jak szósty pasek tego rzędu. Wył., albo bez tego moda, zostaje tam, gdzie go ustawisz.",
+  "My own side": "Moja własna strona",
+  "Keep X from this ini while following the row, to stand it on the other side.": "Zachowaj X z tego ini mimo podążania za rzędem, by postawić go po drugiej stronie."
  }
 }

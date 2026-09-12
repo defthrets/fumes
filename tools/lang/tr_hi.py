@@ -165,4 +165,8 @@ T = {
 "The hose is nearly at full stretch.": "Hose lagbhag poora khinch chuka hai.",
 "The hose will not reach any further.": "Hose isse aage nahi jaayega.",
 "Stop": "Roko",
+"Follow Bare Minimum's row": "Bare Minimum ki row ke saath rakho",
+"Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Us row ki chhathi bar jaisa size aur jagah. Off hone par, ya us mod ke bina, jahan tum rakho wahin rahega.",
+"My own side": "Meri apni side",
+"Keep X from this ini while following the row, to stand it on the other side.": "Row ke saath rehte hue bhi is ini ka X rakho, taaki doosri side par khada ho.",
 }

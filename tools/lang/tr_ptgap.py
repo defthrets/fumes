@@ -77,6 +77,10 @@ T = {
 "Fill the ": "Abastecer ",
 "Hang the nozzle up": "Devolver o bico",
 "Stop": "Parar",
+"Follow Bare Minimum's row": "Seguir a fileira do Bare Minimum",
+"Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Com o tamanho e a posição da sexta barra dessa fileira. Desligado, ou sem esse mod, fica onde você colocar.",
+"My own side": "Meu próprio lado",
+"Keep X from this ini while following the row, to stand it on the other side.": "Manter o X deste ini mesmo seguindo a fileira, para ficar do outro lado.",
 "you moved away from the filler": "você se afastou do bocal",
 "the vehicle went away": "o veículo desapareceu",
 }

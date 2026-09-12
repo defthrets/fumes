@@ -179,6 +179,10 @@
   "Take the nozzle to the filler on the ": "Lleva la pistola hasta la boca del tanque del ",
   "The hose is nearly at full stretch.": "La manguera está casi al límite.",
   "The hose will not reach any further.": "La manguera no llega más lejos.",
-  "Stop": "Parar"
+  "Stop": "Parar",
+  "Follow Bare Minimum's row": "Seguir la fila de Bare Minimum",
+  "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Con el tamaño y la posición de la sexta barra de esa fila. Desactivado, o sin ese mod, queda donde tú lo pongas.",
+  "My own side": "Mi propio lado",
+  "Keep X from this ini while following the row, to stand it on the other side.": "Mantener la X de este ini aunque siga la fila, para ponerlo en el otro lado."
  }
 }

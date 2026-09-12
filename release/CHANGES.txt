@@ -1,6 +1,39 @@
 FUMES -- changes
 
 
+Unreleased
+==========
+
+  * FIXED: AN EMPTY JERRY CAN COULD NOT BE FILLED AT A PUMP. A can with a tenth
+    of a litre in it filled fine; one at exactly nought was offered "put it
+    down" and nothing else, because that prompt took the frame before the pump
+    was looked at. The pump gets its say now, on the secondary key, alongside
+    whatever the can is offering on the interact key. Reported by AliG_15.
+
+  * FIXED: THE GAUGE COULD NOT BE MOVED WITH BARE MINIMUM INSTALLED. That mod's
+    row sizes and places the gauge every frame, so the positioner wrote X, Y,
+    Width and Height to the ini and the next draw overruled them -- "moving the
+    bar doesn't seem to work". The two settings that decide this were ini-only
+    and unexplained: they are on the HUD page now, FOLLOW BARE MINIMUM'S ROW
+    and MY OWN SIDE, and opening the positioner switches the first one off so
+    the placement takes. Reported by VaporHaven and HunterBoys555.
+
+  * FIXED: SPARKS FROM THE EXHAUST AND A CAR THAT CREPT ALONG ON AN EMPTY TANK.
+    Pressing the throttle on a dry tank turned the starter over for a second or
+    two, for the feel of somebody trying -- except the native that does that
+    is a START, not a crank: the engine caught at the end of it, ran until the
+    next frame cut it, and the car moved on that moment of power while the
+    on-off-on backfired. And underneath that, the game's own FuelLevel of nought
+    runs its own starter-and-backfire routine. Both gone: a dry tank shuts down
+    and stays shut down, and the game is never told the tank is quite empty.
+    DryRestartSeconds does nothing now and says so. Reported by GrandHaven and
+    AliG_15.
+
+  * FIXED: THE OPPRESSOR MK II KEPT FLYING ON AN EMPTY TANK. Its flight is a
+    thruster the engine flag never touched. Hover flight is taken away while
+    the tank is dry and given back the moment it is not. Reported by AliG_15.
+
+
 1.0.1
 =====
 

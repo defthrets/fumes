@@ -273,8 +273,20 @@ namespace Fumes.UI
             language.Show = () => Lang.NameOf(_cfg.Language);
             hud.Items.Add(language);
 
-            hud.Items.Add(Action_("Move and size the gauge", () => Placing = true,
+            hud.Items.Add(Action_("Move and size the gauge", () => { Placing = true; Unfollow(); },
                                   "Arrows or DPAD move it, Shift or RB resizes, Enter or A keeps it."));
+
+            // THE TWO THAT DECIDE WHETHER THE ROW ABOVE DOES ANYTHING. With Bare Minimum
+            // installed the gauge is sized and placed by that mod's row every frame, and the
+            // positioner's X, Y, Width and Height were written to the ini and then overruled
+            // on the next draw -- "moving the bar doesn't seem to work". They were ini-only
+            // and unexplained; now they are here, and the positioner turns the first one off.
+            hud.Items.Add(Toggle("Follow Bare Minimum's row", () => _cfg.GaugeMatchBars,
+                                 v => _cfg.GaugeMatchBars = v, "HUD", "MatchBars",
+                                 "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it."));
+            hud.Items.Add(Toggle("My own side", () => _cfg.GaugeManualX, v => _cfg.GaugeManualX = v,
+                                 "HUD", "ManualX",
+                                 "Keep X from this ini while following the row, to stand it on the other side."));
             hud.Items.Add(Toggle("Show the gauge", () => _cfg.ShowGauge, v => _cfg.ShowGauge = v,
                                  "HUD", "ShowGauge", "The bar beside the minimap."));
             hud.Items.Add(Toggle("Hide with the game's HUD", () => _cfg.GaugeFollowsHud,
@@ -733,6 +745,21 @@ namespace Fumes.UI
         }
 
         /// <summary>Stages the four numbers so Close writes them.</summary>
+        /// <summary>
+        /// Stops following Bare Minimum's row, because the positioner is about to be used
+        /// and a gauge that follows the row cannot be moved: the row would put it straight
+        /// back. Written to the ini with the placement, so it stays stopped.
+        /// </summary>
+        private void Unfollow()
+        {
+            if (!_cfg.GaugeMatchBars || !Neighbour.Ready) return;
+
+            _cfg.GaugeMatchBars = false;
+            Stage("HUD", "MatchBars", () => "false");
+            Log.Info("The positioner was opened while the gauge followed Bare Minimum's row; " +
+                     "MatchBars is off so the placement can take.");
+        }
+
         private void Remember()
         {
             Stage("HUD", "X", () => _cfg.GaugeX.ToString("0.0000", CultureInfo.InvariantCulture));

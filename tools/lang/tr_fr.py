@@ -161,4 +161,8 @@ T = {
 "The hose is nearly at full stretch.": "Le tuyau est presque tendu au maximum.",
 "The hose will not reach any further.": "Le tuyau n'ira pas plus loin.",
 "Stop": "Arrêter",
+"Follow Bare Minimum's row": "Suivre la rangée de Bare Minimum",
+"Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Dimensionnée et placée comme sixième barre de cette rangée. Désactivé, ou sans ce mod, elle reste où vous la mettez.",
+"My own side": "Mon propre côté",
+"Keep X from this ini while following the row, to stand it on the other side.": "Garder le X de cet ini tout en suivant la rangée, pour la placer de l'autre côté.",
 }

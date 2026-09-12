@@ -162,4 +162,8 @@ T = {
 "The hose is nearly at full stretch.": "油管快要拉到极限了。",
 "The hose will not reach any further.": "油管无法再伸远了。",
 "Stop": "停止",
+"Follow Bare Minimum's row": "跟随 Bare Minimum 的一排",
+"Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "大小和位置与那一排的第六条一致。关闭时，或没有该模组时，放在你自己设定的位置。",
+"My own side": "我自己的一侧",
+"Keep X from this ini while following the row, to stand it on the other side.": "跟随那一排时仍使用本 ini 的 X，以便放在另一侧。",
 }

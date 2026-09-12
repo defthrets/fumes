@@ -325,18 +325,29 @@ namespace Fumes.Station
 
         private void AtRest(Ped me)
         {
-            // THE CAN IS OFFERED FIRST, and before the pump lookup rather than after it. A jerry
-            // can is for the roadside -- the whole point of carrying one is that there is no
-            // pump -- so anything gated behind "is there a pump nearby" would only ever work in
-            // the one place it is not needed.
-            if (OfferCan(me)) return;
+            var pump = _pumps.Nearest(me.Position, _cfg.PumpReach);
+
+            // THE CAN IS OFFERED FIRST. A jerry can is for the roadside -- the whole point of
+            // carrying one is that there is no pump -- so nothing about it is gated behind
+            // "is there a pump nearby".
+            //
+            // BUT THE PUMP STILL GETS ITS SAY. The can's prompts sit on the interact key and
+            // filling it at a pump sits on the secondary, so the two can stand together -- and
+            // they have to, because this branch used to return before the pump was looked at.
+            // An EMPTY can was offered "put it down" and nothing else, which made the one can
+            // that most needed a pump the one can a pump could never fill; a can with a tenth
+            // of a litre in it fell through and filled fine. Reported by AliG_15, twice.
+            if (OfferCan(me, pump != null))
+            {
+                if (pump != null) OfferCanAtPump(me, pump);
+                return;
+            }
 
             // AFTER the can he is holding, before the pump. A can on the floor is a smaller
             // thing than a forecourt and you are standing on top of it, so it wins over a pump
             // several metres away -- but it must not talk over the can already in his hands.
             if (OfferPickUpCan(me)) return;
 
-            var pump = _pumps.Nearest(me.Position, _cfg.PumpReach);
             if (pump == null) return;
 
             Prompt(Control.Context, "Take the nozzle");
@@ -349,12 +360,12 @@ namespace Fumes.Station
         /// <summary>
         /// The prompt to pour a can into a tank. True when it took the prompt this frame.
         /// </summary>
-        private bool OfferCan(Ped me)
+        private bool OfferCan(Ped me, bool atPump)
         {
             if (!_cfg.JerryCan) return false;
 
             var litres = CanLitres(me);
-            if (litres <= 0.01f) return OfferEmptyCan(me);
+            if (litres <= 0.01f) return OfferEmptyCan(me, atPump);
 
             var vehicle = NearestFillable(me, out var filler, out var inReach);
             if (vehicle == null || !inReach) return false;
@@ -379,7 +390,8 @@ namespace Fumes.Station
                                         " L into the " + vehicle.LocalizedName);
             }
 
-            OfferSiphon(me, vehicle, tank, litres);
+            // Not at a pump: there the secondary key is the pump's. See OfferEmptyCan.
+            if (!atPump) OfferSiphon(me, vehicle, tank, litres);
 
             if (!hasRoom) return true;
 
@@ -537,7 +549,7 @@ namespace Fumes.Station
         /// round the map with empty hands. CanLitres reporting zero for a can that is not out
         /// is what routed a full can down here in the first place.
         /// </summary>
-        private bool OfferEmptyCan(Ped me)
+        private bool OfferEmptyCan(Ped me, bool atPump)
         {
             if (!_cfg.DropEmptyCan) return false;
 
@@ -548,10 +560,12 @@ namespace Fumes.Station
             // weapon that is not out.
             if (!HoldingCan(me)) return false;
 
-            // Still worth offering the siphon, and this is the case that needed it most.
+            // Still worth offering the siphon, and this is the case that needed it most --
+            // except at a pump, where the secondary key is the pump's: filling the can there
+            // is the thing you walked up for, and two prompts on one key is a coin toss.
             var vehicle = NearestFillable(me, out var filler, out var inReach);
 
-            if (vehicle != null && inReach)
+            if (vehicle != null && inReach && !atPump)
             {
                 var tank = _tanks.For(vehicle);
                 if (tank != null) OfferSiphon(me, vehicle, tank, 0f);

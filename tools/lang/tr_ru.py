@@ -161,4 +161,8 @@ T = {
 "The hose is nearly at full stretch.": "Шланг почти натянут до предела.",
 "The hose will not reach any further.": "Шланг дальше не достаёт.",
 "Stop": "Стоп",
+"Follow Bare Minimum's row": "Следовать за рядом Bare Minimum",
+"Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Размер и место — как у шестой полоски того ряда. Выкл., или без того мода, — там, куда поставишь сам.",
+"My own side": "Своя сторона",
+"Keep X from this ini while following the row, to stand it on the other side.": "Брать X из этого ini даже следуя за рядом, чтобы поставить шкалу с другой стороны.",
 }

@@ -338,6 +338,14 @@ namespace Fumes
                 if (theirs >= 5f && theirs <= 800f && tank.Capacity > 0.01f)
                 {
                     want = tank.Fraction * theirs;
+
+                    // NEVER QUITE ZERO. At a FuelLevel of nought the game runs its own
+                    // out-of-fuel routine -- the starter turns over on the throttle, the car
+                    // inches along on it and the exhaust backfires -- which is the very thing
+                    // Starvation was rewritten not to do. Two per cent keeps the game out of
+                    // it; the engine is held off by us, every frame, whatever the game
+                    // believes is in the tank.
+                    if (want < theirs * 0.02f) want = theirs * 0.02f;
                 }
 
                 if (Math.Abs(v.FuelLevel - want) < 0.15f) return;
