@@ -91,12 +91,30 @@ Unreleased
     about: NumPad * cycles all eight, NumPad 0 keeps one. The physics is the
     same solver whichever it is; the type is only the look.
 
+    AND IT IS NOT STIFF ANY MORE. A rope's SEGMENT COUNT is fixed when it is
+    created, from the length it is created at -- and this one was created at the
+    span between the pump and a nozzle still hanging on it, about a metre and a
+    half. A handful of vertices, which Pin then stretched out to nine metres as
+    you walked: long straight runs with a corner at each joint, which is the
+    whole of "stiff and jagged". Created at the full reach now, so it gets the
+    full count and keeps every one at every length. HoseFlex runs the rope's own
+    clock faster on top, for something that swings off a step like a light hose
+    rather than settling like a mooring line. Type 5, the power line, which is
+    the closest the game has to a fuel hose.
+
   * THE HOSE LEAVES THE NOZZLE SIDEWAYS. The joint was worked out by taking the
     model's longest axis and going to one end of it, which is underneath the
     handle -- so the hose dropped vertically out of the bottom of his fist. A
     real one leaves the side and carries its weight out sideways. [Nozzle]
     HoseEndEdit places it by eye, the same way the spray is placed: take the
     nozzle, arrows move it, ENTER saves and locks.
+
+    AND MOVING IT NO LONGER MOVES THE FUEL. The spout the stream leaves was
+    mirrored from the whole hose joint, the by-eye nudge included, so placing
+    one end of the nozzle moved the other -- a spray just positioned was
+    somewhere else the moment the joint was. It mirrors the measured end alone
+    now, and the spray's own numbers are shifted by the same amount, so it is
+    exactly where it was left.
 
     The mode is on the HOSE page of the menu now, beside Sag, rather than being
     an ini line nobody would find. The C# default said Line while the ini's own
@@ -168,7 +186,7 @@ Unreleased
     A waypoint YOU have already set is never taken away -- you were going
     somewhere. [Fuel] RouteOnReserve.
 
-  * 244 settings in the ini.
+  * 245 settings in the ini.
 
 
 1.0.2
