@@ -181,6 +181,6 @@ T = {
 "Per kilowatt": "每千瓦",
 "Low fuel effect": "低油量效果",
 "What the last litre looks like. None of these touches the engine or the brakes.": "最后一升油时的表现。都不会影响发动机或刹车。",
-"BACKFIRE": "排气回火", "SPARKS": "火花",
+"BACKFIRE": "排气回火", "SMOKE": "烟雾",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "发动机在 100 公里/小时下每千瓦推力增加的每 100 公里升数。",
 }

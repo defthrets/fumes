@@ -141,7 +141,7 @@
  "HELPTEXT": "enum PromptStyle",
  "BUTTONBAR": "enum PromptStyle",
  "BACKFIRE": "enum LowFuelEffect",
- "SPARKS": "enum LowFuelEffect",
+ "SMOKE": "enum LowFuelEffect",
  "FIREEXTINGUISHER": "enum NozzlePose",
  "PETROLCAN": "enum NozzlePose",
  "ENGLISH": "enum Language",

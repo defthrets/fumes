@@ -184,6 +184,6 @@ T = {
 "Per kilowatt": "Per kilowatt",
 "Low fuel effect": "Kam fuel ka effect",
 "What the last litre looks like. None of these touches the engine or the brakes.": "Aakhri litre kaisa dikhta hai. Inmein se koi engine ya brake ko nahi chhedta.",
-"BACKFIRE": "BACKFIRE", "SPARKS": "CHINGARI",
+"BACKFIRE": "BACKFIRE", "SMOKE": "DHUAN",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "100 km/h par engine ke har kilowatt par litre per 100 km jode jaate hain.",
 }

@@ -20,14 +20,20 @@ namespace Fumes.Fuel
         private readonly Random _rng = new Random();
 
         /// <summary>
-        /// Both effects live in "core", which every install has loaded. veh_backfire is the
-        /// game's own exhaust pop; ent_sht_electrical_box is a burst of electrical sparks,
-        /// nothing to do with vehicles at all -- there for anybody who wants the warning to
-        /// look like nothing the game does on its own.
+        /// Everything here lives in "core", which every install has loaded. veh_backfire is
+        /// the game's own exhaust pop. The smoke is a LADDER, tried in order the first time it
+        /// is wanted and the first one the game accepts kept: there is no list of particle
+        /// names on disk to check against, the game refuses a wrong one in silence, and the
+        /// log says which rung it settled on.
         /// </summary>
         private const string PtfxAsset = "core";
         private const string Backfire = "veh_backfire";
-        private const string ElectricSparks = "ent_sht_electrical_box";
+
+        private static readonly string[] SmokeLadder = { "ent_sht_steam", "exp_grd_grenade_smoke", "veh_backfire" };
+        private static readonly float[] SmokeScale = { 0.8f, 0.25f, 1f };
+
+        /// <summary>The rung of SmokeLadder the game accepted, or -1 while unknown.</summary>
+        private int _smoke = -1;
 
         private static readonly string[] ExhaustBones = { "exhaust", "exhaust_2", "exhaust_3", "exhaust_4" };
 
@@ -203,7 +209,7 @@ namespace Fumes.Fuel
             if (!v.IsEngineRunning) return;
             if (_cfg.LowFuelEffect == LowFuelEffect.None) return;
 
-            var fx = _cfg.LowFuelEffect == LowFuelEffect.Sparks ? ElectricSparks : Backfire;
+            var smoke = _cfg.LowFuelEffect == LowFuelEffect.Smoke;
 
             try
             {
@@ -224,28 +230,13 @@ namespace Fumes.Fuel
                     var off = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS, v.Handle,
                                                      world.X, world.Y, world.Z);
 
-                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-                    var ok = Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
-                                                 off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
-
-                    // SAID ONCE EITHER WAY. A wrong effect name fails in silence, and "they
-                    // aren't showing" cannot be told from "never fired" without this.
-                    Log.Once("fx-" + fx + (ok ? "-ok" : "-fail"),
-                             (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + fx +
-                             " at " + bone + " of " + v.LocalizedName + ".");
-
-                    if (++popped >= 2) break;
+                    if (Puff(v, smoke, off, bone) && ++popped >= 2) break;
                 }
 
                 if (popped == 0)
                 {
                     // No exhaust bone -- some add-ons -- so out of the back, low down.
-                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-                    var ok = Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
-                                                 0f, -2.2f, 0.2f, 0f, 0f, 0f, 1f, false, false, false);
-                    Log.Once("fx-" + fx + "-nobone",
-                             (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + fx +
-                             " behind " + v.LocalizedName + ", which has no exhaust bone.");
+                    Puff(v, smoke, new Vector3(0f, -2.2f, 0.2f), "no exhaust bone");
                 }
             }
             catch (Exception ex)
@@ -332,6 +323,51 @@ namespace Fumes.Fuel
             {
                 Log.Once("unground-fail", "Could not give hover flight back: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// One effect at one point on the vehicle. For smoke, walks the ladder the first
+        /// time and remembers the rung the game took. True when something was drawn.
+        ///
+        /// SAID ONCE EITHER WAY. A wrong effect name fails in silence, and "they aren't
+        /// showing" cannot be told from "never fired" without a line in the log.
+        /// </summary>
+        private bool Puff(Vehicle v, bool smoke, Vector3 off, string where)
+        {
+            if (!smoke)
+            {
+                var ok = Fire(Backfire, 1f, v, off);
+                Log.Once("fx-backfire" + (ok ? "-ok" : "-fail"),
+                         (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + Backfire +
+                         " at " + where + " of " + v.LocalizedName + ".");
+                return ok;
+            }
+
+            if (_smoke >= 0) return Fire(SmokeLadder[_smoke], SmokeScale[_smoke], v, off);
+
+            for (var i = 0; i < SmokeLadder.Length; i++)
+            {
+                if (!Fire(SmokeLadder[i], SmokeScale[i], v, off))
+                {
+                    Log.Info("Low-fuel smoke: " + PtfxAsset + "/" + SmokeLadder[i] + " refused; trying the next.");
+                    continue;
+                }
+
+                _smoke = i;
+                Log.Info("Low-fuel smoke: " + PtfxAsset + "/" + SmokeLadder[i] + " at " + where + " of " +
+                         v.LocalizedName + ".");
+                return true;
+            }
+
+            Log.Once("fx-smoke-none", "Low-fuel smoke: none of " + SmokeLadder.Length + " effects was accepted.");
+            return false;
+        }
+
+        private static bool Fire(string fx, float scale, Vehicle v, Vector3 off)
+        {
+            Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+            return Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
+                                       off.X, off.Y, off.Z, 0f, 0f, 0f, scale, false, false, false);
         }
 
         private static bool IsPlayerDriving(Vehicle v)

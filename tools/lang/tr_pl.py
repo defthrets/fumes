@@ -180,6 +180,6 @@ T = {
 "Per kilowatt": "Na kilowat",
 "Low fuel effect": "Efekt rezerwy",
 "What the last litre looks like. None of these touches the engine or the brakes.": "Jak wygląda ostatni litr. Żaden nie dotyka silnika ani hamulców.",
-"BACKFIRE": "STRZAŁ Z WYDECHU", "SPARKS": "ISKRY",
+"BACKFIRE": "STRZAŁ Z WYDECHU", "SMOKE": "DYM",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Litry na 100 km dodane za każdy kilowat mocy silnika przy 100 km/h.",
 }

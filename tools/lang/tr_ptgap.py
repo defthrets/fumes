@@ -96,7 +96,7 @@ T = {
 "Per kilowatt": "Por quilowatt",
 "Low fuel effect": "Efeito de reserva",
 "What the last litre looks like. None of these touches the engine or the brakes.": "Como fica o último litro. Nenhum deles mexe no motor nem nos freios.",
-"BACKFIRE": "ESTOURO", "SPARKS": "FAÍSCAS",
+"BACKFIRE": "ESTOURO", "SMOKE": "FUMAÇA",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Litros por 100 km somados por cada quilowatt que o motor empurra a 100 km/h.",
 "you moved away from the filler": "você se afastou do bocal",
 "the vehicle went away": "o veículo desapareceu",

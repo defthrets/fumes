@@ -112,11 +112,11 @@ namespace Fumes.Core
     }
 
     /// <summary>What the player's hands do while the nozzle is out.</summary>
-    /// <summary>What the last litre looks like. None of these touches the engine; see Starvation.Sparks.</summary>
+    /// <summary>What the reserve looks like. None of these touches the engine; see Starvation.Sparks.</summary>
     internal enum LowFuelEffect
     {
         Backfire,
-        Sparks,
+        Smoke,
         None
     }
 
