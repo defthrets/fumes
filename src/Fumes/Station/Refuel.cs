@@ -2453,13 +2453,23 @@ namespace Fumes.Station
             // have already walked away from.
             else if (toPump < toFiller) choice = 2;
 
-            // COMING BACK THE OTHER WAY STILL HAS TO BE EARNED, and that is what kills the
-            // strobe the margin was put in for: once hang-up is showing, the filler has to be
-            // clearly nearer to take the button back, so a step or a sway cannot flip it. From
-            // 1 this flips to 2 once and then wants a real half-metre to flip back -- a
-            // per-frame coin toss never produces that.
+            // AND ONCE IT IS SHOWING IT KEEPS THE BUTTON UNTIL YOU ARE PLAINLY AT THE CAR.
+            //
+            // Hanging up is the end of the errand, and it was still the awkward half of it:
+            // "the nozzle is always hard to hang up" came back after the fix above, because
+            // that fix only covers the frame where the pump is nearer. Park snug and the
+            // filler can sit a few centimetres closer than the pump for the whole time you
+            // are stood between them, and the fill prompt takes it back.
+            //
+            // So hang-up now holds the button against anything short of the margin, both
+            // ways round. It still cannot swallow a fill you actually want: walk to the
+            // filler and it is yours, because that is exactly what "clearly nearer" means.
             else if (_prompt == 2) choice = toFiller < toPump - margin ? 1 : 2;
-            else choice = 1;
+
+            // From the fill, hanging up only needs the pump to be no further than the margin
+            // -- not nearer, merely close. Standing between the two, which is where the
+            // complaint lives, that is now hang-up.
+            else choice = toPump < toFiller + margin ? 2 : 1;
 
             _prompt = choice;
 
@@ -3060,6 +3070,9 @@ namespace Fumes.Station
                 // The part-dollar at the end, the same way a fill settles its own.
                 if (_cfg.ChargeMoney && _sprayOwed >= 0.005f) Charge((int)Math.Ceiling(_sprayOwed - 0.001f));
 
+                // Whatever was nudged while the trigger was down, kept.
+                if (_sprayEditing) { SaveSpray(false); _sprayEditing = false; }
+
                 StopStream();
                 _spraying = false;
                 _sprayed = 0f;
@@ -3092,6 +3105,9 @@ namespace Fumes.Station
 
             Stream(me);
             Puddle(me, _nozzle.Spout());
+            SprayEditor();
+
+            if (_cfg.NozzleSprayEdit) return true;
 
             // ITS OWN BUTTON TO STOP, which is the one already being held: let go. Nothing
             // is put on Context, because Context is the fill and the hang-up and this must
@@ -3100,6 +3116,137 @@ namespace Fumes.Station
                       " L.  Let go to stop.");
 
             return true;
+        }
+
+        /// <summary>Where the offsets were when the editor was entered, so a nudge can be noticed.</summary>
+        private bool _sprayEditing;
+        private bool _spraySaved;
+        private float _sprayWasX, _sprayWasY, _sprayWasZ;
+
+        /// <summary>
+        /// Move the stream to the end of the nozzle by looking at it.
+        ///
+        /// THE SAME REASON THE SIPHON HAS ONE. The offset is three numbers against a model
+        /// whose origin nobody can see, and the spout is derived from a bounding box that
+        /// knows where the nozzle ENDS and not where its hole is -- which is why it comes out
+        /// near enough and not right. Moving it and looking settles in seconds what
+        /// arithmetic does not settle at all.
+        ///
+        /// Hold the trigger with the editor on and the arrows move it. ENTER saves and turns
+        /// the editor off, which is one intention and so one button.
+        /// </summary>
+        private void SprayEditor()
+        {
+            if (!_cfg.NozzleSprayEdit) return;
+
+            try
+            {
+                if (!_sprayEditing)
+                {
+                    _sprayEditing = true;
+                    _spraySaved = false;
+                    _sprayWasX = _cfg.NozzleSprayX;
+                    _sprayWasY = _cfg.NozzleSprayY;
+                    _sprayWasZ = _cfg.NozzleSprayZ;
+                }
+
+                var step = _cfg.NozzleSprayStep;
+
+                // The same disabled-control trick the siphon's editor uses, so the arrows
+                // move the stream without also driving whatever they normally drive.
+                if (Game.IsControlJustPressed(Control.PhoneUp)) _cfg.NozzleSprayY += step;
+                if (Game.IsControlJustPressed(Control.PhoneDown)) _cfg.NozzleSprayY -= step;
+                if (Game.IsControlJustPressed(Control.PhoneLeft)) _cfg.NozzleSprayX -= step;
+                if (Game.IsControlJustPressed(Control.PhoneRight)) _cfg.NozzleSprayX += step;
+                if (Game.IsControlJustPressed(Control.Jump)) _cfg.NozzleSprayZ += step;
+                if (Game.IsControlJustPressed(Control.Duck)) _cfg.NozzleSprayZ -= step;
+
+                // The effect is made once and then left alone, so a nudge has to restart it
+                // or nothing moves until the next time the trigger is pulled.
+                if (Moved()) StopStream();
+
+                // A marker on the point itself, so you are aiming at something.
+                var prop = _nozzle.Prop;
+                if (prop != null && prop.Exists())
+                {
+                    var at = prop.GetOffsetPosition(_nozzle.SpoutOffset() +
+                                                    new Vector3(_cfg.NozzleSprayX, _cfg.NozzleSprayY,
+                                                                _cfg.NozzleSprayZ));
+
+                    World.DrawMarker(MarkerType.DebugSphere, at, Vector3.Zero, Vector3.Zero,
+                                     new Vector3(0.02f, 0.02f, 0.02f),
+                                     Color.FromArgb(220, 255, 190, 60));
+                }
+
+                var line = "SPRAY   x " + _cfg.NozzleSprayX.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   y " + _cfg.NozzleSprayY.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   z " + _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture);
+
+                Draw.Rect(0.5f, 0.115f, 0.34f, 0.055f, Color.FromArgb(190, 8, 8, 10));
+                Draw.Text(line, 0.5f, 0.098f, 0.36f, Color.FromArgb(240, 250, 200, 110), 4, true);
+                Draw.Text(_spraySaved
+                              ? "saved and locked"
+                              : "arrows move it, space/ctrl raise it, ENTER saves and locks",
+                          0.5f, 0.128f, 0.26f, Color.FromArgb(200, 200, 200, 205), 4, true);
+
+                if (Game.IsControlJustPressed(Control.FrontendAccept)) SaveSpray(true);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spray-edit", "The spray editor fell over: " + ex.Message);
+            }
+        }
+
+        private bool Moved()
+        {
+            return Math.Abs(_cfg.NozzleSprayX - _sprayWasX) > 0.0005f
+                   || Math.Abs(_cfg.NozzleSprayY - _sprayWasY) > 0.0005f
+                   || Math.Abs(_cfg.NozzleSprayZ - _sprayWasZ) > 0.0005f;
+        }
+
+        /// <summary>
+        /// Writes the three offsets to the ini, and optionally turns the editor off.
+        ///
+        /// CALLED WHEN THE TRIGGER IS LET GO AS WELL AS ON ENTER, for the reason SaveSpout
+        /// spells out: every reload re-reads the ini, so a nudge that lived only in memory
+        /// was destroyed by the very key you press to go and look at it.
+        /// </summary>
+        private void SaveSpray(bool andLock)
+        {
+            if (!_cfg.NozzleSprayEdit) return;
+            if (!Moved() && !andLock) return;
+
+            try
+            {
+                var ok = IniFile.SetValue(Paths.Ini, "Nozzle", "SprayX",
+                                          _cfg.NozzleSprayX.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Nozzle", "SprayY",
+                                          _cfg.NozzleSprayY.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Nozzle", "SprayZ",
+                                          _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture));
+
+                if (ok && andLock)
+                {
+                    IniFile.SetValue(Paths.Ini, "Nozzle", "SprayEdit", "false");
+                    _cfg.NozzleSprayEdit = false;
+                }
+
+                _spraySaved = ok;
+                _sprayWasX = _cfg.NozzleSprayX;
+                _sprayWasY = _cfg.NozzleSprayY;
+                _sprayWasZ = _cfg.NozzleSprayZ;
+
+                Log.Info(ok
+                    ? "Spray saved" + (andLock ? " and locked" : "") + ": x " +
+                      _cfg.NozzleSprayX.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", y " + _cfg.NozzleSprayY.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", z " + _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture) + "."
+                    : "Could not write the spray offsets to Fumes.ini.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spray-save", "Could not save the spray offsets: " + ex.Message);
+            }
         }
 
         /// <summary>The stream itself, looped at the spout and moved with it every frame.</summary>

@@ -208,6 +208,9 @@
   "Engine stumbles when low": "Silnik krztusi się przy rezerwie",
   "It loses power for a moment, more often the emptier it is. Never a gear change.": "Na moment traci moc, tym częściej im mniej paliwa. Nigdy nie zmienia biegu.",
   "Route to a station": "Trasa do stacji",
-  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Ustawia GPS przy wejściu na rezerwę. Punkt ustawiony przez ciebie zostaje."
+  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Ustawia GPS przy wejściu na rezerwę. Punkt ustawiony przez ciebie zostaje.",
+  "Position the spray": "Ustaw strumień",
+  "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Włącz i przytrzymaj ogień: strzałki przesuwają strumień, ENTER zapisuje i to wyłącza.",
+  " L.  Let go to stop.": " L.  Puść, aby przerwać."
  }
 }

@@ -46,6 +46,33 @@ Unreleased
     standing at a filler the interaction is the fill, and a stream of petrol
     competing with it is a way to lose the fill.
 
+  * THE ROUTE TO THE STATION IS ORANGE, and it is drawn on the station's own blip
+    rather than a waypoint -- which is what makes a colour possible at all, since
+    a route's colour belongs to the blip it leads to and the waypoint blip's is
+    the game's to choose. It also means your own waypoint is not touched even to
+    look at. [Fuel] RouteColour, as one of the game's blip colours. The line goes
+    off the map by itself when the tank climbs back out of reserve.
+
+  * HE SAYS WHAT ANYBODY WOULD SAY. Press the throttle on an empty tank and he
+    curses the car in his own voice -- the game's own START_CAR_PANIC, which is
+    the line the protagonists use when one will not start. All three of them
+    have it and so do eighteen ambient voices, so it works whoever you are
+    playing. [Engine] SwearWhenDry.
+
+  * HANGING THE NOZZLE UP WINS THE BUTTON WHENEVER YOU ARE NEAR THE PUMP. 0.1.7
+    made it reachable and it was still the awkward half of the errand: that fix
+    only covers the frame where the pump is actually nearer, and on a snug park
+    the filler can sit a few centimetres closer for the whole time you stand
+    between the two. Hang-up now needs the pump only to be CLOSE rather than
+    nearer, and holds the button until you are plainly back at the car.
+
+  * THE STREAM OUT OF THE NOZZLE CAN BE POSITIONED BY LOOKING AT IT. [Nozzle]
+    SprayEdit, or POSITION THE SPRAY on the HOSE page: hold fire and the arrows
+    move it, ENTER saves it and turns the editor off. The same editor the siphon
+    spout has, for the same reason -- the spout is derived from a bounding box
+    that knows where the nozzle ENDS and not where its hole is, so it lands near
+    enough and not right.
+
   * FIXED: THE CAR VANISHED WHILE YOU SIPHONED FROM IT. Two separate causes, and
     the first fix did not land because the second one is the common one.
 
@@ -102,7 +129,7 @@ Unreleased
     A waypoint YOU have already set is never taken away -- you were going
     somewhere. [Fuel] RouteOnReserve.
 
-  * 231 settings in the ini.
+  * 238 settings in the ini.
 
 
 1.0.2

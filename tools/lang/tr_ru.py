@@ -193,4 +193,7 @@ T = {
 "It loses power for a moment, more often the emptier it is. Never a gear change.": "Он на мгновение теряет тягу, тем чаще, чем пустее бак. Никаких переключений передач.",
 "Route to a station": "Маршрут до АЗС",
 "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Ставит точку на GPS при переходе на резерв. Твою собственную метку не трогает.",
+"Position the spray": "Положение струи",
+"On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Включи и удерживай огонь: стрелки двигают струю, ENTER сохраняет и выключает это.",
+" L.  Let go to stop.": " л.  Отпусти, чтобы остановить.",
 }

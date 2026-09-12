@@ -111,4 +111,7 @@ T = {
 "It loses power for a moment, more often the emptier it is. Never a gear change.": "Perde força por um instante, mais vezes quanto mais vazio. Nunca troca de marcha.",
 "Route to a station": "Rota até um posto",
 "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Marca o GPS ao entrar na reserva. Um destino marcado por você não é mexido.",
+"Position the spray": "Posicionar o jato",
+"On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Ligue e segure atirar: as setas movem o jato, ENTER salva e desliga isto.",
+" L.  Let go to stop.": " L.  Solte para parar.",
 }

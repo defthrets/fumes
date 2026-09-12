@@ -495,6 +495,9 @@ namespace Fumes.UI
                                   v => _cfg.NozzleSprayLitresPerSecond = v, 0.1f, 0.05f, 20f, "0.0",
                                   "Nozzle", "SprayLitresPerSecond",
                                   "How fast it comes out when you hold fire."));
+            hose.Items.Add(Toggle("Position the spray", () => _cfg.NozzleSprayEdit,
+                                  v => _cfg.NozzleSprayEdit = v, "Nozzle", "SprayEdit",
+                                  "On, then hold fire: arrows move the stream, ENTER saves it and turns this off."));
         }
 
         // ==================================================================

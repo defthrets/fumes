@@ -194,4 +194,7 @@ T = {
 "It loses power for a moment, more often the emptier it is. Never a gear change.": "瞬间失去动力，油越少越频繁。绝不换挡。",
 "Route to a station": "导航至加油站",
 "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "进入备用油量时设置导航。你自己设置的路径点不会被改动。",
+"Position the spray": "调整油流位置",
+"On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "开启后按住开火键：方向键移动油流，ENTER 保存并关闭本项。",
+" L.  Let go to stop.": " 升。  松开即停。",
 }

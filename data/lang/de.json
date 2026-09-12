@@ -214,6 +214,9 @@
   "Engine stumbles when low": "Motor stottert bei wenig Sprit",
   "It loses power for a moment, more often the emptier it is. Never a gear change.": "Er verliert kurz an Leistung, je leerer desto öfter. Nie ein Gangwechsel.",
   "Route to a station": "Route zur Tankstelle",
-  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Setzt das GPS beim Erreichen der Reserve. Ein selbst gesetztes Ziel bleibt unangetastet."
+  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Setzt das GPS beim Erreichen der Reserve. Ein selbst gesetztes Ziel bleibt unangetastet.",
+  "Position the spray": "Strahl ausrichten",
+  "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "An, dann Feuertaste halten: Pfeile bewegen den Strahl, ENTER speichert und schaltet dies aus.",
+  " L.  Let go to stop.": " L.  Loslassen zum Beenden."
  }
 }

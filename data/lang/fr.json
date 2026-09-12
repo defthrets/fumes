@@ -202,6 +202,9 @@
   "Engine stumbles when low": "Le moteur hoquette à sec",
   "It loses power for a moment, more often the emptier it is. Never a gear change.": "Il perd de la puissance un instant, d'autant plus souvent que le réservoir est vide. Jamais de changement de vitesse.",
   "Route to a station": "Itinéraire vers une station",
-  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Règle le GPS au passage sur la réserve. Un point que vous avez posé n'est pas touché."
+  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Règle le GPS au passage sur la réserve. Un point que vous avez posé n'est pas touché.",
+  "Position the spray": "Placer le jet",
+  "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Activez puis maintenez tir : les flèches déplacent le jet, ENTRÉE enregistre et désactive ceci.",
+  " L.  Let go to stop.": " L.  Relâchez pour arrêter."
  }
 }

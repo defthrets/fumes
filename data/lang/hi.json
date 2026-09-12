@@ -184,6 +184,9 @@
   "Engine stumbles when low": "Kam fuel par engine ladkhadata hai",
   "It loses power for a moment, more often the emptier it is. Never a gear change.": "Ek pal ke liye power chali jaati hai, tank jitna khali utni baar. Gear kabhi nahi badalta.",
   "Route to a station": "Petrol pump ka route",
-  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Reserve par aate hi GPS set karta hai. Tumhara apna waypoint nahi hatata."
+  "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "Reserve par aate hi GPS set karta hai. Tumhara apna waypoint nahi hatata.",
+  "Position the spray": "Spray ki jagah set karo",
+  "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "On karke fire dabaye rakho: arrows se dhaara hilao, ENTER save karke ise band kar dega.",
+  " L.  Let go to stop.": " L.  Chhodo to ruk jaayega."
  }
 }

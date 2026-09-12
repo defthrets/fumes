@@ -91,6 +91,7 @@ namespace Fumes
 
             // Both exist by now, which is why it is wired here rather than in a constructor.
             _starve.Reserve = RouteToStation;
+            _starve.Refuelled = ClearRoute;
 
             Interval = 0;
             Tick += OnTick;
@@ -204,14 +205,56 @@ namespace Fumes
                 var near = _stations.Nearest(me.Position, float.MaxValue);
                 if (near == null) return;
 
+                ClearRoute();
+
+                // ON THE STATION'S OWN BLIP, not a waypoint, and that is what makes it
+                // ORANGE: a route's colour belongs to the blip it leads to, and the waypoint
+                // blip's is the game's to choose. Routing our own blip also means the
+                // player's waypoint is never touched at all, which was the intent anyway.
+                if (near.Blip != null && near.Blip.Exists())
+                {
+                    Function.Call(Hash.SET_BLIP_ROUTE, near.Blip.Handle, true);
+                    Function.Call(Hash.SET_BLIP_ROUTE_COLOUR, near.Blip.Handle, _cfg.RouteColour);
+
+                    _routed = near.Blip;
+
+                    Log.Info("Low on fuel: routed to " + near.Title + ", " +
+                             me.Position.DistanceTo(near.Position).ToString("0") + "m away, in colour " +
+                             _cfg.RouteColour + ".");
+                    return;
+                }
+
+                // Blips turned off, so there is nothing to draw a line to. A waypoint is the
+                // only thing left, and the game picks its colour.
                 Function.Call(Hash.SET_NEW_WAYPOINT, near.Position.X, near.Position.Y);
 
-                Log.Info("Low on fuel: routed to " + near.Title + ", " +
+                Log.Info("Low on fuel: no blip to route, so a waypoint to " + near.Title + ", " +
                          me.Position.DistanceTo(near.Position).ToString("0") + "m away.");
             }
             catch (Exception ex)
             {
                 Log.Once("route-fail", "Could not route to a station: " + ex.Message);
+            }
+        }
+
+        /// <summary>The blip carrying our route, so the line goes when the tank is full again.</summary>
+        private Blip _routed;
+
+        /// <summary>Takes the line off the map. Safe when there is none.</summary>
+        private void ClearRoute()
+        {
+            if (_routed == null) return;
+
+            var blip = _routed;
+            _routed = null;
+
+            try
+            {
+                if (blip.Exists()) Function.Call(Hash.SET_BLIP_ROUTE, blip.Handle, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Once("route-clear", "Could not take the route off the map: " + ex.Message);
             }
         }
 
@@ -653,6 +696,7 @@ namespace Fumes
         {
             try { _refuel.Shutdown(); } catch (Exception ex) { Log.Error("Refuel shutdown", ex); }
             try { _starve.Quiet(); } catch (Exception ex) { Log.Error("Starvation cleanup", ex); }
+            try { ClearRoute(); } catch (Exception ex) { Log.Error("Route cleanup", ex); }
             try { _buttons.Dispose(); } catch (Exception ex) { Log.Error("Button bar cleanup", ex); }
             try { _stations.RemoveBlips(); } catch (Exception ex) { Log.Error("Blip cleanup", ex); }
             try { _stations.SaveCorrections(); } catch (Exception ex) { Log.Error("Station corrections", ex); }

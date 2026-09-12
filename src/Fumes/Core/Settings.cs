@@ -345,12 +345,18 @@ namespace Fumes.Core
         /// <summary>Multiplies the smoke. The built-in figures are a wisp; this is for anybody who wants more.</summary>
         public float LowFuelSmokeScale = 1.0f;
 
+        /// <summary>He curses the car when he tries to start it on an empty tank. See Starvation.Swear.</summary>
+        public bool SwearWhenDry = true;
+
         /// <summary>The engine stumbles on the last of the fuel. See Starvation.Cutout.</summary>
         public bool LowFuelCutouts = true;
         public float LowFuelCutoutSeconds = 0.35f;
 
         /// <summary>Crossing into reserve routes the GPS to the nearest station. See Main.RouteToStation.</summary>
         public bool RouteOnReserve = true;
+
+        /// <summary>The route line's colour, as one of the game's own blip colours. 17 is orange.</summary>
+        public int RouteColour = 17;
 
         /// <summary>Hold the fire button with the nozzle in hand and fuel comes out of it. See Refuel.Spray.</summary>
         public bool NozzleSpray = true;
@@ -361,6 +367,10 @@ namespace Fumes.Core
         public float NozzleSprayX;
         public float NozzleSprayY;
         public float NozzleSprayZ;
+
+        /// <summary>Move the stream with the arrows while it pours. See Refuel.SprayEditor.</summary>
+        public bool NozzleSprayEdit;
+        public float NozzleSprayStep = 0.01f;
 
 
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
@@ -1588,15 +1598,19 @@ namespace Fumes.Core
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
                 s.LowFuelEffect = ParseEnum(ini.GetString("Engine", "LowFuelEffect", "Backfire"), s.LowFuelEffect);
                 s.LowFuelSmokeScale = ini.GetFloat("Engine", "LowFuelSmokeScale", s.LowFuelSmokeScale, 0.05f, 10f);
+                s.SwearWhenDry = ini.GetBool("Engine", "SwearWhenDry", s.SwearWhenDry);
                 s.LowFuelCutouts = ini.GetBool("Engine", "LowFuelCutouts", s.LowFuelCutouts);
                 s.LowFuelCutoutSeconds = ini.GetFloat("Engine", "LowFuelCutoutSeconds", s.LowFuelCutoutSeconds, 0.05f, 3f);
                 s.RouteOnReserve = ini.GetBool("Fuel", "RouteOnReserve", s.RouteOnReserve);
+                s.RouteColour = ini.GetInt("Fuel", "RouteColour", s.RouteColour, 0, 85);
                 s.NozzleSpray = ini.GetBool("Nozzle", "Spray", s.NozzleSpray);
                 s.NozzleSprayLitresPerSecond = ini.GetFloat("Nozzle", "SprayLitresPerSecond", s.NozzleSprayLitresPerSecond, 0.05f, 20f);
                 s.NozzleSprayScale = ini.GetFloat("Nozzle", "SprayScale", s.NozzleSprayScale, 0.05f, 5f);
                 s.NozzleSprayX = ini.GetFloat("Nozzle", "SprayX", s.NozzleSprayX, -2f, 2f);
                 s.NozzleSprayY = ini.GetFloat("Nozzle", "SprayY", s.NozzleSprayY, -2f, 2f);
                 s.NozzleSprayZ = ini.GetFloat("Nozzle", "SprayZ", s.NozzleSprayZ, -2f, 2f);
+                s.NozzleSprayEdit = ini.GetBool("Nozzle", "SprayEdit", s.NozzleSprayEdit);
+                s.NozzleSprayStep = ini.GetFloat("Nozzle", "SprayStep", s.NozzleSprayStep, 0.001f, 0.2f);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);

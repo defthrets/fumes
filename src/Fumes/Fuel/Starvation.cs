@@ -157,6 +157,9 @@ namespace Fumes.Fuel
                 _nextCough = 0;
                 _coughLogged = false;
                 _toldEmpty = false;
+
+                // Out of reserve, once: the line on the map has done its job.
+                if (_warned && Refuelled != null) Refuelled();
                 _warned = false;
             }
             catch (Exception ex)
@@ -567,6 +570,9 @@ namespace Fumes.Fuel
         /// </summary>
         public Action Reserve;
 
+        /// <summary>Called once when the tank climbs back out of reserve. Main takes its route off the map with it.</summary>
+        public Action Refuelled;
+
         /// <summary>
         /// Nothing left.
         ///
@@ -605,6 +611,51 @@ namespace Fumes.Fuel
                 _warned = true;
                 Say(tank.Electric ? "~r~Flat battery.~s~" : "~r~Out of fuel.~s~");
                 Beep();
+            }
+
+            Swear(v);
+        }
+
+        /// <summary>When he is allowed to say something about it again.</summary>
+        private int _nextWord;
+
+        /// <summary>
+        /// He says what anybody would say, in his own voice.
+        ///
+        /// THE GAME'S OWN LINES, not ours. START_CAR_PANIC is the context the protagonists
+        /// use when a car will not start -- "come on, start, you piece of shit" -- and all
+        /// three of them have it, as do eighteen ambient voices, so it works whoever you are
+        /// playing. Checked against menyooStuff\PedSpeechList.txt rather than guessed: the
+        /// game accepts a speech name it does not have in silence.
+        ///
+        /// ON THE THROTTLE, because that is the moment the sentiment belongs to -- he says it
+        /// when he tries the key, not at the roadside forever. And never over himself.
+        /// </summary>
+        private void Swear(Vehicle v)
+        {
+            if (!_cfg.SwearWhenDry) return;
+
+            var now = Game.GameTime;
+            if (now < _nextWord) return;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists() || me.CurrentVehicle != v) return;
+
+                if (!Game.IsControlPressed(Control.VehicleAccelerate)) return;
+
+                if (Function.Call<bool>(Hash.IS_AMBIENT_SPEECH_PLAYING, me.Handle)) return;
+
+                _nextWord = now + 4000 + _rng.Next(4000);
+
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, me.Handle,
+                              _rng.Next(3) == 0 ? "GENERIC_FRUSTRATED_HIGH" : "START_CAR_PANIC",
+                              "SPEECH_PARAMS_FORCE");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("swear-fail", "Could not say anything about the empty tank: " + ex.Message);
             }
         }
 
