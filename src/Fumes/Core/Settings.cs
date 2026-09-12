@@ -112,6 +112,14 @@ namespace Fumes.Core
     }
 
     /// <summary>What the player's hands do while the nozzle is out.</summary>
+    /// <summary>What the last litre looks like. None of these touches the engine; see Starvation.Sparks.</summary>
+    internal enum LowFuelEffect
+    {
+        Backfire,
+        Sparks,
+        None
+    }
+
     internal enum NozzlePose
     {
         /// <summary>
@@ -330,6 +338,9 @@ namespace Fumes.Core
         /// </summary>
         public float SputterMaxLitres = 1.2f;
         public bool StallWhenEmpty = true;
+
+        /// <summary>The low-fuel warning's effect. Backfire is the game's exhaust pop; Sparks is nothing the game does on its own.</summary>
+        public LowFuelEffect LowFuelEffect = LowFuelEffect.Backfire;
 
 
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
@@ -1555,6 +1566,7 @@ namespace Fumes.Core
                 s.SputterFraction = ini.GetFloat("Engine", "SputterFraction", s.SputterFraction, 0f, 1f);
                 s.SputterMaxLitres = ini.GetFloat("Engine", "SputterMaxLitres", s.SputterMaxLitres, 0f, 40f);
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
+                s.LowFuelEffect = ParseEnum(ini.GetString("Engine", "LowFuelEffect", "Backfire"), s.LowFuelEffect);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);

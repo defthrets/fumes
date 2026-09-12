@@ -378,6 +378,9 @@ namespace Fumes.UI
             fuel.Items.Add(Toggle("Stall when empty", () => _cfg.StallWhenEmpty,
                                   v => _cfg.StallWhenEmpty = v, "Engine", "StallWhenEmpty",
                                   "Off leaves you driving on an empty tank."));
+            fuel.Items.Add(Choice("Low fuel effect", () => _cfg.LowFuelEffect, v => _cfg.LowFuelEffect = v,
+                                  "Engine", "LowFuelEffect",
+                                  "What the last litre looks like. None of these touches the engine or the brakes."));
 
             // EVERY NUMBER THE BURN IS MADE FROM, on one page, so nothing about what a car
             // drinks needs a text editor. The class table was ini-only through every version

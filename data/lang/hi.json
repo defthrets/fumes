@@ -170,6 +170,9 @@
   "Base litres": "Base litre",
   "What any engine drinks just to keep turning, per 100 km.": "Koi bhi engine sirf chalte rehne mein kitna peeta hai, per 100 km.",
   "Litres per 100 km added for each tonne the vehicle weighs.": "Gaadi ke har tonne wazan par litre per 100 km jode jaate hain.",
+  "Low fuel effect": "Kam fuel ka effect",
+  "What the last litre looks like. None of these touches the engine or the brakes.": "Aakhri litre kaisa dikhta hai. Inmein se koi engine ya brake ko nahi chhedta.",
+  "SPARKS": "CHINGARI",
   "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "100 km/h par engine ke har kilowatt par litre per 100 km jode jaate hain."
  }
 }

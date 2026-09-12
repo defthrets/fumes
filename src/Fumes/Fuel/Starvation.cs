@@ -19,9 +19,15 @@ namespace Fumes.Fuel
         private readonly Settings _cfg;
         private readonly Random _rng = new Random();
 
-        /// <summary>The game's own exhaust backfire: "core" carries it, and every install has "core".</summary>
+        /// <summary>
+        /// Both effects live in "core", which every install has loaded. veh_backfire is the
+        /// game's own exhaust pop; ent_sht_electrical_box is a burst of electrical sparks,
+        /// nothing to do with vehicles at all -- there for anybody who wants the warning to
+        /// look like nothing the game does on its own.
+        /// </summary>
         private const string PtfxAsset = "core";
         private const string Backfire = "veh_backfire";
+        private const string ElectricSparks = "ent_sht_electrical_box";
 
         private static readonly string[] ExhaustBones = { "exhaust", "exhaust_2", "exhaust_3", "exhaust_4" };
 
@@ -170,6 +176,9 @@ namespace Fumes.Fuel
             _nextCough = now + 900 + _rng.Next(2200);
 
             if (!v.IsEngineRunning) return;
+            if (_cfg.LowFuelEffect == LowFuelEffect.None) return;
+
+            var fx = _cfg.LowFuelEffect == LowFuelEffect.Sparks ? ElectricSparks : Backfire;
 
             try
             {
@@ -191,7 +200,7 @@ namespace Fumes.Fuel
                                                      world.X, world.Y, world.Z);
 
                     Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, Backfire, v.Handle,
+                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
                                   off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
 
                     if (++popped >= 2) break;
@@ -201,7 +210,7 @@ namespace Fumes.Fuel
                 {
                     // No exhaust bone -- some add-ons -- so out of the back, low down.
                     Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, Backfire, v.Handle,
+                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
                                   0f, -2.2f, 0.2f, 0f, 0f, 0f, 1f, false, false, false);
                 }
             }

@@ -185,5 +185,8 @@ T = {
 "Per tonne": "Por tonelada",
 "Litres per 100 km added for each tonne the vehicle weighs.": "Litros por 100 km añadidos por cada tonelada que pesa el vehículo.",
 "Per kilowatt": "Por kilovatio",
+"Low fuel effect": "Efecto de reserva",
+"What the last litre looks like. None of these touches the engine or the brakes.": "Cómo se ve el último litro. Ninguno toca el motor ni los frenos.",
+"BACKFIRE": "PETARDEO", "SPARKS": "CHISPAS",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Litros por 100 km añadidos por cada kilovatio que empuja el motor a 100 km/h.",
 }

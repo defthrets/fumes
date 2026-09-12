@@ -386,6 +386,10 @@
   "Per tonne": "Por tonelada",
   "Litres per 100 km added for each tonne the vehicle weighs.": "Litros por 100 km somados por cada tonelada que o veículo pesa.",
   "Per kilowatt": "Por quilowatt",
-  "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Litros por 100 km somados por cada quilowatt que o motor empurra a 100 km/h."
+  "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Litros por 100 km somados por cada quilowatt que o motor empurra a 100 km/h.",
+  "Low fuel effect": "Efeito de reserva",
+  "What the last litre looks like. None of these touches the engine or the brakes.": "Como fica o último litro. Nenhum deles mexe no motor nem nos freios.",
+  "BACKFIRE": "ESTOURO",
+  "SPARKS": "FAÍSCAS"
  }
 }

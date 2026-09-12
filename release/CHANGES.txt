@@ -23,6 +23,12 @@ Unreleased
     under thirty per cent now. Nothing of the game's depends on the true figure;
     what a low or empty tank does is this mod's.
 
+  * WHAT THE LAST LITRE LOOKS LIKE IS A SETTING. [Engine] LowFuelEffect, on the
+    FUEL page: Backfire is the game's own exhaust pop, Sparks is a burst of
+    electrical sparks that is nothing the game does on its own, None is no
+    effect at all and the gauge and the chime are the warning. None of the
+    three touches the engine, the gearbox or the brakes. 224 settings.
+
 
 1.0.2
 =====

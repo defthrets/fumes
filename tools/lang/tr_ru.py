@@ -178,5 +178,8 @@ T = {
 "Per tonne": "За тонну",
 "Litres per 100 km added for each tonne the vehicle weighs.": "Литров на 100 км за каждую тонну веса машины.",
 "Per kilowatt": "За киловатт",
+"Low fuel effect": "Эффект резерва",
+"What the last litre looks like. None of these touches the engine or the brakes.": "Как выглядит последний литр. Ни один не трогает двигатель и тормоза.",
+"BACKFIRE": "ВЫХЛОП", "SPARKS": "ИСКРЫ",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Литров на 100 км за каждый киловатт тяги двигателя на 100 км/ч.",
 }
