@@ -363,10 +363,18 @@ namespace Fumes.Core
         public float NozzleSprayLitresPerSecond = 1.2f;
         public float NozzleSprayScale = 1.0f;
 
-        /// <summary>A nudge on the spout, in the nozzle's own space, for anybody whose model sits differently.</summary>
+        /// <summary>
+        /// The stream's offset from the spout, in the nozzle's own space.
+        ///
+        /// PUT THERE BY EYE, with the editor below, and these are the numbers it settled on
+        /// for prop_cs_fuel_nozle. The spout itself is derived from a bounding box, which
+        /// knows where the nozzle ENDS and not where the hole in it is -- about a third of a
+        /// metre out along the barrel and nine centimetres under, as it turns out. A model
+        /// that sits differently wants its own three numbers; hence the editor.
+        /// </summary>
         public float NozzleSprayX;
-        public float NozzleSprayY;
-        public float NozzleSprayZ;
+        public float NozzleSprayY = 0.36f;
+        public float NozzleSprayZ = -0.09f;
 
         /// <summary>Move the stream with the arrows while it pours. See Refuel.SprayEditor.</summary>
         public bool NozzleSprayEdit;

@@ -41,8 +41,10 @@ Unreleased
 
     It comes out of the SPOUT -- the far end from the hose, worked out from the
     same measurement the hose end uses, so it swings with the thing in his hand.
-    SprayX, SprayY and SprayZ nudge it for anybody whose nozzle model sits
-    differently. And it is only offered with NOTHING TO FILL in front of you:
+    SprayX, SprayY and SprayZ carry the rest of the way -- a third of a metre out
+    along the barrel and nine centimetres under, put there by eye with the
+    editor below, because a bounding box knows where the nozzle ENDS and not
+    where the hole in it is. A model that sits differently wants its own three. And it is only offered with NOTHING TO FILL in front of you:
     standing at a filler the interaction is the fill, and a stream of petrol
     competing with it is a way to lose the fill.
 
