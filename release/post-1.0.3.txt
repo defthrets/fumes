@@ -1,0 +1,29 @@
+FUMES 1.0.3 -- short changelog for comments / the upload form
+=============================================================
+
+1.0.3 is up.
+
+FIXED, the ones reported here:
+  - An empty jerry can can be filled at a pump again. @AliG_15
+  - The gauge can be moved with Bare Minimum installed. @VaporHaven
+    @HunterBoys555
+  - No more sparks and crawling along on an empty tank -- two causes
+    stacked, ours and the game's own low-fuel routine. @GrandHaven
+    @AliG_15
+  - The Oppressor Mk II no longer hovers on an empty tank. @AliG_15
+  - And the car no longer vanishes while you siphon from it.
+
+NEW:
+  - Fuel comes out of the nozzle. Hold FIRE with it in your hand away
+    from a filler and petrol pours on the ground, charged at that
+    pump's price, and the forecourt hazard treats it like any fill.
+  - Every vehicle has its own thirst, worked out from its weight and
+    engine rather than a table, so DLC and add-ons get a real figure.
+    All of it adjustable: THIS VEHICLE on the FUEL page, and a new
+    CLASSES page. @Asaseh @Aquaphobic
+  - Reserve routes the GPS to the nearest station, in orange.
+  - The low-fuel splutter is backfires and smoke and never touches
+    the driving. He curses the car in his own voice when it is dry.
+  - The hose is smooth -- 36 segments, not 14.
+
+246 settings. Drop it over the old one, nothing needs a new save.
