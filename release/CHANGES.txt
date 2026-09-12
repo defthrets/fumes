@@ -75,6 +75,27 @@ Unreleased
     that knows where the nozzle ENDS and not where its hole is, so it lands near
     enough and not right.
 
+  * THE HOSE IS A REAL ROPE AGAIN, with more slack in it. Painted is the mode:
+    a physics rope does the shape, the swing and the drape, and the black is
+    drawn on along the rope's own vertices, because GTA cannot tint a rope --
+    the colour is baked into its texture. Line, which the build had drifted
+    onto, is a computed curve with no rope behind it at all: it cannot fail and
+    it cannot swing either. Sag 1.22 to 1.45.
+
+    The mode is on the HOSE page of the menu now, beside Sag, rather than being
+    an ini line nobody would find. The C# default said Line while the ini's own
+    comment said Painted was the default; they agree now.
+
+  * THE STREAM OUT OF THE NOZZLE POINTS DOWN. The effect emits along its own
+    forward, so at no rotation it squirted out level, like a hose held straight.
+    [Nozzle] SprayPitch, and the scroll wheel tilts it while the editor is on.
+
+  * THE PETROL ON THE GROUND IS A WET PATCH RATHER THAN A BLACK ONE. The decal's
+    last argument is how opaque it comes out and it was at the maximum, which
+    lays something closer to fresh tarmac than to fuel -- and each decal overlaps
+    the last as the pool spreads, so it compounded. [Station] PoolAlpha, for the
+    siphon's overflow and the nozzle's spray both.
+
   * FIXED: THE CAR VANISHED WHILE YOU SIPHONED FROM IT. Two separate causes, and
     the first fix did not land because the second one is the common one.
 
@@ -131,7 +152,7 @@ Unreleased
     A waypoint YOU have already set is never taken away -- you were going
     somewhere. [Fuel] RouteOnReserve.
 
-  * 238 settings in the ini.
+  * 242 settings in the ini.
 
 
 1.0.2

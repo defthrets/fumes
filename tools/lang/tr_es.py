@@ -203,4 +203,7 @@ T = {
 "Position the spray": "Colocar el chorro",
 "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Actívalo y mantén disparar: las flechas mueven el chorro, INTRO lo guarda y desactiva esto.",
 " L.  Let go to stop.": " L.  Suelta para parar.",
+"Hose": "Manguera",
+"Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "Pintada es una cuerda real con nuestro negro. Línea es dibujada, sin cuerda detrás.",
+"1.0 is a taut wire. Higher is more slack in the line.": "1.0 es un cable tenso. Más alto, más holgura.",
 }

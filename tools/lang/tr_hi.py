@@ -200,4 +200,7 @@ T = {
 "Position the spray": "Spray ki jagah set karo",
 "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "On karke fire dabaye rakho: arrows se dhaara hilao, ENTER save karke ise band kar dega.",
 " L.  Let go to stop.": " L.  Chhodo to ruk jaayega.",
+"Hose": "Hose",
+"Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "Painted matlab asli rassi hamare kaale rang mein. Line sirf bani hui hai, peeche koi rassi nahi.",
+"1.0 is a taut wire. Higher is more slack in the line.": "1.0 matlab ekdum tana hua taar. Zyada matlab zyada dheelapan.",
 }

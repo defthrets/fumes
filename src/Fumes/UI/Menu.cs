@@ -475,9 +475,11 @@ namespace Fumes.UI
             hose.Items.Add(Number("Hose length", () => _cfg.HoseMaxMetres,
                                   v => _cfg.HoseMaxMetres = v, 0.5f, 2f, 40f, "0.0",
                                   "Nozzle", "HoseMaxMetres", "How far you can walk with it."));
+            hose.Items.Add(Choice("Hose", () => _cfg.Hose, v => _cfg.Hose = v, "Nozzle", "Hose",
+                                  "Painted is a real rope wearing our black. Line is drawn, with no rope behind it."));
             hose.Items.Add(Number("Sag", () => _cfg.HoseSag, v => _cfg.HoseSag = v,
                                   0.02f, 1f, 2.5f, "0.00", "Nozzle", "HoseSag",
-                                  "1.0 is a taut wire."));
+                                  "1.0 is a taut wire. Higher is more slack in the line."));
             hose.Items.Add(Toggle("Hose snaps if you walk off", () => _cfg.HoseSnaps,
                                   v => _cfg.HoseSnaps = v, "Nozzle", "HoseSnaps", null));
             hose.Items.Add(Toggle("Filling sound", () => _cfg.FillSound, v => _cfg.FillSound = v,

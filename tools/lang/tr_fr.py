@@ -196,4 +196,7 @@ T = {
 "Position the spray": "Placer le jet",
 "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Activez puis maintenez tir : les flèches déplacent le jet, ENTRÉE enregistre et désactive ceci.",
 " L.  Let go to stop.": " L.  Relâchez pour arrêter.",
+"Hose": "Tuyau",
+"Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "Peint : une vraie corde portant notre noir. Ligne : dessinée, sans corde derrière.",
+"1.0 is a taut wire. Higher is more slack in the line.": "1.0 est un fil tendu. Plus haut, plus de mou.",
 }

@@ -114,4 +114,7 @@ T = {
 "Position the spray": "Posicionar o jato",
 "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Ligue e segure atirar: as setas movem o jato, ENTER salva e desliga isto.",
 " L.  Let go to stop.": " L.  Solte para parar.",
+"Hose": "Mangueira",
+"Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "Pintada é uma corda de verdade com o nosso preto. Linha é desenhada, sem corda por trás.",
+"1.0 is a taut wire. Higher is more slack in the line.": "1.0 deixa a mangueira esticada. Mais alto, mais folga.",
 }

@@ -376,6 +376,17 @@ namespace Fumes.Core
         public float NozzleSprayY = 0.36f;
         public float NozzleSprayZ = -0.09f;
 
+        /// <summary>
+        /// Which way the stream points, in degrees, in the nozzle's own space.
+        ///
+        /// DOWN, because fuel falls. ent_sht_petrol emits along its own forward, so at no
+        /// rotation at all it squirted out level like a hose held straight -- a quarter turn
+        /// nose-down is petrol leaving a spout.
+        /// </summary>
+        public float NozzleSprayPitch = -90f;
+        public float NozzleSprayYaw;
+        public float NozzleSprayRoll;
+
         /// <summary>Move the stream with the arrows while it pours. See Refuel.SprayEditor.</summary>
         public bool NozzleSprayEdit;
         public float NozzleSprayStep = 0.01f;
@@ -659,6 +670,17 @@ namespace Fumes.Core
         /// decal allowance in a second, and that allowance is shared with every scuff, skid and
         /// bullet hole already on the street.
         /// </summary>
+        /// <summary>
+        /// How dark the petrol on the ground is, 0 to 1.
+        ///
+        /// NOT ONE. ADD_PETROL_DECAL's last argument is how opaque the stain comes out, and
+        /// at the full value it lays near-black tarmac rather than fuel -- and successive
+        /// decals overlap as the pool spreads, so each one darkens the last. About half is a
+        /// wet patch that reads as spilled petrol, which is what the game's own jerry can
+        /// leaves.
+        /// </summary>
+        public float PoolAlpha = 0.5f;
+
         public float SiphonPoolWidth = 0.50f;
 
         /// <summary>
@@ -972,7 +994,7 @@ namespace Fumes.Core
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
-        public HoseMode Hose = HoseMode.Line;
+        public HoseMode Hose = HoseMode.Painted;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -1052,7 +1074,7 @@ namespace Fumes.Core
         public int HoseSides = 7;
 
         /// <summary>How much slack the hose carries, as a multiple of the straight-line distance.</summary>
-        public float HoseSag = 1.22f;
+        public float HoseSag = 1.45f;
 
         /// <summary>Whether over-stretching yanks the nozzle out of your hand, or merely stops you.</summary>
         public bool HoseSnaps = true;
@@ -1617,6 +1639,9 @@ namespace Fumes.Core
                 s.NozzleSprayX = ini.GetFloat("Nozzle", "SprayX", s.NozzleSprayX, -2f, 2f);
                 s.NozzleSprayY = ini.GetFloat("Nozzle", "SprayY", s.NozzleSprayY, -2f, 2f);
                 s.NozzleSprayZ = ini.GetFloat("Nozzle", "SprayZ", s.NozzleSprayZ, -2f, 2f);
+                s.NozzleSprayPitch = ini.GetFloat("Nozzle", "SprayPitch", s.NozzleSprayPitch, -180f, 180f);
+                s.NozzleSprayYaw = ini.GetFloat("Nozzle", "SprayYaw", s.NozzleSprayYaw, -180f, 180f);
+                s.NozzleSprayRoll = ini.GetFloat("Nozzle", "SprayRoll", s.NozzleSprayRoll, -180f, 180f);
                 s.NozzleSprayEdit = ini.GetBool("Nozzle", "SprayEdit", s.NozzleSprayEdit);
                 s.NozzleSprayStep = ini.GetFloat("Nozzle", "SprayStep", s.NozzleSprayStep, 0.001f, 0.2f);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
@@ -1659,6 +1684,7 @@ namespace Fumes.Core
                 s.SiphonCrouchFlag = ini.GetInt("Station", "SiphonCrouchFlag", s.SiphonCrouchFlag, 0, 255);
                 s.SiphonOverflow = ini.GetBool("Station", "SiphonOverflow", s.SiphonOverflow);
                 s.SiphonPool = ini.GetBool("Station", "SiphonPool", s.SiphonPool);
+                s.PoolAlpha = ini.GetFloat("Station", "PoolAlpha", s.PoolAlpha, 0.05f, 1f);
                 s.SiphonPoolWidth = ini.GetFloat("Station", "SiphonPoolWidth", s.SiphonPoolWidth, 0.05f, 3f);
                 s.SiphonPoolPerLitre = ini.GetFloat("Station", "SiphonPoolPerLitre", s.SiphonPoolPerLitre, 0f, 5f);
                 s.SiphonPoolGrowth = ini.GetFloat("Station", "SiphonPoolGrowth", s.SiphonPoolGrowth, 0.005f, 1f);

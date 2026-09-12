@@ -196,4 +196,7 @@ T = {
 "Position the spray": "Strahl ausrichten",
 "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "An, dann Feuertaste halten: Pfeile bewegen den Strahl, ENTER speichert und schaltet dies aus.",
 " L.  Let go to stop.": " L.  Loslassen zum Beenden.",
+"Hose": "Schlauch",
+"Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "Gemalt ist ein echtes Seil in unserem Schwarz. Linie ist gezeichnet, ohne Seil dahinter.",
+"1.0 is a taut wire. Higher is more slack in the line.": "1.0 ist ein straffer Draht. Höher heißt mehr Durchhang.",
 }

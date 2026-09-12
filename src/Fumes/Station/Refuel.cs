@@ -1654,7 +1654,7 @@ namespace Fumes.Station
                 _poolWidth = want;
 
                 Function.Call(Hash.ADD_PETROL_DECAL, _poolAt.X, _poolAt.Y, _poolAt.Z,
-                              0.1f, _poolWidth, 1f);
+                              0.1f, _poolWidth, _cfg.PoolAlpha);
 
                 _poolDecals++;
             }
@@ -3121,7 +3121,7 @@ namespace Fumes.Station
         /// <summary>Where the offsets were when the editor was entered, so a nudge can be noticed.</summary>
         private bool _sprayEditing;
         private bool _spraySaved;
-        private float _sprayWasX, _sprayWasY, _sprayWasZ;
+        private float _sprayWasX, _sprayWasY, _sprayWasZ, _sprayWasPitch;
 
         /// <summary>
         /// Move the stream to the end of the nozzle by looking at it.
@@ -3148,6 +3148,7 @@ namespace Fumes.Station
                     _sprayWasX = _cfg.NozzleSprayX;
                     _sprayWasY = _cfg.NozzleSprayY;
                     _sprayWasZ = _cfg.NozzleSprayZ;
+                    _sprayWasPitch = _cfg.NozzleSprayPitch;
                 }
 
                 var step = _cfg.NozzleSprayStep;
@@ -3160,6 +3161,11 @@ namespace Fumes.Station
                 if (Game.IsControlJustPressed(Control.PhoneRight)) _cfg.NozzleSprayX += step;
                 if (Game.IsControlJustPressed(Control.Jump)) _cfg.NozzleSprayZ += step;
                 if (Game.IsControlJustPressed(Control.Duck)) _cfg.NozzleSprayZ -= step;
+
+                // THE SCROLL WHEEL TILTS IT, because where it comes out and which way it
+                // points are two different questions and the arrows only answer the first.
+                if (Game.IsControlJustPressed(Control.SelectNextWeapon)) _cfg.NozzleSprayPitch += 5f;
+                if (Game.IsControlJustPressed(Control.SelectPrevWeapon)) _cfg.NozzleSprayPitch -= 5f;
 
                 // The effect is made once and then left alone, so a nudge has to restart it
                 // or nothing moves until the next time the trigger is pulled.
@@ -3180,13 +3186,14 @@ namespace Fumes.Station
 
                 var line = "SPRAY   x " + _cfg.NozzleSprayX.ToString("0.000", CultureInfo.InvariantCulture) +
                            "   y " + _cfg.NozzleSprayY.ToString("0.000", CultureInfo.InvariantCulture) +
-                           "   z " + _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture);
+                           "   z " + _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture) +
+                           "   tilt " + _cfg.NozzleSprayPitch.ToString("0", CultureInfo.InvariantCulture);
 
                 Draw.Rect(0.5f, 0.115f, 0.34f, 0.055f, Color.FromArgb(190, 8, 8, 10));
                 Draw.Text(line, 0.5f, 0.098f, 0.36f, Color.FromArgb(240, 250, 200, 110), 4, true);
                 Draw.Text(_spraySaved
                               ? "saved and locked"
-                              : "arrows move it, space/ctrl raise it, ENTER saves and locks",
+                              : "arrows move it, space/ctrl raise it, scroll tilts it, ENTER saves and locks",
                           0.5f, 0.128f, 0.26f, Color.FromArgb(200, 200, 200, 205), 4, true);
 
                 if (Game.IsControlJustPressed(Control.FrontendAccept)) SaveSpray(true);
@@ -3201,7 +3208,8 @@ namespace Fumes.Station
         {
             return Math.Abs(_cfg.NozzleSprayX - _sprayWasX) > 0.0005f
                    || Math.Abs(_cfg.NozzleSprayY - _sprayWasY) > 0.0005f
-                   || Math.Abs(_cfg.NozzleSprayZ - _sprayWasZ) > 0.0005f;
+                   || Math.Abs(_cfg.NozzleSprayZ - _sprayWasZ) > 0.0005f
+                   || Math.Abs(_cfg.NozzleSprayPitch - _sprayWasPitch) > 0.05f;
         }
 
         /// <summary>
@@ -3223,7 +3231,9 @@ namespace Fumes.Station
                          && IniFile.SetValue(Paths.Ini, "Nozzle", "SprayY",
                                           _cfg.NozzleSprayY.ToString("0.000", CultureInfo.InvariantCulture))
                          && IniFile.SetValue(Paths.Ini, "Nozzle", "SprayZ",
-                                          _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture));
+                                          _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture))
+                         && IniFile.SetValue(Paths.Ini, "Nozzle", "SprayPitch",
+                                          _cfg.NozzleSprayPitch.ToString("0.0", CultureInfo.InvariantCulture));
 
                 if (ok && andLock)
                 {
@@ -3235,12 +3245,14 @@ namespace Fumes.Station
                 _sprayWasX = _cfg.NozzleSprayX;
                 _sprayWasY = _cfg.NozzleSprayY;
                 _sprayWasZ = _cfg.NozzleSprayZ;
+                _sprayWasPitch = _cfg.NozzleSprayPitch;
 
                 Log.Info(ok
                     ? "Spray saved" + (andLock ? " and locked" : "") + ": x " +
                       _cfg.NozzleSprayX.ToString("0.000", CultureInfo.InvariantCulture) +
                       ", y " + _cfg.NozzleSprayY.ToString("0.000", CultureInfo.InvariantCulture) +
-                      ", z " + _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture) + "."
+                      ", z " + _cfg.NozzleSprayZ.ToString("0.000", CultureInfo.InvariantCulture) +
+                      ", tilt " + _cfg.NozzleSprayPitch.ToString("0.0", CultureInfo.InvariantCulture) + "."
                     : "Could not write the spray offsets to Fumes.ini.");
             }
             catch (Exception ex)
@@ -3284,7 +3296,9 @@ namespace Fumes.Station
                     // hand rather than being restarted at a world position every frame.
                     var handle = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
                                                     SprayLadder[i], prop.Handle,
-                                                    at.X, at.Y, at.Z, 0f, 0f, 0f,
+                                                    at.X, at.Y, at.Z,
+                                                    _cfg.NozzleSprayPitch, _cfg.NozzleSprayYaw,
+                                                    _cfg.NozzleSprayRoll,
                                                     _cfg.NozzleSprayScale, false, false, false);
 
                     if (handle == 0)
@@ -3366,7 +3380,7 @@ namespace Fumes.Station
                 _sprayWidth = want;
 
                 Function.Call(Hash.ADD_PETROL_DECAL, _sprayAt.X, _sprayAt.Y, _sprayAt.Z,
-                              0.1f, _sprayWidth, 1f);
+                              0.1f, _sprayWidth, _cfg.PoolAlpha);
 
                 _sprayDecals++;
             }

@@ -196,4 +196,7 @@ T = {
 "Position the spray": "Положение струи",
 "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "Включи и удерживай огонь: стрелки двигают струю, ENTER сохраняет и выключает это.",
 " L.  Let go to stop.": " л.  Отпусти, чтобы остановить.",
+"Hose": "Шланг",
+"Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "«Рисованный» — настоящий трос в нашем чёрном. «Линия» — просто рисунок, троса за ней нет.",
+"1.0 is a taut wire. Higher is more slack in the line.": "1.0 — натянутая струна. Больше — больше провис.",
 }

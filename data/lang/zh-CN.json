@@ -220,6 +220,9 @@
   "Sets the GPS when you hit reserve. A waypoint you set yourself is left alone.": "进入备用油量时设置导航。你自己设置的路径点不会被改动。",
   "Position the spray": "调整油流位置",
   "On, then hold fire: arrows move the stream, ENTER saves it and turns this off.": "开启后按住开火键：方向键移动油流，ENTER 保存并关闭本项。",
-  " L.  Let go to stop.": " 升。  松开即停。"
+  " L.  Let go to stop.": " 升。  松开即停。",
+  "Hose": "油管",
+  "Painted is a real rope wearing our black. Line is drawn, with no rope behind it.": "“绘色”是真实绳索套上我们的黑色。“线条”只是绘制，背后没有绳索。",
+  "1.0 is a taut wire. Higher is more slack in the line.": "1.0 为绷直的线。数值越大越松弛。"
  }
 }
