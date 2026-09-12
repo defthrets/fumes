@@ -12,6 +12,17 @@ Unreleased
     now: on the last litre the exhaust backfires every second or two, and the
     only thing that ever stops the car is an empty tank.
 
+    AND THE GAME'S OWN SPLUTTER IS SWITCHED OFF UNDERNEATH IT. This is the one
+    that was actually locking the wheels. GTA V has a fuel routine of its own --
+    it is what a shot tank draining does -- and it starts well above empty: as
+    the level the game holds gets low, the engine misfires, a backfire out of
+    the exhaust and a momentary cut with it. This mod mirrors its tank into that
+    level, so on the last litre the game was running its splutter under ours,
+    and it kept doing so after ours stopped touching the engine at all, which is
+    how the two were finally told apart. The game is never told the tank is
+    under thirty per cent now. Nothing of the game's depends on the true figure;
+    what a low or empty tank does is this mod's.
+
 
 1.0.2
 =====

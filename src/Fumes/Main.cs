@@ -339,13 +339,22 @@ namespace Fumes
                 {
                     want = tank.Fraction * theirs;
 
-                    // NEVER QUITE ZERO. At a FuelLevel of nought the game runs its own
-                    // out-of-fuel routine -- the starter turns over on the throttle, the car
-                    // inches along on it and the exhaust backfires -- which is the very thing
-                    // Starvation was rewritten not to do. Two per cent keeps the game out of
-                    // it; the engine is held off by us, every frame, whatever the game
-                    // believes is in the tank.
-                    if (want < theirs * 0.02f) want = theirs * 0.02f;
+                    // NEVER LOW. The game has a fuel routine of its own -- it is what a shot
+                    // tank draining does -- and it starts well above empty: as FuelLevel gets
+                    // low the engine misfires, a backfire out of the exhaust and a momentary
+                    // cut with it, and at nought the starter turns over on the throttle and
+                    // inches the car along. That misfire is a gearbox event on a moving car:
+                    // the rear wheels lock and it lurches into reverse for a moment. It was
+                    // running underneath every splutter this mod ever had, and it was still
+                    // there when this mod's splutter stopped touching the engine at all, which
+                    // is how it was finally told apart from ours.
+                    //
+                    // So the game is never told the tank is under thirty per cent. Nothing of
+                    // the game's depends on the true figure: there is no fuel gauge in it, and
+                    // the one thing it does with a low tank is the thing above. What a low or
+                    // empty tank does is this mod's, in Starvation, and the engine is held off
+                    // by us, every frame, whatever the game believes is in the tank.
+                    if (want < theirs * 0.30f) want = theirs * 0.30f;
                 }
 
                 if (Math.Abs(v.FuelLevel - want) < 0.15f) return;
