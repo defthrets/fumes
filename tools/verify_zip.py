@@ -21,10 +21,10 @@ else:
     ZIP = sorted(zips, key=os.path.getmtime)[-1]
 
 # Shipping any of these leaks this machine's own play state to every downloader.
-FORBIDDEN = ['tanks.json', 'can.json', 'stations.local.json', 'Fumes.log', '.bak', '.tmp', '.pdb']
+FORBIDDEN = ['tanks.json', 'can.json', 'stations.local.json', 'models.local.json', 'Fumes.log', '.bak', '.tmp', '.pdb']
 
 REQUIRED = [
-    'Fumes.dll', 'Fumes.ini', 'stations.json',
+    'Fumes.dll', 'Fumes.ini', 'stations.json', 'models.json',
     'icons/drop.png', 'icons/fuel_bar.png', 'icons/fuel.png', 'icons/icon_hose.png',
     'icons/icon_hud.png', 'icons/icon_station.png', 'icons/label_fuel.png', 'icons/logo.png',
     'README.txt', 'CHANGES.txt', 'LICENCE.txt',

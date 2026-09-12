@@ -199,7 +199,7 @@ function Deploy-To([string]$gameDir, [string]$label) {
     # stopped shipping. Anything else added to Paths that the mod WRITES has to be added to
     # this list in the same change, or the next deploy destroys it and nothing says why.
     $ours = @('tanks.json', 'tanks.json.bak', 'stations.local.json', 'stations.local.json.bak',
-              'Fumes.log', 'Fumes.log.1')
+              'models.local.json', 'models.local.json.bak', 'Fumes.log', 'Fumes.log.1')
 
     Get-ChildItem $dataSrc -Recurse -File | ForEach-Object {
         $rel = $_.FullName.Substring($dataSrc.Length).TrimStart('\')

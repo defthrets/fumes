@@ -224,6 +224,9 @@ namespace Fumes.Core
         /// </summary>
         public static string StationsLocalFile => Path.Combine(Writable, "stations.local.json");
 
+        /// <summary>Per-model consumption the player tuned from the menu. Theirs, so an update cannot undo it.</summary>
+        public static string ModelsLocalFile => Path.Combine(Writable, "models.local.json");
+
         private static void EnsureDir(string path)
         {
             try

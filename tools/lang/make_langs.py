@@ -29,7 +29,11 @@ required += ['standard', '% further', ' loaded.  Press ~b~', '~s~ for settings.'
 IDENT = re.compile(r'^[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]*)+$')      # AffectBoats and friends: ini keys, not text
 required = [k for k in required if not IDENT.match(k) and k not in ('/L', '.~s~', 'HUD', 'SHIFT', 'ALT', 'AUTO',
             'CONTROL', 'ENGLISH', 'ENGLISHUS', 'PORTUGUESEBR', 'SPANISH', 'FRENCH', 'GERMAN', 'RUSSIAN',
-            'POLISH', 'HINDI', 'CHINESESIMPLIFIED')]      # Language values show through Lang.NameOf, not T
+            'POLISH', 'HINDI', 'CHINESESIMPLIFIED',       # Language values show through Lang.NameOf, not T
+            # the CLASSES page: the game's own class names, left as the game spells them
+            'Compacts', 'Sedans', 'SUVs', 'Coupes', 'Muscle', 'SportsClassics', 'Sports', 'Super',
+            'Motorcycles', 'OffRoad', 'Industrial', 'Utility', 'Vans', 'Cycles', 'Boats', 'Helicopters',
+            'Planes', 'Service', 'Emergency', 'Military', 'Commercial', 'Trains', 'OpenWheel')]
 
 CODES = re.compile(r'~[a-z_]+~')
 

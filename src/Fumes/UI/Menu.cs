@@ -9,6 +9,7 @@ using GTA.Native;
 // Both namespaces have a Control and only one of them is a game control.
 using Control = GTA.Control;
 using Fumes.Core;
+using Fumes.Fuel;
 
 namespace Fumes.UI
 {
@@ -89,10 +90,17 @@ namespace Fumes.UI
         private static readonly Color Panel = Color.FromArgb(234, 15, 15, 18);
         private static readonly Color Head = Color.FromArgb(242, 26, 26, 31);
 
-        public Menu(Settings cfg, Gauge gauge)
+        /// <summary>The burn model, for the row that shows and tunes what the car you are in drinks.</summary>
+        private readonly Consumption _burn;
+
+        private readonly Tanks _tanks;
+
+        public Menu(Settings cfg, Gauge gauge, Consumption burn, Tanks tanks)
         {
             _cfg = cfg;
             _gauge = gauge;
+            _burn = burn;
+            _tanks = tanks;
 
             Build();
         }
@@ -329,6 +337,20 @@ namespace Fumes.UI
             fuel.Items.Add(Number("Per-model rates", () => _cfg.PerModel, v => _cfg.PerModel = v,
                                   0.1f, 0f, 1f, "0.0", "Fuel", "PerModel",
                                   "1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone."));
+
+            // THE CAR YOU ARE IN, AND WHAT IT DRINKS -- tuned here in half litres and kept by
+            // name in models.local.json. Not an ini row: the ini has no line for a Sultan, and
+            // a table that grows a line per model is what the json is for. No Section, so the
+            // ini writer leaves it alone; Close hands it to the burn model to save instead.
+            fuel.Items.Add(new Item
+            {
+                Label = "This vehicle",
+                Hint = "Left and right tune the car you are in, in half litres per 100 km. Kept in models.local.json.",
+                Show = VehicleRate,
+                Nudge = NudgeVehicle,
+            });
+            fuel.Items.Add(Action_("Reset this vehicle", ResetVehicle,
+                                   "Back to the figure worked out from its weight and power."));
             fuel.Items.Add(Number("Idling, litres an hour", () => _cfg.IdleLitresPerHour,
                                   v => _cfg.IdleLitresPerHour = v, 0.1f, 0f, 20f, "0.0",
                                   "Fuel", "IdleLitresPerHour", "What it burns going nowhere."));
@@ -356,6 +378,29 @@ namespace Fumes.UI
             fuel.Items.Add(Toggle("Stall when empty", () => _cfg.StallWhenEmpty,
                                   v => _cfg.StallWhenEmpty = v, "Engine", "StallWhenEmpty",
                                   "Off leaves you driving on an empty tank."));
+
+            // EVERY NUMBER THE BURN IS MADE FROM, on one page, so nothing about what a car
+            // drinks needs a text editor. The class table was ini-only through every version
+            // before this; the three above it are the worked-out figure's own parts. The class
+            // names are the game's, and stay as the game spells them.
+            var classes = Add("CLASSES", "fuel.png");
+            classes.Items.Add(Number("Base litres", () => _cfg.PerModelBase, v => _cfg.PerModelBase = v,
+                                     0.1f, 0f, 30f, "0.0", "Fuel", "PerModelBase",
+                                     "What any engine drinks just to keep turning, per 100 km."));
+            classes.Items.Add(Number("Per tonne", () => _cfg.PerModelPerTonne, v => _cfg.PerModelPerTonne = v,
+                                     0.1f, 0f, 20f, "0.0", "Fuel", "PerModelPerTonne",
+                                     "Litres per 100 km added for each tonne the vehicle weighs."));
+            classes.Items.Add(Number("Per kilowatt", () => _cfg.PerModelPerKw, v => _cfg.PerModelPerKw = v,
+                                     0.005f, 0f, 1f, "0.000", "Fuel", "PerModelPerKw",
+                                     "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h."));
+
+            foreach (var pair in _cfg.Thirst)
+            {
+                var c = pair.Key;
+                classes.Items.Add(Number(c.ToString(), () => _cfg.Thirst[c], v => _cfg.Thirst[c] = v,
+                                         0.5f, 0f, 100f, "0.0", "Consumption", c.ToString(),
+                                         "Litres per 100 km for the class, before Per-model rates and the multiplier."));
+            }
 
             var station = Add("STATION", "icon_station.png");
             station.Items.Add(Number("Price a litre", () => _cfg.PricePerLitre,
@@ -672,6 +717,9 @@ namespace Fumes.UI
             _open = false;
             Placing = false;
 
+            // The per-model figures go to their own file, whether or not an ini line moved.
+            SaveVehicleRates();
+
             if (_changed.Count == 0) return;
 
             var written = 0;
@@ -748,6 +796,74 @@ namespace Fumes.UI
         }
 
         /// <summary>Stages the four numbers so Close writes them.</summary>
+        // ==================================================================
+        // The car you are in
+        // ==================================================================
+
+        /// <summary>The car he is in, or the last one he was in while it still exists.</summary>
+        private static Vehicle CurrentVehicle()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return null;
+
+                var v = me.CurrentVehicle;
+                if (v != null && v.Exists()) return v;
+
+                v = me.LastVehicle;
+                return v != null && v.Exists() ? v : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>"SULTAN  10.8 L/100km", with a star when the figure is one the player pinned.</summary>
+        private string VehicleRate()
+        {
+            var v = CurrentVehicle();
+            if (v == null) return "--";
+
+            var name = Consumption.ModelName(v);
+            var rate = _burn.RateFor(v, _tanks.For(v));
+
+            return name.ToUpperInvariant() + "  " + rate.ToString("0.0", CultureInfo.InvariantCulture) +
+                   " L/100km" + (_burn.HasOverride(name) ? " *" : "");
+        }
+
+        private void NudgeVehicle(int d)
+        {
+            var v = CurrentVehicle();
+            if (v == null) return;
+
+            var name = Consumption.ModelName(v);
+            if (name.Length == 0) return;
+
+            // From wherever it is now -- the worked-out figure the first time -- in halves.
+            var rate = _burn.RateFor(v, _tanks.For(v)) + d * 0.5f;
+            rate = (float)Math.Round(rate * 2f) / 2f;
+
+            _burn.SetOverride(name, rate);
+        }
+
+        private void ResetVehicle()
+        {
+            var v = CurrentVehicle();
+            if (v == null) return;
+
+            _burn.ClearOverride(Consumption.ModelName(v));
+        }
+
+        private void SaveVehicleRates()
+        {
+            if (!_burn.SaveOverrides()) return;
+
+            try { GTA.UI.Notification.Show(Lang.T("~g~Vehicle rates saved~s~ to models.local.json."), false); }
+            catch { /* the log has it */ }
+        }
+
         /// <summary>
         /// Stops following Bare Minimum's row, because the positioner is about to be used
         /// and a gauge that follows the row cannot be moved: the row would put it straight

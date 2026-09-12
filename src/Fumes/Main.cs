@@ -82,7 +82,7 @@ namespace Fumes
             _pumps = new Pumps();
             _stations = new Stations(_cfg);
             _gauge = new Gauge(_cfg);
-            _menu = new Menu(_cfg, _gauge);
+            _menu = new Menu(_cfg, _gauge, _burn, _tanks);
             _lowFuel = new LowFuel(_cfg);
             _forecourt = new TrafficRefuel(_cfg, _tanks, _stations);
             _meter = new Meter(_cfg, _gauge);

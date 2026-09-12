@@ -12,6 +12,7 @@ release/*.zip
 *.log
 *.log.1
 tanks.json
+models.local.json
 *.bak
 
 # Editor and OS noise.

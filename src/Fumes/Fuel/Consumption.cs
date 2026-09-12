@@ -7,38 +7,24 @@ using Fumes.Core;
 
 namespace Fumes.Fuel
 {
-    /// <summary>
-    /// Turns a second of driving into litres.
-    ///
-    /// The model is deliberately physical -- distance times a litres-per-100km figure, plus an
-    /// idle burn, times an engine-load factor -- rather than a flat "percent per minute". A
-    /// physical model is the only kind where a Phantom towing a trailer up Chiliad costs more
-    /// than a Blista on the freeway without anybody writing a rule saying so.
-    /// </summary>
     internal sealed class Consumption
     {
-        /// <summary>
-        /// The fudge that makes realism playable, named so nobody deletes it by accident.
-        ///
-        /// Los Santos is roughly a tenth of real scale: a coast-to-coast drive is about 8 km,
-        /// where the real thing it is drawn from is several hundred. So a genuinely realistic
-        /// engine on a genuinely realistic tank has a range of forty real-world minutes of
-        /// solid motorway driving, and NOTHING ELSE IN THE GAME IS THAT LONG. You would fill
-        /// up once a session, by accident, and never think about fuel again.
-        ///
-        /// Multiplying the burn by ten puts a tank at roughly half an hour of ordinary play,
-        /// which is the number this whole mod is actually about. It lives here, as one named
-        /// constant, instead of being smuggled into every litres-per-100km figure in the ini --
-        /// where it would make every one of those numbers a lie and make the ini impossible to
-        /// tune by anybody who knows what a car drinks.
-        /// </summary>
         private const float MapScale = 10f;
 
         private readonly Settings _cfg;
 
-        /// <summary>Litres per 100 km by model name, from data\models.json. Wins over everything.</summary>
+        /// <summary>
+        /// Litres per 100 km by model name. The shipped models.json first, then the player's
+        /// own models.local.json on top -- and only the second is ever written, so an update
+        /// cannot undo a figure somebody tuned.
+        /// </summary>
         private readonly Dictionary<string, float> _overrides =
             new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The names in _overrides that belong to models.local.json.</summary>
+        private readonly HashSet<string> _local = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private bool _dirty;
 
         /// <summary>Models whose figure has been written to the log, once each.</summary>
         private readonly HashSet<string> _said = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -51,9 +37,21 @@ namespace Fumes.Fuel
 
         private void LoadOverrides()
         {
+            Read(Path.Combine(Paths.Data, "models.json"), false);
+            Read(Paths.ModelsLocalFile, true);
+
+            if (_overrides.Count > 0)
+            {
+                Log.Info(_overrides.Count + " per-model consumption figure(s), " + _local.Count +
+                         " of them from models.local.json.");
+            }
+        }
+
+        private void Read(string path, bool local)
+        {
             try
             {
-                var doc = JsonFile.Read(Path.Combine(Paths.Data, "models.json"));
+                var doc = JsonFile.Read(path);
                 if (doc == null) return;
 
                 var models = doc["models"];
@@ -61,26 +59,99 @@ namespace Fumes.Fuel
                 foreach (var key in models.Keys)
                 {
                     var rate = models[key].AsFloat(-1f);
-                    if (rate >= 0f && rate < 500f) _overrides[key.Trim()] = rate;
-                }
+                    if (rate < 0f || rate >= 500f) continue;
 
-                if (_overrides.Count > 0)
-                {
-                    Log.Info(_overrides.Count + " per-model consumption figure(s) from models.json.");
+                    var name = key.Trim();
+                    _overrides[name] = rate;
+                    if (local) _local.Add(name);
                 }
             }
             catch (Exception ex)
             {
-                Log.Warn("Could not read models.json: " + ex.Message + " - the worked-out figures apply.");
+                Log.Warn("Could not read " + Path.GetFileName(path) + ": " + ex.Message +
+                         " - the worked-out figures apply.");
             }
         }
 
-        /// <summary>
-        /// Litres burnt by this vehicle over dt real seconds.
-        ///
-        /// Never negative, never NaN, and zero for anything with the engine off -- a parked car
-        /// does not drink, and a car being towed or shipped should not either.
-        /// </summary>
+        // ==================================================================
+        // What the menu needs
+        // ==================================================================
+
+        /// <summary>The model name as the game spells it -- "SULTAN" -- or empty.</summary>
+        public static string ModelName(Vehicle v)
+        {
+            try { return (v.DisplayName ?? "").Trim(); }
+            catch { return ""; }
+        }
+
+        /// <summary>This vehicle's litres per 100 km as the burn will use them, before the multiplier.</summary>
+        public float RateFor(Vehicle v, Tank tank)
+        {
+            if (v == null) return 0f;
+
+            try { return Thirst(v, tank, false); }
+            catch { return 0f; }
+        }
+
+        public bool HasOverride(string model)
+        {
+            return model.Length > 0 && _overrides.ContainsKey(model);
+        }
+
+        /// <summary>Pins a model to a figure of the player's own. Kept in memory until SaveOverrides.</summary>
+        public void SetOverride(string model, float rate)
+        {
+            if (model.Length == 0) return;
+
+            if (rate < 0.5f) rate = 0.5f;
+            if (rate > 300f) rate = 300f;
+
+            _overrides[model] = rate;
+            _local.Add(model);
+            _dirty = true;
+        }
+
+        /// <summary>Back to the worked-out figure.</summary>
+        public void ClearOverride(string model)
+        {
+            if (model.Length == 0) return;
+
+            if (_overrides.Remove(model)) _dirty = true;
+            _local.Remove(model);
+            _said.Remove(model);      // so the worked-out figure is said again
+        }
+
+        /// <summary>Writes models.local.json if anything moved. True when it did and the write went.</summary>
+        public bool SaveOverrides()
+        {
+            if (!_dirty) return false;
+
+            var models = Json.Object();
+
+            foreach (var name in _local)
+            {
+                float rate;
+                if (_overrides.TryGetValue(name, out rate)) models.Set(name, Math.Round(rate, 1));
+            }
+
+            var doc = Json.Object()
+                .Set("note", "Litres per 100 km by model, tuned from the menu. Wins over models.json and " +
+                             "over the figure worked out from the vehicle's weight and power. Delete an " +
+                             "entry, or use RESET THIS VEHICLE, to go back.")
+                .Set("models", models);
+
+            var ok = JsonFile.Write(Paths.ModelsLocalFile, doc);
+            if (ok) _dirty = false;
+
+            Log.Info(ok ? _local.Count + " per-model figure(s) written to models.local.json."
+                        : "Could not write models.local.json.");
+            return ok;
+        }
+
+        // ==================================================================
+        // The burn
+        // ==================================================================
+
         public float Burn(Vehicle v, Tank tank, float dt)
         {
             if (v == null || tank == null || dt <= 0f) return 0f;
@@ -89,26 +160,7 @@ namespace Fumes.Fuel
             {
                 if (!v.IsEngineRunning) return LeakOnly(v, tank, dt);
 
-                var thirst = _cfg.ThirstFor(v.ClassType);
-
-                // A BIKE'S THIRST IS WORKED OUT FROM ITS TANK, not looked up, so that a quarter
-                // of the fuel still covers the same ground. Sixteen litres at the class figure
-                // of 4.5 is three hundred and fifty kilometres against a saloon's seven
-                // hundred, which is the honest consequence of a small tank and not what anybody
-                // wants from a motorbike.
-                //
-                // Derived rather than another number in the table, because the two have to
-                // agree: change the tank and the range holds by construction. Two independent
-                // settings would drift the first time one of them moved.
-                if (_cfg.BikeRangeKm > 0f && Tanks.IsBike(v) && tank.Capacity > 0f)
-                {
-                    thirst = tank.Capacity / _cfg.BikeRangeKm * 100f;
-                }
-                else if (_cfg.PerModel > 0f)
-                {
-                    // Everything that is not a bike: its own figure, from what it is.
-                    thirst = ModelThirst(v, thirst);
-                }
+                var thirst = Thirst(v, tank, true);
 
                 if (thirst <= 0f) return 0f;
 
@@ -145,11 +197,39 @@ namespace Fumes.Fuel
         }
 
         /// <summary>
-        /// How hard the engine is working, 0.55 at a coast to about 1.5 flat out.
-        ///
-        /// RPM rather than throttle, because RPM already carries the gear. Flooring it in top
-        /// at 30mph and flooring it in first are the same throttle and very different fuel.
+        /// Litres per 100 km for this vehicle: the class figure, or a bike's from its tank, or
+        /// the model's own. One place, so the menu shows exactly what the burn uses.
         /// </summary>
+        private float Thirst(Vehicle v, Tank tank, bool say)
+        {
+            var thirst = _cfg.ThirstFor(v.ClassType);
+
+            // A BIKE'S THIRST IS WORKED OUT FROM ITS TANK, not looked up, so that a quarter
+            // of the fuel still covers the same ground. Sixteen litres at the class figure
+            // of 4.5 is three hundred and fifty kilometres against a saloon's seven
+            // hundred, which is the honest consequence of a small tank and not what anybody
+            // wants from a motorbike.
+            //
+            // Derived rather than another number in the table, because the two have to
+            // agree: change the tank and the range holds by construction. Two independent
+            // settings would drift the first time one of them moved.
+            if (_cfg.BikeRangeKm > 0f && Tanks.IsBike(v) && tank != null && tank.Capacity > 0f)
+            {
+                thirst = tank.Capacity / _cfg.BikeRangeKm * 100f;
+
+                // ...unless the player pinned this bike by name, which is their call.
+                float pinned;
+                var bike = ModelName(v);
+                if (bike.Length > 0 && _overrides.TryGetValue(bike, out pinned)) thirst = pinned;
+
+                return thirst;
+            }
+
+            if (_cfg.PerModel > 0f) thirst = ModelThirst(v, thirst, say);
+
+            return thirst;
+        }
+
         /// <summary>
         /// This model's own litres per 100 km, blended into the class figure by [Fuel] PerModel.
         ///
@@ -160,34 +240,41 @@ namespace Fumes.Fuel
         /// turning, about 1.8 more for every tonne it has to move, and about 0.05 for every
         /// kilowatt that makes it quick. Calibrated so a Blista lands near the Compacts figure
         /// and an Adder near the Super one -- and every DLC and add-on vehicle gets a figure of
-        /// its own without anybody typing it. models.json is for the exceptions, and wins.
+        /// its own without anybody typing it. The three numbers are settings, and the log says
+        /// what they produced the first time a model is driven.
         ///
-        /// Said once per model in the log, with the numbers it came from, so "this car drinks
-        /// too much" can be answered with the figures rather than a feeling.
+        /// A FIGURE THE PLAYER PINNED IS NOT BLENDED. models.json and the menu's THIS VEHICLE
+        /// row say "this car, this number"; halving that by PerModel = 0.5 would make the row
+        /// lie about what it just set.
         /// </summary>
-        private float ModelThirst(Vehicle v, float classRate)
+        private float ModelThirst(Vehicle v, float classRate, bool say)
         {
             var name = ModelName(v);
             float own;
-            string from;
 
             if (name.Length > 0 && _overrides.TryGetValue(name, out own))
             {
-                from = "models.json";
-            }
-            else
-            {
-                // Aircraft, boats and rail carry mass and drive force too, and neither means
-                // what it means on a road. They keep the class figure unless models.json says.
-                var c = v.ClassType;
-                if (c == VehicleClass.Helicopters || c == VehicleClass.Planes || c == VehicleClass.Boats ||
-                    c == VehicleClass.Trains || c == VehicleClass.Cycles)
+                if (say && _said.Add(name))
                 {
-                    return classRate;
+                    Log.Info(v.LocalizedName + " (" + name.ToLowerInvariant() + "): pinned to " +
+                             own.ToString("0.0", CultureInfo.InvariantCulture) + " L/100km by " +
+                             (_local.Contains(name) ? "models.local.json" : "models.json") + ".");
                 }
 
-                if (!Derive(v, out own, out from)) return classRate;
+                return own;
             }
+
+            // Aircraft, boats and rail carry mass and drive force too, and neither means
+            // what it means on a road. They keep the class figure unless pinned.
+            var c = v.ClassType;
+            if (c == VehicleClass.Helicopters || c == VehicleClass.Planes || c == VehicleClass.Boats ||
+                c == VehicleClass.Trains || c == VehicleClass.Cycles)
+            {
+                return classRate;
+            }
+
+            string from;
+            if (!Derive(v, out own, out from)) return classRate;
 
             var w = _cfg.PerModel;
             if (w < 0f) w = 0f;
@@ -195,7 +282,7 @@ namespace Fumes.Fuel
 
             var rate = classRate + (own - classRate) * w;
 
-            if (name.Length > 0 && _said.Add(name))
+            if (say && name.Length > 0 && _said.Add(name))
             {
                 Log.Info(v.LocalizedName + " (" + name.ToLowerInvariant() + "): " + from + " -> " +
                          own.ToString("0.0", CultureInfo.InvariantCulture) + " L/100km; class " +
@@ -207,14 +294,8 @@ namespace Fumes.Fuel
             return rate;
         }
 
-        private static string ModelName(Vehicle v)
-        {
-            try { return (v.DisplayName ?? "").Trim(); }
-            catch { return ""; }
-        }
-
         /// <summary>A figure from the handling numbers, or false when the game did not give usable ones.</summary>
-        private static bool Derive(Vehicle v, out float rate, out string how)
+        private bool Derive(Vehicle v, out float rate, out string how)
         {
             rate = 0f;
             how = "";
@@ -239,7 +320,7 @@ namespace Fumes.Fuel
 
             var kw = Power(mass, force);
 
-            rate = 2.0f + 1.8f * (mass / 1000f) + 0.05f * kw;
+            rate = _cfg.PerModelBase + _cfg.PerModelPerTonne * (mass / 1000f) + _cfg.PerModelPerKw * kw;
             how = mass.ToString("0", CultureInfo.InvariantCulture) + " kg, " +
                   force.ToString("0.00", CultureInfo.InvariantCulture) + " g, ~" +
                   kw.ToString("0", CultureInfo.InvariantCulture) + " kW";
@@ -298,7 +379,6 @@ namespace Fumes.Fuel
             return 0.55f + rpm * 0.95f;
         }
 
-        /// <summary>A damaged engine burns more. 1.0 healthy, 1.35 at death's door.</summary>
         private static float Wear(Vehicle v)
         {
             float health;
@@ -311,13 +391,6 @@ namespace Fumes.Fuel
             return 1f + (1000f - health) / 1000f * 0.35f;
         }
 
-        /// <summary>
-        /// What pours out of a shot tank whether the engine runs or not.
-        ///
-        /// This is the one bit of the model that keeps working with the key out, and it is
-        /// deliberate: a car left overnight with a hole in it should be empty in the morning.
-        /// PetrolTankHealth runs 0..1000 and only moves when something has actually hit it.
-        /// </summary>
         private float Leak(Vehicle v, Tank tank, float dt)
         {
             if (!_cfg.TankLeaks || tank.Empty) return 0f;
@@ -334,7 +407,6 @@ namespace Fumes.Fuel
             return tank.Capacity * severity * severity * dt / 90f;
         }
 
-        /// <summary>Engine off: nothing burns, but a holed tank still empties.</summary>
         private float LeakOnly(Vehicle v, Tank tank, float dt)
         {
             var l = Leak(v, tank, dt);

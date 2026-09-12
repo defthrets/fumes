@@ -202,6 +202,11 @@ namespace Fumes.Core
         /// </summary>
         public float PerModel = 1.0f;
 
+        /// <summary>The worked-out figure: Base + PerTonne × tonnes + PerKw × kilowatts. See Consumption.Derive.</summary>
+        public float PerModelBase = 2.0f;
+        public float PerModelPerTonne = 1.8f;
+        public float PerModelPerKw = 0.05f;
+
         /// <summary>Litres burnt per hour sitting still with the engine running, before the multiplier.</summary>
         public float IdleLitresPerHour = 1.4f;
 
@@ -1515,6 +1520,9 @@ namespace Fumes.Core
 
                 s.ConsumptionMultiplier = ini.GetFloat("Fuel", "ConsumptionMultiplier", s.ConsumptionMultiplier, 0.05f, 20f);
                 s.PerModel = ini.GetFloat("Fuel", "PerModel", s.PerModel, 0f, 1f);
+                s.PerModelBase = ini.GetFloat("Fuel", "PerModelBase", s.PerModelBase, 0f, 30f);
+                s.PerModelPerTonne = ini.GetFloat("Fuel", "PerModelPerTonne", s.PerModelPerTonne, 0f, 20f);
+                s.PerModelPerKw = ini.GetFloat("Fuel", "PerModelPerKw", s.PerModelPerKw, 0f, 1f);
                 s.BikeTankLitres = ini.GetFloat("Fuel", "BikeTankLitres", s.BikeTankLitres, 0f, 200f);
                 s.BikeRangeKm = ini.GetFloat("Fuel", "BikeRangeKm", s.BikeRangeKm, 0f, 5000f);
                 s.IdleLitresPerHour = ini.GetFloat("Fuel", "IdleLitresPerHour", s.IdleLitresPerHour, 0f, 60f);

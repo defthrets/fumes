@@ -46,8 +46,16 @@ Unreleased
 
     [Fuel] PerModel, on the FUEL page as PER-MODEL RATES: 1.0 is the vehicle's
     own figure, 0 is the class table as before, in between blends. Bikes keep
-    their range rule. Fumes\models.json overrides any model by name, for the
-    exceptions. Asked for by Asaseh, Aquaphobic and GrandHaven.
+    their range rule. Asked for by Asaseh, Aquaphobic and GrandHaven.
+
+  * AND EVERY ONE OF THOSE FIGURES IS YOURS TO CHANGE, FROM THE MENU. THIS
+    VEHICLE on the FUEL page shows the car you are in and what it drinks; left
+    and right tune it in half-litres, RESET THIS VEHICLE puts it back. Pinned
+    figures go to models.local.json beside your tanks.json -- yours, so an
+    update never touches them -- and a pinned figure is used as is, whatever
+    PerModel says. A new CLASSES page carries the whole class table and the
+    three numbers the worked-out figure is made from, saved to the ini like
+    everything else. 223 settings.
 
 
 1.0.1
