@@ -95,7 +95,7 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <b>CONTROLS</b>
 
 <ul>
-<li><b>SHIFT + F</b>: the settings menu, 223 of them. <b>LB + D-pad Down</b> on a controller;</li>
+<li><b>SHIFT + F</b>: the settings menu, 246 of them. <b>LB + D-pad Down</b> on a controller;</li>
 <li><b>E</b>: take the nozzle, fill, hang up, pour the can. <b>Q</b>: siphon, or fill the can at a pump.</li>
 </ul>
 
@@ -103,15 +103,19 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 
 <b>CHANGELOG</b>
 
-<b>1.0.2</b>
+<b>1.0.3</b>
 
 <ul>
-<li><b>Fixed: an empty jerry can could not be filled at a pump.</b> A can with a tenth of a litre in it filled fine; one at exactly nought was offered "put it down" and nothing else, because that prompt took the frame before the pump was looked at. <i>AliG_15.</i></li>
-<li><b>Fixed: the gauge could not be moved with Bare Minimum installed.</b> That mod's row re-sizes and re-places it every frame, so the positioner's changes were overruled on the next draw. The two settings that decide this are on the HUD page now, and opening the positioner switches the first off so the placement takes. <i>VaporHaven, HunterBoys555.</i></li>
-<li><b>Fixed: sparks from the exhaust and a car creeping along on an empty tank.</b> The "starter" was actually starting the engine for a frame. A dry tank shuts down and stays shut down. <i>GrandHaven, AliG_15.</i></li>
-<li><b>Fixed: the Oppressor Mk II kept flying on an empty tank.</b> Its thruster is not the engine; hover flight is taken away while dry. <i>AliG_15.</i></li>
-<li><b>Every vehicle has its own thirst.</b> Not a table of models: the game knows what each one weighs and how hard its engine pushes, and consumption is worked out from those two, so every DLC and add-on vehicle gets a figure of its own. Idle scales with engine size the same way. The log says what it worked out the first time you drive a model. <i>Asaseh, Aquaphobic, GrandHaven.</i></li>
-<li><b>And every figure is yours to change, from the menu.</b> THIS VEHICLE on the FUEL page tunes the car you are in; a new CLASSES page carries the whole class table and the three numbers the worked-out figure is made from. Pinned figures go to models.local.json, which an update never touches. 223 settings.</li>
+<li><b>Fuel comes out of the nozzle.</b> Hold FIRE with it in your hand, away from a filler, and petrol pours onto the ground -- the game's own decals, charged at that pump's price, and the forecourt hazard treats it exactly as it treats filling. This is what the carrying pose was chosen for three versions ago;</li>
+<li><b>Every vehicle has its own thirst</b>, worked out from what it weighs and how hard its engine pushes rather than a table -- so DLC and add-on vehicles get a figure of their own. And every figure is yours to change from the menu: THIS VEHICLE on the FUEL page tunes the car you are in, and a new CLASSES page carries the whole class table;</li>
+<li><b>Crossing into reserve routes the GPS to the nearest station</b>, in orange, on the station's own blip. A waypoint you set yourself is never touched;</li>
+<li><b>The engine stumbles on the last of the fuel</b> and smoke trails from the exhaust, and he curses the car in his own voice when you try to start it dry. None of it touches the gearbox or the brakes;</li>
+<li><b>Fixed: the car vanished while you siphoned from it.</b> Ambient traffic belongs to nobody and the game recycles it hard; anything this mod is working on is now held in the world until it is done;</li>
+<li><b>Fixed: an empty jerry can could not be filled at a pump.</b> <i>AliG_15.</i></li>
+<li><b>Fixed: the gauge could not be moved with Bare Minimum installed.</b> <i>VaporHaven, HunterBoys555.</i></li>
+<li><b>Fixed: sparks and a car creeping along on an empty tank.</b> <i>GrandHaven, AliG_15.</i></li>
+<li><b>Fixed: the Oppressor Mk II kept flying on an empty tank.</b> <i>AliG_15.</i></li>
+<li><b>The hose is smooth.</b> It was drawn in fourteen straight segments however long it got, which over nine metres is a corner every sixty-five centimetres. 246 settings.</li>
 </ul>
 
 Every earlier version, with the full explanation of each change, is in <i>CHANGES.txt</i> inside the zip.

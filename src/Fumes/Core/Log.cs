@@ -140,7 +140,7 @@ namespace Fumes.Core
     /// </summary>
     internal static class Build
     {
-        public const string Version = "1.0.2";
+        public const string Version = "1.0.3";
         public const string Name = "Fumes";
         public const string By = "spitmux";
     }

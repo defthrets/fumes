@@ -1,8 +1,8 @@
 FUMES -- changes
 
 
-Unreleased
-==========
+1.0.3
+=====
 
   * THE LOW-FUEL SPLUTTER NO LONGER TOUCHES THE ENGINE. It cut the engine and
     brought it back, for the feel of one catching and dropping, and every
