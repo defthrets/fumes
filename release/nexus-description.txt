@@ -19,6 +19,9 @@ MARKUP, CONFIRMED AGAINST THE LIVE PAGE (read out of its own DOM, 2026-09-11):
 
 So: no <br> anywhere below, and every gap is a real blank line.
 
+THE PAGE CARRIES ONLY THE LATEST CHANGELOG. When a version is cut, the block
+under CHANGELOG is replaced, not added to; the full history ships in CHANGES.txt.
+
 Paste from the next divider down.
 
 --------------------------------------------------------------------------------
@@ -111,72 +114,7 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <li><b>And every figure is yours to change, from the menu.</b> THIS VEHICLE on the FUEL page tunes the car you are in; a new CLASSES page carries the whole class table and the three numbers the worked-out figure is made from. Pinned figures go to models.local.json, which an update never touches. 223 settings.</li>
 </ul>
 
-<b>1.0.1</b>
-
-<ul>
-<li><b>Hindi.</b> The ninth language, in Latin script, and that is not a choice of style: GTA V's font has no Devanagari in any game language, and unlike Chinese there is no game setting that ever loads it, so a Devanagari file would be boxes on every install. Romanised Hindi, the Hindi Indian players already read game UI in, draws on all of them. Unreviewed by a native speaker; corrections are one line in one file;</li>
-<li><b>The draw budget is counted for the whole machine.</b> The game keeps one list of rectangles a frame for every script and drops the rest past about 350, so whichever mod draws last pays for everybody. Fumes, Bare Minimum and the rest now count into one shared tally, and the log says what the busiest frame cost and who spent it, and when a tick was handed back with no gauge on it;</li>
-<li><b>No more notice when Chinese is picked on a non-Chinese game.</b> The row reads CHINESE (SIMPLIFIED) over an English menu, which says it;</li>
-<li><b>Nothing in the fuel changed.</b> 219 settings.</li>
-</ul>
-
-<b>1.0.0</b>
-
-<ul>
-<li><b>Eight languages, from the settings menu.</b> English (UK and US), Português (Brasil), Español, Français, Deutsch, Русский, Polski and 中文 (简体). Top row of the HUD page, English by default. Each is one json in <i>Fumes\lang</i> with the English on the left, so a correction or a new language needs no rebuild, and anything a file does not cover shows in English rather than going blank;</li>
-<li><b>The Portuguese is by lirounando.</b> They built a full PT-BR translation of 0.1.1 and sent it back as a modified dll; its strings were recovered from the assembly, read through, and everything since 0.1.1 filled in. The other six are the author's own and have not yet been checked by a native speaker: corrections welcome, one line in one file;</li>
-<li><b>Picking a language sets the units its speakers expect</b>, gallons for English (US), litres for the rest. The Units row is still there for whoever wants the other one;</li>
-<li><b>Chinese needs the game itself set to Chinese.</b> GTA V has no Chinese glyphs in any other game language, so on any other one the mod keeps your choice, shows English, and tells you why;</li>
-<li><b>Nothing in the game changed.</b> Fumes.log stays English whatever the setting, so a bug report reads the same from anyone. 219 settings.</li>
-</ul>
-
-<b>0.1.9</b>
-
-<ul>
-<li><b>A licence, at last.</b> MIT. The repo went public without one, which means all rights reserved by default whatever a mod page says, so nobody could legally fork it or read it into their own mod. <i>LICENSE</i> at the root of the repo, <i>LICENCE.txt</i> in the zip. The 0.1.8 zip carried neither;</li>
-<li><b>The README stopped asking for ScriptHookVDotNet 3.9.0.0.</b> That stopped being true in 0.1.8 and the install step never followed the build down. It is where every "I cannot find a 3.9 anywhere" message came from. Any ScriptHookVDotNet 3 from 3.6.0 up;</li>
-<li><b>No code changed from 0.1.8.</b> If you are on 0.1.8 and happy, there is nothing here you need.</li>
-</ul>
-
-<b>0.1.8</b>
-
-<ul>
-<li><b>The fuel gauge is one of Bare Minimum's bars now.</b> The same width, the same height, the same surround and the same mark beneath it, and it stands <i>in</i> that row as a sixth bar rather than beside it, among health, food, thirst and sleep, following the row to whichever side of the minimap it is on. Nothing to set up, and nothing to lose: without Bare Minimum the gauge stands on its own exactly as before;</li>
-<li><b>The fuel moves the way the bars beside it do.</b> It settles at a stop and leans the right way round under braking, and the specks rise through it instead of falling, slower and wider than they used to. A bevel down each side gives the column its depth;</li>
-<li><b>The gauge hides on the wasted screen and through cutscenes</b>, with the rest of the HUD;</li>
-<li><b>Fixed: the gauge was pushing other mods' panels off the screen.</b> Rectangles come out of one list the whole machine shares, and once it is full everything handed over after that is dropped, so the script that pays for a busy frame is whichever draws last. Another mod's phone was coming up in a car with no background. The gradient costs a fraction of what it did;</li>
-<li><b>Fixed: the mod did not load on ScriptHookVDotNet 3.6 or on the nightlies.</b> It was built against the 3.9 fork and asked for 3.9 by name, and no loader hands a script a ScriptHookVDotNet newer than itself. Built against 3.6.0 now. <b>If you are on 3.6 or a nightly, this is the first version that loads at all.</b> <i>RReu, Van_Zandt.</i></li>
-</ul>
-
-<b>0.1.7</b>
-
-<ul>
-<li><b>Fixed: the nozzle could not be hung back up</b>, the prompt stuck on "Fill". <i>susipupi44.</i></li>
-<li><b>Fixed: a jerry can or fire extinguisher flashed into his hand</b> when taking the nozzle, and showed during the grade card and fill. <i>Gta5gamer__.</i></li>
-<li><b>Electric vehicles are detected by the model's own flag</b>, so DLC and add-on electrics are left alone too. <i>MaitreSystem.</i></li>
-<li><b>Fixed: the fire button poured a second stream</b> while pouring the can into a car.</li>
-<li><b>The can's level is saved every ten seconds</b>, not only at shutdown.</li>
-</ul>
-
-<b>0.1.6</b>
-
-<ul>
-<li><b>Fixed: the jerry can stuck at 0 litres in 0.1.5.</b> Nothing to delete. <i>AliG_15.</i></li>
-<li><b>Fixed: you could not siphon from a full car.</b></li>
-<li><b>An empty can can be put down and picked back up</b>, it used to do nothing at all.</li>
-<li><b>Fill the can at a pump by walking up holding it.</b> He stands it down, takes the nozzle and crouches over it.</li>
-<li><b>The grade card can be switched off from the settings menu.</b></li>
-</ul>
-
-<b>EARLIER</b>
-
-<ul>
-<li><b>0.1.5</b>: fixed bikes spluttering at half a tank. The jerry can keeps what is in it across respawns and reloads. Siphon prompt fixed.</li>
-<li><b>0.1.4</b>: fixed a full tank after a save load. Bikes get a bike's tank. Electric vehicles excluded. One legend entry for all stations. Fixed filling with the wrong hand.</li>
-<li><b>0.1.3</b>: siphoning. Fuel grades and diesel. The grade card. Controller support. Traffic refuels. Runs on any ScriptHookVDotNet 3.</li>
-</ul>
-
-Every fix above has a full explanation in <i>CHANGES.txt</i>, inside the zip.
+Every earlier version, with the full explanation of each change, is in <i>CHANGES.txt</i> inside the zip.
 
 ===================================
 
