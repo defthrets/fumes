@@ -81,6 +81,8 @@ T = {
 "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Com o tamanho e a posição da sexta barra dessa fileira. Desligado, ou sem esse mod, fica onde você colocar.",
 "My own side": "Meu próprio lado",
 "Keep X from this ini while following the row, to stand it on the other side.": "Manter o X deste ini mesmo seguindo a fileira, para ficar do outro lado.",
+"Per-model rates": "Consumo por modelo",
+"1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone.": "1.0 é o valor próprio de cada veículo a partir do peso e da potência; 0 é só a tabela por classe.",
 "you moved away from the filler": "você se afastou do bocal",
 "the vehicle went away": "o veículo desapareceu",
 }

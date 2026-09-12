@@ -326,6 +326,9 @@ namespace Fumes.UI
                                   v => _cfg.ConsumptionMultiplier = v, 0.05f, 0f, 5f, "0.00",
                                   "Fuel", "ConsumptionMultiplier",
                                   "1.0 is about half an hour of driving to a tank."));
+            fuel.Items.Add(Number("Per-model rates", () => _cfg.PerModel, v => _cfg.PerModel = v,
+                                  0.1f, 0f, 1f, "0.0", "Fuel", "PerModel",
+                                  "1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone."));
             fuel.Items.Add(Number("Idling, litres an hour", () => _cfg.IdleLitresPerHour,
                                   v => _cfg.IdleLitresPerHour = v, 0.1f, 0f, 20f, "0.0",
                                   "Fuel", "IdleLitresPerHour", "What it burns going nowhere."));

@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using GTA;
 using Fumes.Core;
 
@@ -33,9 +36,43 @@ namespace Fumes.Fuel
 
         private readonly Settings _cfg;
 
+        /// <summary>Litres per 100 km by model name, from data\models.json. Wins over everything.</summary>
+        private readonly Dictionary<string, float> _overrides =
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Models whose figure has been written to the log, once each.</summary>
+        private readonly HashSet<string> _said = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         public Consumption(Settings cfg)
         {
             _cfg = cfg;
+            LoadOverrides();
+        }
+
+        private void LoadOverrides()
+        {
+            try
+            {
+                var doc = JsonFile.Read(Path.Combine(Paths.Data, "models.json"));
+                if (doc == null) return;
+
+                var models = doc["models"];
+
+                foreach (var key in models.Keys)
+                {
+                    var rate = models[key].AsFloat(-1f);
+                    if (rate >= 0f && rate < 500f) _overrides[key.Trim()] = rate;
+                }
+
+                if (_overrides.Count > 0)
+                {
+                    Log.Info(_overrides.Count + " per-model consumption figure(s) from models.json.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not read models.json: " + ex.Message + " - the worked-out figures apply.");
+            }
         }
 
         /// <summary>
@@ -67,6 +104,11 @@ namespace Fumes.Fuel
                 {
                     thirst = tank.Capacity / _cfg.BikeRangeKm * 100f;
                 }
+                else if (_cfg.PerModel > 0f)
+                {
+                    // Everything that is not a bike: its own figure, from what it is.
+                    thirst = ModelThirst(v, thirst);
+                }
 
                 if (thirst <= 0f) return 0f;
 
@@ -76,7 +118,7 @@ namespace Fumes.Fuel
                 var km = Math.Abs(v.Speed) * dt / 1000f;
 
                 var driving = thirst * km / 100f;
-                var idling = _cfg.IdleLitresPerHour * dt / 3600f;
+                var idling = _cfg.IdleLitresPerHour * IdleScale(v) * dt / 3600f;
 
                 // THE GRADE IN THE TANK, not the one selected. See Tank.Grade -- except for
                 // diesel, which comes from the VEHICLE, because a diesel truck cannot be
@@ -108,6 +150,141 @@ namespace Fumes.Fuel
         /// RPM rather than throttle, because RPM already carries the gear. Flooring it in top
         /// at 30mph and flooring it in first are the same throttle and very different fuel.
         /// </summary>
+        /// <summary>
+        /// This model's own litres per 100 km, blended into the class figure by [Fuel] PerModel.
+        ///
+        /// NO TABLE OF MODELS. The game already knows what every vehicle weighs and how hard
+        /// its engine pushes -- fMass and fInitialDriveForce in handling.meta, which SHVDN
+        /// hands over as HandlingData -- and real consumption follows those two closely enough
+        /// to be worked out rather than looked up: a couple of litres to keep an engine
+        /// turning, about 1.8 more for every tonne it has to move, and about 0.05 for every
+        /// kilowatt that makes it quick. Calibrated so a Blista lands near the Compacts figure
+        /// and an Adder near the Super one -- and every DLC and add-on vehicle gets a figure of
+        /// its own without anybody typing it. models.json is for the exceptions, and wins.
+        ///
+        /// Said once per model in the log, with the numbers it came from, so "this car drinks
+        /// too much" can be answered with the figures rather than a feeling.
+        /// </summary>
+        private float ModelThirst(Vehicle v, float classRate)
+        {
+            var name = ModelName(v);
+            float own;
+            string from;
+
+            if (name.Length > 0 && _overrides.TryGetValue(name, out own))
+            {
+                from = "models.json";
+            }
+            else
+            {
+                // Aircraft, boats and rail carry mass and drive force too, and neither means
+                // what it means on a road. They keep the class figure unless models.json says.
+                var c = v.ClassType;
+                if (c == VehicleClass.Helicopters || c == VehicleClass.Planes || c == VehicleClass.Boats ||
+                    c == VehicleClass.Trains || c == VehicleClass.Cycles)
+                {
+                    return classRate;
+                }
+
+                if (!Derive(v, out own, out from)) return classRate;
+            }
+
+            var w = _cfg.PerModel;
+            if (w < 0f) w = 0f;
+            if (w > 1f) w = 1f;
+
+            var rate = classRate + (own - classRate) * w;
+
+            if (name.Length > 0 && _said.Add(name))
+            {
+                Log.Info(v.LocalizedName + " (" + name.ToLowerInvariant() + "): " + from + " -> " +
+                         own.ToString("0.0", CultureInfo.InvariantCulture) + " L/100km; class " +
+                         classRate.ToString("0.0", CultureInfo.InvariantCulture) + ", PerModel " +
+                         w.ToString("0.0", CultureInfo.InvariantCulture) + " -> " +
+                         rate.ToString("0.0", CultureInfo.InvariantCulture) + " L/100km.");
+            }
+
+            return rate;
+        }
+
+        private static string ModelName(Vehicle v)
+        {
+            try { return (v.DisplayName ?? "").Trim(); }
+            catch { return ""; }
+        }
+
+        /// <summary>A figure from the handling numbers, or false when the game did not give usable ones.</summary>
+        private static bool Derive(Vehicle v, out float rate, out string how)
+        {
+            rate = 0f;
+            how = "";
+
+            float mass, force;
+
+            try
+            {
+                var h = v.HandlingData;
+                if (h == null) return false;
+
+                mass = h.Mass;
+                force = h.InitialDriveForce;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (float.IsNaN(mass) || float.IsNaN(force)) return false;
+            if (mass < 50f || mass > 60000f || force <= 0.01f || force > 3f) return false;
+
+            var kw = Power(mass, force);
+
+            rate = 2.0f + 1.8f * (mass / 1000f) + 0.05f * kw;
+            how = mass.ToString("0", CultureInfo.InvariantCulture) + " kg, " +
+                  force.ToString("0.00", CultureInfo.InvariantCulture) + " g, ~" +
+                  kw.ToString("0", CultureInfo.InvariantCulture) + " kW";
+
+            return true;
+        }
+
+        /// <summary>
+        /// The engine's push at a hundred an hour, in kilowatts. fInitialDriveForce is an
+        /// acceleration in g, so the force is m·g·drive and the power is that times the speed.
+        /// </summary>
+        private static float Power(float mass, float force)
+        {
+            return mass * 9.81f * force * 27.8f / 1000f;
+        }
+
+        /// <summary>
+        /// Idle scaled by engine size, on the same numbers: a truck ticking over drinks more
+        /// than a Blista does. Eighty kilowatts is the one that idles at the ini's figure.
+        /// </summary>
+        private float IdleScale(Vehicle v)
+        {
+            if (_cfg.PerModel <= 0f) return 1f;
+
+            try
+            {
+                var h = v.HandlingData;
+                if (h == null) return 1f;
+
+                var kw = Power(h.Mass, h.InitialDriveForce);
+                if (float.IsNaN(kw) || kw <= 1f) return 1f;
+
+                var s = kw / 80f;
+                if (s < 0.5f) s = 0.5f;
+                if (s > 3f) s = 3f;
+
+                var w = _cfg.PerModel > 1f ? 1f : _cfg.PerModel;
+                return 1f + (s - 1f) * w;
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
         private static float Load(Vehicle v)
         {
             float rpm;

@@ -33,6 +33,22 @@ Unreleased
     thruster the engine flag never touched. Hover flight is taken away while
     the tank is dry and given back the moment it is not. Reported by AliG_15.
 
+  * EVERY VEHICLE HAS ITS OWN THIRST. Not a table of models: the game already
+    knows what each one weighs and how hard its engine pushes -- fMass and
+    fInitialDriveForce in handling.meta -- and consumption follows those two
+    closely enough to be worked out rather than looked up. A couple of litres to
+    keep an engine turning, about 1.8 more for every tonne it moves, about 0.05
+    for every kilowatt that makes it quick; calibrated so a Blista lands near the
+    Compacts figure and an Adder near the Super one, and every DLC and add-on
+    vehicle gets a figure of its own without anybody typing it. Idle scales with
+    engine size the same way. The log says what it worked out the first time you
+    drive a model, with the numbers it came from.
+
+    [Fuel] PerModel, on the FUEL page as PER-MODEL RATES: 1.0 is the vehicle's
+    own figure, 0 is the class table as before, in between blends. Bikes keep
+    their range rule. Fumes\models.json overrides any model by name, for the
+    exceptions. Asked for by Asaseh, Aquaphobic and GrandHaven.
+
 
 1.0.1
 =====

@@ -179,6 +179,8 @@
   "Follow Bare Minimum's row": "Podążaj za rzędem Bare Minimum",
   "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Rozmiar i miejsce jak szósty pasek tego rzędu. Wył., albo bez tego moda, zostaje tam, gdzie go ustawisz.",
   "My own side": "Moja własna strona",
-  "Keep X from this ini while following the row, to stand it on the other side.": "Zachowaj X z tego ini mimo podążania za rzędem, by postawić go po drugiej stronie."
+  "Keep X from this ini while following the row, to stand it on the other side.": "Zachowaj X z tego ini mimo podążania za rzędem, by postawić go po drugiej stronie.",
+  "Per-model rates": "Zużycie według modelu",
+  "1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone.": "1.0 to własna wartość każdego pojazdu z jego masy i mocy; 0 to sama tabela klas."
  }
 }

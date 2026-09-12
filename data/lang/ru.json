@@ -188,6 +188,8 @@
   "Follow Bare Minimum's row": "Следовать за рядом Bare Minimum",
   "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Размер и место — как у шестой полоски того ряда. Выкл., или без того мода, — там, куда поставишь сам.",
   "My own side": "Своя сторона",
-  "Keep X from this ini while following the row, to stand it on the other side.": "Брать X из этого ini даже следуя за рядом, чтобы поставить шкалу с другой стороны."
+  "Keep X from this ini while following the row, to stand it on the other side.": "Брать X из этого ini даже следуя за рядом, чтобы поставить шкалу с другой стороны.",
+  "Per-model rates": "Расход по модели",
+  "1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone.": "1.0 — собственный расход каждой машины по её массе и мощности; 0 — только таблица по классам."
  }
 }

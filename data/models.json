@@ -1,0 +1,5 @@
+{
+ "note": "Litres per 100 km by model, overriding the figure the mod works out from the vehicle's weight and power. Model names as the game spells them -- adder, blista, sultan -- and case does not matter. Applied before ConsumptionMultiplier, and only while [Fuel] PerModel is above 0. Example: \"adder\": 16.0. Delete an entry to go back to the worked-out figure; the log says what that is the first time you drive the model.",
+ "models": {
+ }
+}

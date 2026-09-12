@@ -166,4 +166,6 @@ T = {
 "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "大小和位置与那一排的第六条一致。关闭时，或没有该模组时，放在你自己设定的位置。",
 "My own side": "我自己的一侧",
 "Keep X from this ini while following the row, to stand it on the other side.": "跟随那一排时仍使用本 ini 的 X，以便放在另一侧。",
+"Per-model rates": "按车型油耗",
+"1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone.": "1.0 为每辆车根据自身重量和功率得出的油耗；0 为仅使用车辆类别表。",
 }

@@ -165,4 +165,6 @@ T = {
 "Sized and placed as that row's sixth bar. Off, or without that mod, it is where you put it.": "Größe und Platz wie der sechste Balken dieser Reihe. Aus, oder ohne diese Mod, bleibt sie, wo du sie hinsetzt.",
 "My own side": "Meine eigene Seite",
 "Keep X from this ini while following the row, to stand it on the other side.": "Das X aus dieser ini behalten, auch wenn der Reihe gefolgt wird, um sie auf die andere Seite zu stellen.",
+"Per-model rates": "Verbrauch je Modell",
+"1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone.": "1.0 ist der eigene Wert jedes Fahrzeugs aus Gewicht und Leistung; 0 ist allein die Klassentabelle.",
 }

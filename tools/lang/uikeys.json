@@ -37,6 +37,8 @@
  "Help box top left, or the button bar.": "hint",
  "Consumption": "label",
  "1.0 is about half an hour of driving to a tank.": "hint",
+ "Per-model rates": "label",
+ "1.0 is each vehicle's own figure from its weight and power; 0 is the class table alone.": "hint",
  "Idling, litres an hour": "label",
  "What it burns going nowhere.": "hint",
  "Reserve mark": "label",

@@ -196,6 +196,12 @@ namespace Fumes.Core
         /// </summary>
         public float ConsumptionMultiplier = 1.0f;
 
+        /// <summary>
+        /// How much of each vehicle's own figure -- from its weight and power -- goes into its
+        /// thirst. 1 is the vehicle's own; 0 is the class table alone. See Consumption.ModelThirst.
+        /// </summary>
+        public float PerModel = 1.0f;
+
         /// <summary>Litres burnt per hour sitting still with the engine running, before the multiplier.</summary>
         public float IdleLitresPerHour = 1.4f;
 
@@ -1508,6 +1514,7 @@ namespace Fumes.Core
                 s.Language = ParseEnum(ini.GetString("General", "Language", "English"), s.Language);
 
                 s.ConsumptionMultiplier = ini.GetFloat("Fuel", "ConsumptionMultiplier", s.ConsumptionMultiplier, 0.05f, 20f);
+                s.PerModel = ini.GetFloat("Fuel", "PerModel", s.PerModel, 0f, 1f);
                 s.BikeTankLitres = ini.GetFloat("Fuel", "BikeTankLitres", s.BikeTankLitres, 0f, 200f);
                 s.BikeRangeKm = ini.GetFloat("Fuel", "BikeRangeKm", s.BikeRangeKm, 0f, 5000f);
                 s.IdleLitresPerHour = ini.GetFloat("Fuel", "IdleLitresPerHour", s.IdleLitresPerHour, 0f, 60f);
