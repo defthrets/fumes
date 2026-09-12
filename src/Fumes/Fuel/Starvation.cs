@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Fumes.Core;
 
@@ -18,17 +19,17 @@ namespace Fumes.Fuel
         private readonly Settings _cfg;
         private readonly Random _rng = new Random();
 
+        /// <summary>The game's own exhaust backfire: "core" carries it, and every install has "core".</summary>
+        private const string PtfxAsset = "core";
+        private const string Backfire = "veh_backfire";
+
+        private static readonly string[] ExhaustBones = { "exhaust", "exhaust_2", "exhaust_3", "exhaust_4" };
+
         /// <summary>Which vehicle these timers belong to, so a new car starts clean.</summary>
         private int _handle;
 
-        /// <summary>While the game time is under this, the engine is deliberately dead.</summary>
-        private int _coughUntil;
-
         /// <summary>When the next cough is due.</summary>
         private int _nextCough;
-
-        /// <summary>Whether the engine being off right now is our doing. See Cough.</summary>
-        private bool _cutByUs;
 
         /// <summary>Whether the reserve warning has already been given for this tankful.</summary>
         private bool _warned;
@@ -82,16 +83,14 @@ namespace Fumes.Fuel
                                  SputterAt(tank).ToString("0.00", CultureInfo.InvariantCulture) + " L.");
                     }
 
-                    Cough(v);
+                    Sparks(v);
                     return;
                 }
 
                 // Back above the sputter line: everything resets, including the warnings, so
                 // a tank filled and run down again warns again.
-                _coughUntil = 0;
                 _nextCough = 0;
                 _coughLogged = false;
-                _cutByUs = false;
                 _toldEmpty = false;
 
                 if (tank.Fraction > _cfg.ReserveFraction) { _warned = false; return; }
@@ -148,50 +147,68 @@ namespace Fumes.Fuel
             Unground();
 
             _handle = v.Handle;
-            _coughUntil = _nextCough = 0;
-            _warned = _toldEmpty = _cutByUs = _coughLogged = false;
+            _nextCough = 0;
+            _warned = _toldEmpty = _coughLogged = false;
             Stalled = false;
         }
 
         /// <summary>
-        /// The last half-litre: an engine that keeps cutting out and coming back.
+        /// The last half-litre: the exhaust backfires, and the engine is not touched.
         ///
-        /// BOTH EDGES INSTANT. This used to cut with instantly=false, for the engine dying
-        /// down through its own audio, and bring it back with instantly=false too -- and that
-        /// second one is a START, not a resume: the game runs its starter, and a car on the
-        /// starter lurches and rolls backwards for a moment before it catches. Reported as
-        /// jerking and driving backwards at low fuel. Off is off and on is on now; what is
-        /// left is a car that loses power for half a second and gets it back, which is what a
-        /// splutter is.
+        /// IT USED TO CUT THE ENGINE AND BRING IT BACK, for the feel of one catching and
+        /// dropping -- and every version of that, gentle or instant, locked the rear wheels
+        /// and threw the car into reverse for a moment, because SET_VEHICLE_ENGINE_ON on a
+        /// moving car is a gearbox event before it is an audio one. So the driving is left
+        /// alone entirely: sparks out of the exhaust every second or two say the tank is on
+        /// its last litre, and the only thing that ever stops the car is Dry, when it is empty.
         /// </summary>
-        private void Cough(Vehicle v)
+        private void Sparks(Vehicle v)
         {
             var now = Game.GameTime;
-
-            if (now < _coughUntil)
-            {
-                Engine(v, false, true);
-                return;
-            }
-
-            if (_cutByUs)
-            {
-                // We put it out, so we put it back -- and ONLY then. The earlier version of
-                // this restarted any engine that was off between coughs, which meant a car
-                // parked at the kerb on its last half-litre started itself, ran the tank out
-                // and would not stay switched off. Never start an engine you did not stop.
-                _cutByUs = false;
-                Engine(v, true, true);
-                return;
-            }
-
             if (now < _nextCough) return;
+
+            _nextCough = now + 900 + _rng.Next(2200);
+
             if (!v.IsEngineRunning) return;
 
-            _coughUntil = now + 260 + _rng.Next(320);
-            _nextCough = _coughUntil + 700 + _rng.Next(1800);
-            _cutByUs = true;
-            Engine(v, false, true);
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PtfxAsset))
+                {
+                    Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PtfxAsset);
+                    return;
+                }
+
+                var popped = 0;
+
+                foreach (var bone in ExhaustBones)
+                {
+                    var index = Function.Call<int>(Hash.GET_ENTITY_BONE_INDEX_BY_NAME, v.Handle, bone);
+                    if (index < 0) continue;
+
+                    var world = Function.Call<Vector3>(Hash.GET_WORLD_POSITION_OF_ENTITY_BONE, v.Handle, index);
+                    var off = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS, v.Handle,
+                                                     world.X, world.Y, world.Z);
+
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, Backfire, v.Handle,
+                                  off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
+
+                    if (++popped >= 2) break;
+                }
+
+                if (popped == 0)
+                {
+                    // No exhaust bone -- some add-ons -- so out of the back, low down.
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+                    Function.Call(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, Backfire, v.Handle,
+                                  0f, -2.2f, 0.2f, 0f, 0f, 0f, 1f, false, false, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("sparks-fail", "Could not backfire: " + ex.Message);
+            }
         }
 
         /// <summary>

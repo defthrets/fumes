@@ -4,12 +4,13 @@ FUMES -- changes
 Unreleased
 ==========
 
-  * FIXED: JERKING AND ROLLING BACKWARDS ON LOW FUEL. The splutter in the last
-    half-litre cut the engine gently and brought it back gently -- and "gently
-    back" is the game's starter, which lurches the car and rolls it backwards
-    for a moment before the engine catches. The same thing 1.0.2 took out of the
-    empty tank, one stage earlier. Both edges are instant now: the engine cuts
-    out and comes back, and that is all it does.
+  * THE LOW-FUEL SPLUTTER NO LONGER TOUCHES THE ENGINE. It cut the engine and
+    brought it back, for the feel of one catching and dropping, and every
+    version of that -- gentle or instant -- locked the rear wheels and threw the
+    car into reverse for a moment, because switching a moving car's engine is a
+    gearbox event before it is an audio one. The driving is left alone entirely
+    now: on the last litre the exhaust backfires every second or two, and the
+    only thing that ever stops the car is an empty tank.
 
 
 1.0.2
