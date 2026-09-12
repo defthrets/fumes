@@ -1010,7 +1010,16 @@ namespace Fumes.Core
         /// little of it that shows through the drawn hose reads as shadow rather than as beige
         /// rope. 1 is the tan mooring rope, which is what Rope and Auto modes look like.
         /// </summary>
-        public int HoseRopeType = 4;
+        /// <summary>
+        /// Which of GTA's nine ropes does the physics. 5 is the thin dark wire.
+        ///
+        /// IT HAS TO BE THE THIN ONE, because Painted mode draws our black hose along the
+        /// rope's vertices and the rope itself still draws its own texture underneath -- a
+        /// rope cannot be tinted or hidden. At 4 that texture is a fat braided hawser lying
+        /// beside our ribbon, which reads as two hoses. At 5 it is a wire thin enough to
+        /// disappear under it.
+        /// </summary>
+        public int HoseRopeType = 5;
 
         /// <summary>
         /// The in-game rope picker: NumPad * to cycle, NumPad 0 to keep.
