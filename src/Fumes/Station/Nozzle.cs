@@ -240,12 +240,17 @@ namespace Fumes.Station
             {
                 if (!Out) return Vector3.Zero;
 
-                var back = _cfg.HoseEndAuto ? BackOfNozzle() : Vector3.Zero;
-                var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ) + back;
-
+                // THE GEOMETRY ONLY, NOT THE HOSE'S NUDGE. This used to mirror the whole hose
+                // joint, HoseEndX/Y/Z included -- so moving where the hose meets the handle
+                // dragged the fuel stream with it, and a spray that had been placed by eye
+                // was somewhere else the moment the joint was placed by eye. They are two
+                // ends of the same model and neither should move the other. Mirrored from
+                // the measured end alone; SprayX/Y/Z is the only thing that places the
+                // stream, and it is the editor that sets them.
+                //
                 // A fraction past the end, so what comes out leaves the model rather than
                 // starting inside it.
-                return -local * 1.15f;
+                return -BackOfNozzle() * 1.15f;
             }
             catch
             {

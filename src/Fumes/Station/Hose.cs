@@ -220,7 +220,17 @@ namespace Fumes.Station
             try
             {
                 var span = from.DistanceTo(to);
-                var initial = Clamp(span * Sag, 1.5f, _cfg.HoseMaxMetres);
+
+                // BORN AT FULL LENGTH, WHATEVER THE SPAN IS. This was span * Sag, which is
+                // about a metre and a half at the moment the nozzle leaves the pump -- and
+                // a rope's SEGMENT COUNT is fixed when it is created, from the length it is
+                // created at. A metre and a half of rope is a handful of vertices, and Pin
+                // then stretches those same few vertices out to nine metres as you walk: long
+                // straight runs with a corner at each joint, which is exactly the "stiff and
+                // jagged" of it. Created at the full reach it gets the full count, and Pin
+                // shortening it afterwards keeps every one of them -- so the same hose has
+                // several times the joints to bend at, at every length.
+                var initial = _cfg.HoseMaxMetres;
 
                 // ADD_ROPE(x, y, z, rotX, rotY, rotZ, maxLength, ropeType, initLength,
                 //          minLength, windingSpeed, p11, p12, rigid, p14, breakWhenShot, unkPtr)
@@ -244,7 +254,7 @@ namespace Fumes.Station
                     1f,
                     false, false,
                     false,
-                    1f,
+                    _cfg.HoseFlex,
                     false,
                     0);
 
@@ -264,7 +274,11 @@ namespace Fumes.Station
                                       Blue + " with sheen " + Sheen +
                                       ", ribbon " + Thickness.ToString("0.000") + "m.");
 
-                Log.Debug("Hose out: rope " + handle + ", " + _rope.VertexCount + " vertices.");
+                // AT INFO, because the vertex count is the whole of how a rope moves and it
+                // is the one number that explains a stiff one. Once per hose.
+                Log.Once("hose-verts-" + RopeType,
+                         "Hose out: rope type " + RopeType + ", " + _rope.VertexCount +
+                         " vertices over " + initial.ToString("0.0") + "m.");
                 return true;
             }
             catch (Exception ex)

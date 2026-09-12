@@ -374,7 +374,7 @@ namespace Fumes.Core
         /// </summary>
         public float NozzleSprayX;
         public float NozzleSprayY = 0.36f;
-        public float NozzleSprayZ = -0.09f;
+        public float NozzleSprayZ = -0.13f;
 
         /// <summary>
         /// Which way the stream points, in degrees, in the nozzle's own space.
@@ -390,6 +390,15 @@ namespace Fumes.Core
         /// <summary>Move the stream with the arrows while it pours. See Refuel.SprayEditor.</summary>
         public bool NozzleSprayEdit;
         public float NozzleSprayStep = 0.01f;
+
+        /// <summary>
+        /// How fast the rope's own simulation runs. 1 is the game's own pace.
+        ///
+        /// ADD_ROPE's time multiplier. Higher makes it livelier -- it swings further off a
+        /// step and settles sooner -- which is what a light rubber hose does and what a
+        /// mooring rope does not.
+        /// </summary>
+        public float HoseFlex = 1.8f;
 
         /// <summary>Move the hose's joint on the nozzle with the arrows. See Refuel.HoseEndEditor.</summary>
         public bool HoseEndEdit;
@@ -1030,12 +1039,13 @@ namespace Fumes.Core
         /// <summary>
         /// Which of GTA's eight ropes the hose is. Chosen with the in-game picker.
         ///
-        /// 4 IS THE ONE, picked by cycling them at a pump rather than argued about. The mode
-        /// below is Rope, so this texture IS the hose -- nothing is drawn over it. The rope
-        /// cannot be tinted, so its look is entirely this number; the physics is the same
-        /// solver whichever it is.
+        /// 5 IS THE ONE: the thin dark wire, which reads as a power line and is the closest
+        /// the game has to a fuel hose. Picked by cycling them at a pump rather than argued
+        /// about. The mode below is Rope, so this texture IS the hose -- nothing is drawn
+        /// over it. A rope cannot be tinted, so its look is entirely this number; the physics
+        /// is the same solver whichever it is.
         /// </summary>
-        public int HoseRopeType = 4;
+        public int HoseRopeType = 5;
 
         /// <summary>
         /// The in-game rope picker: NumPad * to cycle, NumPad 0 to keep.
@@ -1133,9 +1143,9 @@ namespace Fumes.Core
         ///
         /// Negative Y is behind it. Dial it in with the tuner like the rest of the placement.
         /// </summary>
-        public float HoseEndX = 0.050f;
+        public float HoseEndX = 0f;
         public float HoseEndY = 0f;
-        public float HoseEndZ = 0.180f;
+        public float HoseEndZ = 0.080f;
 
         /// <summary>
         /// How far STRAIGHT UP IN THE WORLD the hose joins, in metres.
@@ -1667,6 +1677,7 @@ namespace Fumes.Core
                 s.NozzleSprayPitch = ini.GetFloat("Nozzle", "SprayPitch", s.NozzleSprayPitch, -180f, 180f);
                 s.NozzleSprayYaw = ini.GetFloat("Nozzle", "SprayYaw", s.NozzleSprayYaw, -180f, 180f);
                 s.NozzleSprayRoll = ini.GetFloat("Nozzle", "SprayRoll", s.NozzleSprayRoll, -180f, 180f);
+                s.HoseFlex = ini.GetFloat("Nozzle", "HoseFlex", s.HoseFlex, 0.2f, 5f);
                 s.HoseEndEdit = ini.GetBool("Nozzle", "HoseEndEdit", s.HoseEndEdit);
                 s.HoseEndStep = ini.GetFloat("Nozzle", "HoseEndStep", s.HoseEndStep, 0.001f, 0.2f);
                 s.NozzleSprayEdit = ini.GetBool("Nozzle", "SprayEdit", s.NozzleSprayEdit);
