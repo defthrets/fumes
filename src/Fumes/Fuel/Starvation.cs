@@ -154,11 +154,15 @@ namespace Fumes.Fuel
         }
 
         /// <summary>
-        /// The last half-litre: an engine that keeps catching and dropping.
+        /// The last half-litre: an engine that keeps cutting out and coming back.
         ///
-        /// The cut is NOT instant. SET_VEHICLE_ENGINE_ON with instantly=false lets the engine
-        /// die down through its own audio, which is the whole effect -- instant off is a car
-        /// that switches off, and this is a car that is running out.
+        /// BOTH EDGES INSTANT. This used to cut with instantly=false, for the engine dying
+        /// down through its own audio, and bring it back with instantly=false too -- and that
+        /// second one is a START, not a resume: the game runs its starter, and a car on the
+        /// starter lurches and rolls backwards for a moment before it catches. Reported as
+        /// jerking and driving backwards at low fuel. Off is off and on is on now; what is
+        /// left is a car that loses power for half a second and gets it back, which is what a
+        /// splutter is.
         /// </summary>
         private void Cough(Vehicle v)
         {
@@ -166,7 +170,7 @@ namespace Fumes.Fuel
 
             if (now < _coughUntil)
             {
-                Engine(v, false, false);
+                Engine(v, false, true);
                 return;
             }
 
@@ -177,7 +181,7 @@ namespace Fumes.Fuel
                 // parked at the kerb on its last half-litre started itself, ran the tank out
                 // and would not stay switched off. Never start an engine you did not stop.
                 _cutByUs = false;
-                Engine(v, true, false);
+                Engine(v, true, true);
                 return;
             }
 
@@ -187,7 +191,7 @@ namespace Fumes.Fuel
             _coughUntil = now + 260 + _rng.Next(320);
             _nextCough = _coughUntil + 700 + _rng.Next(1800);
             _cutByUs = true;
-            Engine(v, false, false);
+            Engine(v, false, true);
         }
 
         /// <summary>

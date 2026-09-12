@@ -1,6 +1,17 @@
 FUMES -- changes
 
 
+Unreleased
+==========
+
+  * FIXED: JERKING AND ROLLING BACKWARDS ON LOW FUEL. The splutter in the last
+    half-litre cut the engine gently and brought it back gently -- and "gently
+    back" is the game's starter, which lurches the car and rolls it backwards
+    for a moment before the engine catches. The same thing 1.0.2 took out of the
+    empty tank, one stage earlier. Both edges are instant now: the engine cuts
+    out and comes back, and that is all it does.
+
+
 1.0.2
 =====
 
