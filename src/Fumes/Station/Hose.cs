@@ -47,8 +47,17 @@ namespace Fumes.Station
         /// <summary>Lengthways bands the hose is shaded in. See Stroke.</summary>
         private const int Bands = 5;
 
-        /// <summary>Most segments the hose is drawn in, however many vertices the rope has.</summary>
-        private const int MaxSegments = 14;
+        /// <summary>
+        /// Most segments the hose is drawn in, however many points it is handed.
+        ///
+        /// A SETTING NOW, AND IT WAS FOURTEEN. The note below said a dozen is smooth over
+        /// three or four metres and nobody can tell -- true, and this hose runs to nine, where
+        /// fourteen is a segment every sixty-five centimetres and every one of them is
+        /// straight. That is the jaggedness. The band shading multiplies the cost by five, so
+        /// it is not free, but DRAW_POLY does not come out of the rectangle budget that the
+        /// HUD is fighting over.
+        /// </summary>
+        private int MaxSegments => _cfg.HoseSegments;
 
         /// <summary>
         /// Whether this is the siphon line rather than the pump hose.
@@ -375,7 +384,9 @@ namespace Fumes.Station
 
         private void DrawCatenary(Vector3 from, Vector3 to)
         {
-            const int segments = 16;
+            // Sampled at least as finely as it will be drawn, or the stride below has nothing
+            // to choose from and the extra segments buy nothing.
+            var segments = _cfg.HoseSegments + 4;
 
             try
             {

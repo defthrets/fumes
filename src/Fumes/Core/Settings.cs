@@ -400,6 +400,16 @@ namespace Fumes.Core
         /// </summary>
         public float HoseFlex = 1.8f;
 
+        /// <summary>
+        /// How many straight segments the drawn hose is made of. See Hose.MaxSegments.
+        ///
+        /// Fourteen for a long time, which over nine metres of hose is a corner every
+        /// sixty-five centimetres -- a hose you can count the sides of. The shading costs
+        /// five polygons a segment, so this is not free; it does not touch the rectangle
+        /// budget the HUD is fighting over.
+        /// </summary>
+        public int HoseSegments = 36;
+
         /// <summary>Move the hose's joint on the nozzle with the arrows. See Refuel.HoseEndEditor.</summary>
         public bool HoseEndEdit;
         public float HoseEndStep = 0.01f;
@@ -1014,13 +1024,17 @@ namespace Fumes.Core
         public Keys InteractKey = Keys.E;
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
         /// <summary>
-        /// A REAL ROPE, wearing its own texture. Painted is the only route to a BLACK hose --
-        /// it draws a flat camera-facing strip along the rope's vertices, because a rope's
-        /// colour is baked in and cannot be tinted -- but that strip is a band running through
-        /// the hose when you look along it, and a thick rope with the right texture reads
-        /// better than a thin one with a stripe painted on. See HoseRopeType.
+        /// THE DRAWN HOSE, which is what 1.0.2 shipped and what this went back to.
+        ///
+        /// No rope behind it: a hanging curve worked out here and drawn as geometry, black,
+        /// the right thickness at every distance, and it cannot fail. The rope modes were
+        /// tried against it -- Rope wears one of eight textures that cannot be tinted, and
+        /// Painted gets black by drawing a flat strip along a rope's vertices, which reads as
+        /// a band running through the hose when you look along it. What a rope buys is that it
+        /// drapes over what is in the way and swings when the car moves; between a bowser and
+        /// a filler cap there is nothing in the way.
         /// </summary>
-        public HoseMode Hose = HoseMode.Rope;
+        public HoseMode Hose = HoseMode.Line;
 
         /// <summary>How far the nozzle reaches from its pump before it is pulled out of your hand.</summary>
         public float HoseMaxMetres = 9.0f;
@@ -1678,6 +1692,7 @@ namespace Fumes.Core
                 s.NozzleSprayYaw = ini.GetFloat("Nozzle", "SprayYaw", s.NozzleSprayYaw, -180f, 180f);
                 s.NozzleSprayRoll = ini.GetFloat("Nozzle", "SprayRoll", s.NozzleSprayRoll, -180f, 180f);
                 s.HoseFlex = ini.GetFloat("Nozzle", "HoseFlex", s.HoseFlex, 0.2f, 5f);
+                s.HoseSegments = ini.GetInt("Nozzle", "HoseSegments", s.HoseSegments, 6, 80);
                 s.HoseEndEdit = ini.GetBool("Nozzle", "HoseEndEdit", s.HoseEndEdit);
                 s.HoseEndStep = ini.GetFloat("Nozzle", "HoseEndStep", s.HoseEndStep, 0.001f, 0.2f);
                 s.NozzleSprayEdit = ini.GetBool("Nozzle", "SprayEdit", s.NozzleSprayEdit);

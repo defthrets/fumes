@@ -75,50 +75,25 @@ Unreleased
     that knows where the nozzle ENDS and not where its hole is, so it lands near
     enough and not right.
 
-  * THE HOSE IS A REAL ROPE AGAIN, with more slack in it. Painted is the mode:
-    a physics rope does the shape, the swing and the drape, and the black is
-    drawn on along the rope's own vertices, because GTA cannot tint a rope --
-    the colour is baked into its texture. Line, which the build had drifted
-    onto, is a computed curve with no rope behind it at all: it cannot fail and
-    it cannot swing either. Sag 1.22 to 1.45.
+  * THE DRAWN HOSE IS SMOOTH. It is made of straight segments and there were
+    fourteen of them, which over nine metres of hose is a corner every
+    sixty-five centimetres -- a hose you can count the sides of. Thirty-six now,
+    and it is [Nozzle] HoseSegments rather than a constant. The shading costs
+    five polygons a segment so it is not free, and none of it touches the
+    rectangle budget the HUD fights over.
 
-    AND IT ENDED UP ON ROPE, NOT PAINTED. Painted is the only route to a BLACK
-    hose -- it draws a flat camera-facing strip along the rope's vertices,
-    because a rope's colour is baked into its texture and cannot be tinted --
-    but looked along, that strip is a band running through the hose. A real rope
-    with the right texture reads better than a thin one with a stripe painted
-    on. Type 4, chosen with the in-game picker at a pump rather than argued
-    about: NumPad * cycles all eight, NumPad 0 keeps one. The physics is the
-    same solver whichever it is; the type is only the look.
+    The real physics ropes were tried against it and the drawn one won. A rope
+    wears one of eight authored textures and none can be tinted; Painted gets
+    black by drawing a flat strip along a rope's vertices, and looked along, that
+    strip is a band running through the hose. What a rope buys is draping over
+    what is in the way and swinging when the car moves -- and between a bowser
+    and a filler cap there is nothing in the way. Rope, Painted and the in-game
+    picker are all still there for anybody who wants them; HoseFlex and the
+    segment count went in while they were being tried and they make the ropes
+    better too.
 
-    AND IT IS NOT STIFF ANY MORE. A rope's SEGMENT COUNT is fixed when it is
-    created, from the length it is created at -- and this one was created at the
-    span between the pump and a nozzle still hanging on it, about a metre and a
-    half. A handful of vertices, which Pin then stretched out to nine metres as
-    you walked: long straight runs with a corner at each joint, which is the
-    whole of "stiff and jagged". Created at the full reach now, so it gets the
-    full count and keeps every one at every length. HoseFlex runs the rope's own
-    clock faster on top, for something that swings off a step like a light hose
-    rather than settling like a mooring line. Type 5, the power line, which is
-    the closest the game has to a fuel hose.
+    More slack in it either way: sag 1.22 to 1.45.
 
-  * THE HOSE LEAVES THE NOZZLE SIDEWAYS. The joint was worked out by taking the
-    model's longest axis and going to one end of it, which is underneath the
-    handle -- so the hose dropped vertically out of the bottom of his fist. A
-    real one leaves the side and carries its weight out sideways. [Nozzle]
-    HoseEndEdit places it by eye, the same way the spray is placed: take the
-    nozzle, arrows move it, ENTER saves and locks.
-
-    AND MOVING IT NO LONGER MOVES THE FUEL. The spout the stream leaves was
-    mirrored from the whole hose joint, the by-eye nudge included, so placing
-    one end of the nozzle moved the other -- a spray just positioned was
-    somewhere else the moment the joint was. It mirrors the measured end alone
-    now, and the spray's own numbers are shifted by the same amount, so it is
-    exactly where it was left.
-
-    The mode is on the HOSE page of the menu now, beside Sag, rather than being
-    an ini line nobody would find. The C# default said Line while the ini's own
-    comment said Painted was the default; they agree now.
 
   * THE STREAM OUT OF THE NOZZLE POINTS DOWN. The effect emits along its own
     forward, so at no rotation it squirted out level, like a hose held straight.
@@ -186,7 +161,7 @@ Unreleased
     A waypoint YOU have already set is never taken away -- you were going
     somewhere. [Fuel] RouteOnReserve.
 
-  * 245 settings in the ini.
+  * 246 settings in the ini.
 
 
 1.0.2
