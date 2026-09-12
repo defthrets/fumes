@@ -183,4 +183,9 @@ T = {
 "What the last litre looks like. None of these touches the engine or the brakes.": "最后一升油时的表现。都不会影响发动机或刹车。",
 "BACKFIRE": "排气回火", "SMOKE": "烟雾",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "发动机在 100 公里/小时下每千瓦推力增加的每 100 公里升数。",
+"Fuel out of the nozzle": "从油枪放油",
+"Hold fire with the nozzle in hand and it pours on the ground. You pay for it.": "手持油枪按住开火键，油会流到地上。费用照付。",
+"Spray litres a second": "每秒放油升数",
+"How fast it comes out when you hold fire.": "按住开火键时的出油速度。",
+"Fuel on the ground   ": "地上的油   ",
 }

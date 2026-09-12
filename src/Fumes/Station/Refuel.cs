@@ -212,7 +212,7 @@ namespace Fumes.Station
             switch (_stage)
             {
                 case Stage.Idle: AtRest(me); break;
-                case Stage.Carrying: Carrying(me); break;
+                case Stage.Carrying: Carrying(me, dt); break;
                 case Stage.Filling: Filling(me, dt); break;
                 case Stage.Pouring: Pouring(me, dt); break;
                 case Stage.FillingCan: FillingCan(me, dt); break;
@@ -718,9 +718,7 @@ namespace Fumes.Station
             if (_droppedCan == null) return;
             if (!now && Game.GameTime < _tidyCanAt) return;
 
-            try { if (_droppedCan.Exists()) _droppedCan.Delete(); }
-            catch { /* it will go with the session */ }
-
+            SafeDelete(_droppedCan, "put-down can");
             _droppedCan = null;
         }
 
@@ -1147,14 +1145,10 @@ namespace Fumes.Station
 
             try
             {
-                if (_canOnGround != null && _canOnGround.Exists())
-                {
-                    // Detached first. Deleting an attached entity works, but leaving the
-                    // detach to the delete is the kind of thing that is fine until the delete
-                    // is the call that fails.
-                    if (_canOnGround.IsAttached()) _canOnGround.Detach();
-                    _canOnGround.Delete();
-                }
+                // Detached first, inside SafeDelete: deleting an attached entity works, but
+                // leaving the detach to the delete is the kind of thing that is fine until
+                // the delete is the call that fails.
+                SafeDelete(_canOnGround, "siphon can");
             }
             catch (Exception ex)
             {
@@ -2349,7 +2343,7 @@ namespace Fumes.Station
         // Carrying: nozzle in hand, hose out
         // ==================================================================
 
-        private void Carrying(Ped me)
+        private void Carrying(Ped me, float dt)
         {
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
@@ -2357,10 +2351,14 @@ namespace Fumes.Station
             RopePicker();
             LockHands();
 
+            // The trigger, before anything that might return: hold it and fuel comes out of
+            // the nozzle onto the ground. See Spray.
+            var spraying = Spray(me, dt);
+
             var anchor = Anchor();
             _hose.Update(anchor, _nozzle.HoseEnd());
 
-            if (_hazard.Update(_pump.Position, false)) { Abandon("the pump went up"); return; }
+            if (_hazard.Update(_pump.Position, spraying)) { Abandon("the pump went up"); return; }
 
             if (Leash(me, anchor)) return;
 
@@ -2891,10 +2889,279 @@ namespace Fumes.Station
 
             if (!now && Game.GameTime < _tidyDroppedAt) return;
 
-            try { if (_dropped.Exists()) _dropped.Delete(); }
-            catch { /* it will go with the session */ }
-
+            SafeDelete(_dropped, "dropped nozzle");
             _dropped = null;
+        }
+
+        // ==================================================================
+        // Fuel out of the nozzle
+        // ==================================================================
+
+        /// <summary>How much has gone on the tarmac this time out, and the pool it has made.</summary>
+        private float _sprayed;
+        private float _sprayWidth;
+        private int _sprayDecals;
+        private int _sprayNextAt;
+        private Vector3 _sprayAt;
+
+        /// <summary>The looped stream at the spout, and the rung of SprayLadder it came from.</summary>
+        private int _stream;
+        private static int _streamRung = -1;
+
+        private const string PtfxAsset = "core";
+
+        /// <summary>
+        /// Names tried in order for the stream out of the spout, the first the game accepts
+        /// kept. There is no list of particle names on disk to check against and the game
+        /// refuses a wrong one in silence, so the log says which rung it took.
+        /// </summary>
+        private static readonly string[] SprayLadder =
+        {
+            "ent_ray_meth_leaky_pipe", "ent_sht_petrol", "ent_sht_water", "weap_extinguisher"
+        };
+
+        /// <summary>
+        /// Hold the fire button with the nozzle in hand and fuel comes out of it.
+        ///
+        /// THE SEAM THE POSE WAS CHOSEN FOR. The carrying pose is an invisible fire
+        /// extinguisher rather than a jerry can precisely because an extinguisher is a weapon
+        /// that SPRAYS -- it carries a trigger -- and that was always the route to fuel
+        /// leaving the nozzle under the player's control. Everything up to here has disabled
+        /// the trigger and nothing has read it.
+        ///
+        /// READ THROUGH THE DISABLED CONTROL. LockHands turns Attack off every frame, which is
+        /// what stops the extinguisher itself spraying white foam; IS_DISABLED_CONTROL_PRESSED
+        /// is how a control that has been turned off can still be asked whether it is held.
+        ///
+        /// It is the station's fuel, so it is charged for at the pump's price like any other
+        /// litre, it feeds the forecourt hazard the same way a fill does, and it leaves the
+        /// game's own petrol decals -- the same ones a jerry can leaves. Returns true while
+        /// fuel is actually coming out.
+        /// </summary>
+        private bool Spray(Ped me, float dt)
+        {
+            var held = false;
+
+            if (_cfg.NozzleSpray && dt > 0f)
+            {
+                try
+                {
+                    held = Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.Attack)
+                           || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.Attack2);
+                }
+                catch
+                {
+                    held = false;
+                }
+            }
+
+            if (!held)
+            {
+                if (_sprayed > 0.05f)
+                {
+                    Log.Info("Sprayed " + _sprayed.ToString("0.0", CultureInfo.InvariantCulture) +
+                             " L out of the nozzle over " + _sprayDecals + " decal(s).");
+                }
+
+                StopStream();
+                _sprayed = 0f;
+                _sprayWidth = 0f;
+                _sprayDecals = 0;
+                _sprayAt = Vector3.Zero;
+                return false;
+            }
+
+            var wanted = _cfg.NozzleSprayLitresPerSecond * dt;
+
+            _sprayed += wanted;
+            _dispensed += wanted;
+
+            if (_cfg.ChargeMoney && _price > 0f)
+            {
+                _owed += wanted * _price;
+                Settle();
+            }
+
+            Stream(me);
+            Puddle(me, _nozzle.Spout());
+
+            Prompt(Control.Context, "Fuel on the ground   " +
+                                    _sprayed.ToString("0.0", CultureInfo.InvariantCulture) + " L");
+
+            return true;
+        }
+
+        /// <summary>The stream itself, looped at the spout and moved with it every frame.</summary>
+        private void Stream(Ped me)
+        {
+            try
+            {
+                if (_stream != 0 && Function.Call<bool>(Hash.DOES_PARTICLE_FX_LOOPED_EXIST, _stream)) return;
+
+                _stream = 0;
+
+                if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PtfxAsset))
+                {
+                    Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PtfxAsset);
+                    return;
+                }
+
+                var prop = _nozzle.Prop;
+                if (prop == null || !prop.Exists()) return;
+
+                var first = _streamRung >= 0 ? _streamRung : 0;
+                var last = _streamRung >= 0 ? _streamRung : SprayLadder.Length - 1;
+
+                for (var i = first; i <= last; i++)
+                {
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+
+                    // ON THE NOZZLE, in the nozzle's own space, so it follows the thing in his
+                    // hand rather than being restarted at a world position every frame.
+                    var handle = Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY,
+                                                    SprayLadder[i], prop.Handle,
+                                                    0f, 0f, 0f, 0f, 0f, 0f,
+                                                    _cfg.NozzleSprayScale, false, false, false);
+
+                    if (handle == 0)
+                    {
+                        if (_streamRung < 0)
+                        {
+                            Log.Info("Nozzle spray: " + PtfxAsset + "/" + SprayLadder[i] +
+                                     " refused; trying the next.");
+                        }
+                        continue;
+                    }
+
+                    _stream = handle;
+
+                    if (_streamRung < 0)
+                    {
+                        _streamRung = i;
+                        Log.Info("Nozzle spray: " + PtfxAsset + "/" + SprayLadder[i] + " out of the spout.");
+                    }
+
+                    return;
+                }
+
+                Log.Once("spray-none", "Nozzle spray: none of " + SprayLadder.Length +
+                                       " effects was accepted; the petrol on the ground is the whole of it.");
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spray-fail", "Could not start the nozzle spray: " + ex.Message);
+            }
+        }
+
+        private void StopStream()
+        {
+            if (_stream == 0) return;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.DOES_PARTICLE_FX_LOOPED_EXIST, _stream))
+                {
+                    Function.Call(Hash.STOP_PARTICLE_FX_LOOPED, _stream, false);
+                }
+            }
+            catch
+            {
+                // It is gone either way.
+            }
+
+            _stream = 0;
+        }
+
+        /// <summary>
+        /// Petrol on the tarmac under a point, spreading as more of it goes down.
+        ///
+        /// The same rules as the siphon's overflow pool and for the same reasons -- a decal
+        /// cannot be resized once it is down, so a pool that grows is successive decals, and
+        /// one that lands inside its predecessor costs budget and changes nothing.
+        /// </summary>
+        private void Puddle(Ped me, Vector3 over)
+        {
+            if (!_cfg.SiphonPool) return;
+            if (_sprayDecals >= _cfg.SiphonPoolMaxDecals) return;
+            if (Game.GameTime < _sprayNextAt) return;
+
+            _sprayNextAt = Game.GameTime + (int)(_cfg.SiphonPoolEverySeconds * 1000f);
+
+            try
+            {
+                var at = new Vector3(over.X, over.Y, me.Position.Z - 0.9f);
+
+                var want = _cfg.SiphonPoolWidth + _sprayed * _cfg.SiphonPoolPerLitre;
+                if (want > _cfg.SiphonPoolMaxWidth) want = _cfg.SiphonPoolMaxWidth;
+
+                var moved = _sprayAt == Vector3.Zero || at.DistanceTo(_sprayAt) > _cfg.SiphonPoolStep;
+
+                if (moved) _sprayAt = at;
+                else if (want - _sprayWidth < _cfg.SiphonPoolGrowth) return;
+
+                _sprayWidth = want;
+
+                Function.Call(Hash.ADD_PETROL_DECAL, _sprayAt.X, _sprayAt.Y, _sprayAt.Z,
+                              0.1f, _sprayWidth, 1f);
+
+                _sprayDecals++;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("spray-decal", "Could not put petrol on the ground: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Deletes one of OUR props, and nothing else that might be wearing its number.
+        ///
+        /// THE GAME RECYCLES ENTITY HANDLES. A prop this mod stood on the ground and then
+        /// forgot about for a while -- the dropped nozzle goes six seconds later, a put-down
+        /// can two minutes later -- can be streamed out by the game in the meantime, and its
+        /// handle handed to the next thing spawned. Exists() is then TRUE, because something
+        /// exists at that handle, and Delete() deletes it: which was, more than once, the car
+        /// somebody had just walked up to with a jerry can. So a delete first asks whether the
+        /// thing at the handle is still an object at all, and still one of our models; if it
+        /// is not, it is somebody else's now and it stays.
+        /// </summary>
+        private static void SafeDelete(Prop prop, string what)
+        {
+            try
+            {
+                if (prop == null || !prop.Exists()) return;
+
+                if (!Function.Call<bool>(Hash.IS_ENTITY_AN_OBJECT, prop.Handle))
+                {
+                    Log.Warn("Not deleting the " + what + ": handle " + prop.Handle +
+                             " is no longer an object -- the game has reused it.");
+                    return;
+                }
+
+                if (!OurModel(prop.Model))
+                {
+                    Log.Warn("Not deleting the " + what + ": handle " + prop.Handle +
+                             " is a different object now (" + prop.Model.Hash + ").");
+                    return;
+                }
+
+                if (prop.IsAttached()) prop.Detach();
+                prop.Delete();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not delete the " + what + ": " + ex.Message);
+            }
+        }
+
+        /// <summary>The models this file ever stands on the ground: the cans, and the nozzle.</summary>
+        private static bool OurModel(Model model)
+        {
+            foreach (var name in CanProps)
+            {
+                if (model.Hash == Game.GenerateHash(name)) return true;
+            }
+
+            return Nozzle.IsNozzleModel(model);
         }
 
         /// <summary>Called on shutdown. Leaves nothing of ours in the world.</summary>

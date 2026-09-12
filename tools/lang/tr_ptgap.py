@@ -100,4 +100,9 @@ T = {
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Litros por 100 km somados por cada quilowatt que o motor empurra a 100 km/h.",
 "you moved away from the filler": "você se afastou do bocal",
 "the vehicle went away": "o veículo desapareceu",
+"Fuel out of the nozzle": "Combustível pelo bico",
+"Hold fire with the nozzle in hand and it pours on the ground. You pay for it.": "Segure atirar com o bico na mão e o combustível cai no chão. Você paga por ele.",
+"Spray litres a second": "Litros por segundo no chão",
+"How fast it comes out when you hold fire.": "A velocidade com que sai enquanto você segura atirar.",
+"Fuel on the ground   ": "Combustível no chão   ",
 }

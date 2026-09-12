@@ -186,4 +186,9 @@ T = {
 "What the last litre looks like. None of these touches the engine or the brakes.": "Aakhri litre kaisa dikhta hai. Inmein se koi engine ya brake ko nahi chhedta.",
 "BACKFIRE": "BACKFIRE", "SMOKE": "DHUAN",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "100 km/h par engine ke har kilowatt par litre per 100 km jode jaate hain.",
+"Fuel out of the nozzle": "Nozzle se fuel",
+"Hold fire with the nozzle in hand and it pours on the ground. You pay for it.": "Nozzle haath mein lekar fire dabaye rakho, fuel zameen par girega. Paise tumhare lagenge.",
+"Spray litres a second": "Zameen par litre per second",
+"How fast it comes out when you hold fire.": "Fire dabaye rakhne par kitni tezi se nikalta hai.",
+"Fuel on the ground   ": "Zameen par fuel   ",
 }

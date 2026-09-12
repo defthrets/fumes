@@ -478,6 +478,13 @@ namespace Fumes.UI
             hose.Items.Add(Toggle("Marker on the filler", () => _cfg.ShowFillerMarker,
                                   v => _cfg.ShowFillerMarker = v, "Nozzle", "ShowFillerMarker",
                                   "A ring on the spot the nozzle has to reach."));
+            hose.Items.Add(Toggle("Fuel out of the nozzle", () => _cfg.NozzleSpray,
+                                  v => _cfg.NozzleSpray = v, "Nozzle", "Spray",
+                                  "Hold fire with the nozzle in hand and it pours on the ground. You pay for it."));
+            hose.Items.Add(Number("Spray litres a second", () => _cfg.NozzleSprayLitresPerSecond,
+                                  v => _cfg.NozzleSprayLitresPerSecond = v, 0.1f, 0.05f, 20f, "0.0",
+                                  "Nozzle", "SprayLitresPerSecond",
+                                  "How fast it comes out when you hold fire."));
         }
 
         // ==================================================================

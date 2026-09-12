@@ -607,6 +607,7 @@ namespace Fumes
         private void Cleanup()
         {
             try { _refuel.Shutdown(); } catch (Exception ex) { Log.Error("Refuel shutdown", ex); }
+            try { _starve.Quiet(); } catch (Exception ex) { Log.Error("Starvation cleanup", ex); }
             try { _buttons.Dispose(); } catch (Exception ex) { Log.Error("Button bar cleanup", ex); }
             try { _stations.RemoveBlips(); } catch (Exception ex) { Log.Error("Blip cleanup", ex); }
             try { _stations.SaveCorrections(); } catch (Exception ex) { Log.Error("Station corrections", ex); }

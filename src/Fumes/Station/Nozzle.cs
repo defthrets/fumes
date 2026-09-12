@@ -46,6 +46,23 @@ namespace Fumes.Station
         };
 
         /// <summary>
+        /// Whether a model is one this class stands in the world.
+        ///
+        /// For Refuel.SafeDelete: the game reuses entity handles, so before deleting a
+        /// nozzle we dropped minutes ago it is worth asking whether the thing at that handle
+        /// is still a nozzle.
+        /// </summary>
+        public static bool IsNozzleModel(Model model)
+        {
+            foreach (var name in Models)
+            {
+                if (model.Hash == Game.GenerateHash(name)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// PH_R_Hand and PH_L_Hand.
         ///
         /// NOT SKEL_R_Hand (57005), which is the wrist joint the arm deforms around -- a prop
@@ -94,6 +111,9 @@ namespace Fumes.Station
 
         /// <summary>Whether the nozzle is currently in his hand.</summary>
         public bool Out => _prop != null && _prop.Exists();
+
+        /// <summary>The nozzle in his hand, for anything that needs to hang an effect on it.</summary>
+        public Prop Prop => _prop;
 
         /// <summary>
         /// The hand, which is where the hose really ends.
@@ -185,6 +205,59 @@ namespace Fumes.Station
         /// box look the same to a box. That is HoseEndSign -- one bit, flipped in the tuner in
         /// a second, instead of three continuous numbers nobody can reason about.
         /// </summary>
+        /// <summary>
+        /// The spout: the far end from where the hose joins, in world space.
+        ///
+        /// THE OPPOSITE OF HoseEnd, and worked out from it rather than measured again: the
+        /// nozzle is a stick with a hose on one end, so the other end is the same offset
+        /// mirrored through the middle. Taken in the nozzle's own space, so it swings with
+        /// the thing when he tilts it, and a fraction past the end so the fuel leaves the
+        /// model rather than starting inside it.
+        ///
+        /// Falls back to the hand while the model streams in.
+        /// </summary>
+        public Vector3 Spout()
+        {
+            try
+            {
+                if (Out)
+                {
+                    var back = _cfg.HoseEndAuto ? BackOfNozzle() : Vector3.Zero;
+                    var local = new Vector3(_cfg.HoseEndX, _cfg.HoseEndY, _cfg.HoseEndZ) + back;
+
+                    return _prop.GetOffsetPosition(-local * 1.15f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("nozzle-spout", "Could not find the nozzle spout: " + ex.Message);
+            }
+
+            return HoseEnd();
+        }
+
+        /// <summary>Which way the spout points, for a stream that leaves it.</summary>
+        public Vector3 SpoutDirection()
+        {
+            try
+            {
+                if (Out)
+                {
+                    var away = Spout() - HoseEnd();
+                    if (away.Length() > 0.02f) return away.Normalized;
+
+                    return _prop.ForwardVector;
+                }
+            }
+            catch
+            {
+                // Fall through.
+            }
+
+            try { return Game.Player.Character.ForwardVector; }
+            catch { return Vector3.Zero; }
+        }
+
         private Vector3 BackOfNozzle()
         {
             if (_backKnown) return _back;

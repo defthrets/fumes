@@ -182,4 +182,9 @@ T = {
 "What the last litre looks like. None of these touches the engine or the brakes.": "Как выглядит последний литр. Ни один не трогает двигатель и тормоза.",
 "BACKFIRE": "ВЫХЛОП", "SMOKE": "ДЫМ",
 "Litres per 100 km added for each kilowatt the engine pushes with at 100 km/h.": "Литров на 100 км за каждый киловатт тяги двигателя на 100 км/ч.",
+"Fuel out of the nozzle": "Топливо из пистолета",
+"Hold fire with the nozzle in hand and it pours on the ground. You pay for it.": "Удерживай огонь с пистолетом в руке — и топливо льётся на землю. Платишь ты.",
+"Spray litres a second": "Литров в секунду на землю",
+"How fast it comes out when you hold fire.": "Как быстро льётся, пока удерживаешь огонь.",
+"Fuel on the ground   ": "Топливо на земле   ",
 }

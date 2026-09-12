@@ -26,11 +26,39 @@ Unreleased
     under thirty per cent now. Nothing of the game's depends on the true figure;
     what a low or empty tank does is this mod's.
 
+  * FUEL COMES OUT OF THE NOZZLE. Hold the FIRE button with it in your hand,
+    away from a filler, and petrol pours onto the ground: the game's own decals,
+    the same ones a jerry can leaves, spreading as more of it goes down. It is
+    the station's fuel, so it is charged for at that pump's price like any other
+    litre, and the forecourt hazard treats it exactly as it treats filling --
+    which is to say a shootout over a puddle you made is your own doing.
+
+    This is the seam the carrying pose was chosen for, three versions ago: he
+    holds an invisible fire extinguisher rather than a jerry can because an
+    extinguisher is a weapon that SPRAYS, and that was always the route to fuel
+    leaving the nozzle under your control. Everything until now disabled that
+    trigger; this reads it. [Nozzle] Spray, and two rows on the HOSE page.
+
+  * FIXED: SIPHONING SOMETIMES DELETED THE CAR. The mod deletes its own props by
+    handle on a timer -- the dropped nozzle six seconds later, a put-down can
+    two minutes later -- and the game recycles entity handles. A prop streamed
+    out in the meantime, and its number handed to the next thing spawned, still
+    "exists" at that handle, so the delete took whatever was wearing it: more
+    than once, the car somebody had just walked up to. Every delete now checks
+    that the thing at the handle is still an object, and still one of ours,
+    before it goes; if it is not, it stays, and the log says so.
+
   * WHAT THE LAST LITRE LOOKS LIKE IS A SETTING. [Engine] LowFuelEffect, on the
     FUEL page: Backfire is the game's own exhaust pop, Smoke is a puff out of
     the exhaust, None is no effect at all and the gauge and the chime are the
     warning. None of the three touches the engine, the gearbox or the brakes.
-    224 settings.
+
+    The smoke is a LOOPED trail out of each exhaust, lit for as long as the tank
+    is in reserve and thickening toward empty, rather than a puff a second: a
+    puff a second read as a geyser, and the first thing tried was steam shot
+    upward, which is not smoke.
+
+  * 227 settings in the ini.
 
 
 1.0.2

@@ -21,19 +21,28 @@ namespace Fumes.Fuel
 
         /// <summary>
         /// Everything here lives in "core", which every install has loaded. veh_backfire is
-        /// the game's own exhaust pop. The smoke is a LADDER, tried in order the first time it
-        /// is wanted and the first one the game accepts kept: there is no list of particle
-        /// names on disk to check against, the game refuses a wrong one in silence, and the
-        /// log says which rung it settled on.
+        /// the game's own exhaust pop. The smoke is LOOPED and a LADDER: a low trail out of
+        /// each exhaust that stays lit for as long as the tank is in reserve, thickening
+        /// toward empty -- a puff every second read as a geyser, and steam shot upward is
+        /// not smoke. Tried in order the first time it is wanted and the first effect the
+        /// game accepts kept: there is no list of particle names on disk to check against,
+        /// the game refuses a wrong one in silence, and the log says which rung it took.
         /// </summary>
         private const string PtfxAsset = "core";
         private const string Backfire = "veh_backfire";
 
-        private static readonly string[] SmokeLadder = { "ent_sht_steam", "exp_grd_grenade_smoke", "veh_backfire" };
-        private static readonly float[] SmokeScale = { 0.8f, 0.25f, 1f };
+        private static readonly string[] SmokeLadder = { "veh_exhaust", "ent_amb_smoke_general", "ent_sht_steam" };
+
+        /// <summary>Scale at the reserve mark, and in the last litre, per rung.</summary>
+        private static readonly float[] SmokeAtMark = { 2.0f, 0.30f, 0.10f };
+        private static readonly float[] SmokeAtEmpty = { 5.0f, 0.75f, 0.22f };
 
         /// <summary>The rung of SmokeLadder the game accepted, or -1 while unknown.</summary>
         private int _smoke = -1;
+
+        /// <summary>The looped effects, one per exhaust, and the vehicle they are on.</summary>
+        private readonly int[] _plumes = new int[2];
+        private int _plumeVehicle;
 
         private static readonly string[] ExhaustBones = { "exhaust", "exhaust_2", "exhaust_3", "exhaust_4" };
 
@@ -129,6 +138,7 @@ namespace Fumes.Fuel
 
                 // Above the reserve mark: everything resets, including the warnings, so a
                 // tank filled and run down again warns again.
+                Quench();
                 _nextCough = 0;
                 _coughLogged = false;
                 _toldEmpty = false;
@@ -176,6 +186,7 @@ namespace Fumes.Fuel
 
             // The vehicle he got out of keeps nothing of ours.
             Unground();
+            Quench();
 
             _handle = v.Handle;
             _nextCough = 0;
@@ -184,32 +195,43 @@ namespace Fumes.Fuel
         }
 
         /// <summary>
-        /// The reserve: the exhaust backfires, more and more often, and the engine is not touched.
+        /// The reserve: smoke trails out of the exhausts, or a backfire now and then, and the
+        /// engine is not touched.
         ///
         /// IT USED TO CUT THE ENGINE AND BRING IT BACK, for the feel of one catching and
         /// dropping -- and every version of that, gentle or instant, locked the rear wheels
         /// and threw the car into reverse for a moment, because SET_VEHICLE_ENGINE_ON on a
         /// moving car is a gearbox event before it is an audio one. So the driving is left
-        /// alone entirely: sparks out of the exhaust every second or two say the tank is on
-        /// its last litre, and the only thing that ever stops the car is Dry, when it is empty.
+        /// alone entirely, and the only thing that ever stops the car is Dry, when it is
+        /// empty. Depth is how far into the reserve the tank is: nought at the mark, one in
+        /// the last litre.
         /// </summary>
         private void Sparks(Vehicle v, float depth)
         {
-            var now = Game.GameTime;
-            if (now < _nextCough) return;
-
-            // Every five or six seconds at the reserve mark, every one to three in the last
-            // litre, with a little jitter so it never reads as a metronome.
             if (depth < 0f) depth = 0f;
             if (depth > 1f) depth = 1f;
 
+            if (_cfg.LowFuelEffect == LowFuelEffect.None || !v.IsEngineRunning)
+            {
+                Quench();
+                return;
+            }
+
+            if (_cfg.LowFuelEffect == LowFuelEffect.Smoke)
+            {
+                Plume(v, depth);
+                return;
+            }
+
+            Quench();
+
+            // The backfire: every five or six seconds at the mark, every one to three in the
+            // last litre, with a little jitter so it never reads as a metronome.
+            var now = Game.GameTime;
+            if (now < _nextCough) return;
+
             var gap = 5500f - depth * 4600f;
             _nextCough = now + (int)gap + _rng.Next((int)(gap * 0.7f));
-
-            if (!v.IsEngineRunning) return;
-            if (_cfg.LowFuelEffect == LowFuelEffect.None) return;
-
-            var smoke = _cfg.LowFuelEffect == LowFuelEffect.Smoke;
 
             try
             {
@@ -230,19 +252,151 @@ namespace Fumes.Fuel
                     var off = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS, v.Handle,
                                                      world.X, world.Y, world.Z);
 
-                    if (Puff(v, smoke, off, bone) && ++popped >= 2) break;
-                }
+                    Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+                    var ok = Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, Backfire, v.Handle,
+                                                 off.X, off.Y, off.Z, 0f, 0f, 0f, 1f, false, false, false);
+                    Log.Once("fx-backfire" + (ok ? "-ok" : "-fail"),
+                             (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + Backfire +
+                             " at " + bone + " of " + v.LocalizedName + ".");
 
-                if (popped == 0)
-                {
-                    // No exhaust bone -- some add-ons -- so out of the back, low down.
-                    Puff(v, smoke, new Vector3(0f, -2.2f, 0.2f), "no exhaust bone");
+                    if (ok && ++popped >= 2) break;
                 }
             }
             catch (Exception ex)
             {
                 Log.Once("sparks-fail", "Could not backfire: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// The smoke: looped on each exhaust bone, made once per vehicle, scaled every frame
+        /// by how deep into the reserve the tank is.
+        /// </summary>
+        private void Plume(Vehicle v, float depth)
+        {
+            try
+            {
+                if (_plumeVehicle != v.Handle)
+                {
+                    Quench();
+
+                    if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, PtfxAsset))
+                    {
+                        Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, PtfxAsset);
+                        return;
+                    }
+
+                    var lit = 0;
+
+                    foreach (var bone in ExhaustBones)
+                    {
+                        var index = Function.Call<int>(Hash.GET_ENTITY_BONE_INDEX_BY_NAME, v.Handle, bone);
+                        if (index < 0) continue;
+
+                        var handle = Light(v, index, bone);
+                        if (handle == 0) continue;
+
+                        _plumes[lit++] = handle;
+                        if (lit >= _plumes.Length) break;
+                    }
+
+                    // No exhaust bone -- some add-ons -- so out of the back, low down.
+                    if (lit == 0)
+                    {
+                        var handle = Light(v, -1, "no exhaust bone");
+                        if (handle != 0) _plumes[0] = handle;
+                    }
+
+                    _plumeVehicle = v.Handle;
+                }
+
+                if (_smoke < 0) return;
+
+                var scale = SmokeAtMark[_smoke] + (SmokeAtEmpty[_smoke] - SmokeAtMark[_smoke]) * depth;
+
+                foreach (var handle in _plumes)
+                {
+                    if (handle != 0) Function.Call(Hash.SET_PARTICLE_FX_LOOPED_SCALE, handle, scale);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Once("plume-fail", "Could not smoke the exhaust: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// One looped effect at one bone, walking the ladder if the rung is not yet known.
+        /// Returns the handle, or nought when nothing was accepted.
+        /// </summary>
+        private int Light(Vehicle v, int bone, string where)
+        {
+            var first = _smoke >= 0 ? _smoke : 0;
+            var last = _smoke >= 0 ? _smoke : SmokeLadder.Length - 1;
+
+            for (var i = first; i <= last; i++)
+            {
+                Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
+
+                var handle = bone >= 0
+                    ? Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY_BONE, SmokeLadder[i], v.Handle,
+                                         0f, 0f, 0f, 0f, 0f, 0f, bone, SmokeAtMark[i], false, false, false)
+                    : Function.Call<int>(Hash.START_PARTICLE_FX_LOOPED_ON_ENTITY, SmokeLadder[i], v.Handle,
+                                         0f, -2.2f, 0.2f, 0f, 0f, 0f, SmokeAtMark[i], false, false, false);
+
+                if (handle == 0)
+                {
+                    if (_smoke < 0)
+                    {
+                        Log.Info("Low-fuel smoke: " + PtfxAsset + "/" + SmokeLadder[i] + " refused; trying the next.");
+                    }
+                    continue;
+                }
+
+                if (_smoke < 0)
+                {
+                    _smoke = i;
+                    Log.Info("Low-fuel smoke: " + PtfxAsset + "/" + SmokeLadder[i] + " at " + where + " of " +
+                             v.LocalizedName + ".");
+                }
+
+                return handle;
+            }
+
+            Log.Once("fx-smoke-none", "Low-fuel smoke: none of " + SmokeLadder.Length + " effects was accepted.");
+            return 0;
+        }
+
+        /// <summary>Puts the smoke out. Safe to call when there is none.</summary>
+        private void Quench()
+        {
+            for (var i = 0; i < _plumes.Length; i++)
+            {
+                if (_plumes[i] == 0) continue;
+
+                try
+                {
+                    if (Function.Call<bool>(Hash.DOES_PARTICLE_FX_LOOPED_EXIST, _plumes[i]))
+                    {
+                        Function.Call(Hash.STOP_PARTICLE_FX_LOOPED, _plumes[i], false);
+                    }
+                }
+                catch
+                {
+                    // It is gone either way.
+                }
+
+                _plumes[i] = 0;
+            }
+
+            _plumeVehicle = 0;
+        }
+
+        /// <summary>For the script going down: nothing of ours left burning on a car.</summary>
+        public void Quiet()
+        {
+            Quench();
+            Unground();
         }
 
         /// <summary>
@@ -256,6 +410,9 @@ namespace Fumes.Fuel
         private void Dry(Vehicle v, Tank tank)
         {
             Stalled = true;
+
+            // A dead engine does not smoke.
+            Quench();
 
             // HELD OFF, AND NOTHING ELSE. This used to turn the starter over for a second or
             // two whenever the throttle was pressed, for the feel of somebody trying -- but
@@ -323,51 +480,6 @@ namespace Fumes.Fuel
             {
                 Log.Once("unground-fail", "Could not give hover flight back: " + ex.Message);
             }
-        }
-
-        /// <summary>
-        /// One effect at one point on the vehicle. For smoke, walks the ladder the first
-        /// time and remembers the rung the game took. True when something was drawn.
-        ///
-        /// SAID ONCE EITHER WAY. A wrong effect name fails in silence, and "they aren't
-        /// showing" cannot be told from "never fired" without a line in the log.
-        /// </summary>
-        private bool Puff(Vehicle v, bool smoke, Vector3 off, string where)
-        {
-            if (!smoke)
-            {
-                var ok = Fire(Backfire, 1f, v, off);
-                Log.Once("fx-backfire" + (ok ? "-ok" : "-fail"),
-                         (ok ? "Low-fuel effect " : "Low-fuel effect REFUSED: ") + PtfxAsset + "/" + Backfire +
-                         " at " + where + " of " + v.LocalizedName + ".");
-                return ok;
-            }
-
-            if (_smoke >= 0) return Fire(SmokeLadder[_smoke], SmokeScale[_smoke], v, off);
-
-            for (var i = 0; i < SmokeLadder.Length; i++)
-            {
-                if (!Fire(SmokeLadder[i], SmokeScale[i], v, off))
-                {
-                    Log.Info("Low-fuel smoke: " + PtfxAsset + "/" + SmokeLadder[i] + " refused; trying the next.");
-                    continue;
-                }
-
-                _smoke = i;
-                Log.Info("Low-fuel smoke: " + PtfxAsset + "/" + SmokeLadder[i] + " at " + where + " of " +
-                         v.LocalizedName + ".");
-                return true;
-            }
-
-            Log.Once("fx-smoke-none", "Low-fuel smoke: none of " + SmokeLadder.Length + " effects was accepted.");
-            return false;
-        }
-
-        private static bool Fire(string fx, float scale, Vehicle v, Vector3 off)
-        {
-            Function.Call(Hash.USE_PARTICLE_FX_ASSET, PtfxAsset);
-            return Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_ENTITY, fx, v.Handle,
-                                       off.X, off.Y, off.Z, 0f, 0f, 0f, scale, false, false, false);
         }
 
         private static bool IsPlayerDriving(Vehicle v)

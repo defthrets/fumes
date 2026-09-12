@@ -339,8 +339,13 @@ namespace Fumes.Core
         public float SputterMaxLitres = 1.2f;
         public bool StallWhenEmpty = true;
 
-        /// <summary>The low-fuel warning's effect. Backfire is the game's exhaust pop; Sparks is nothing the game does on its own.</summary>
+        /// <summary>The low-fuel warning's effect. Backfire is the game's exhaust pop; Smoke a trail out of it.</summary>
         public LowFuelEffect LowFuelEffect = LowFuelEffect.Backfire;
+
+        /// <summary>Hold the fire button with the nozzle in hand and fuel comes out of it. See Refuel.Spray.</summary>
+        public bool NozzleSpray = true;
+        public float NozzleSprayLitresPerSecond = 1.2f;
+        public float NozzleSprayScale = 1.0f;
 
 
         /// <summary>Seconds of grinding starter before a dry engine gives up again.</summary>
@@ -1567,6 +1572,9 @@ namespace Fumes.Core
                 s.SputterMaxLitres = ini.GetFloat("Engine", "SputterMaxLitres", s.SputterMaxLitres, 0f, 40f);
                 s.StallWhenEmpty = ini.GetBool("Engine", "StallWhenEmpty", s.StallWhenEmpty);
                 s.LowFuelEffect = ParseEnum(ini.GetString("Engine", "LowFuelEffect", "Backfire"), s.LowFuelEffect);
+                s.NozzleSpray = ini.GetBool("Nozzle", "Spray", s.NozzleSpray);
+                s.NozzleSprayLitresPerSecond = ini.GetFloat("Nozzle", "SprayLitresPerSecond", s.NozzleSprayLitresPerSecond, 0.05f, 20f);
+                s.NozzleSprayScale = ini.GetFloat("Nozzle", "SprayScale", s.NozzleSprayScale, 0.05f, 5f);
                 s.DryRestartSeconds = ini.GetFloat("Engine", "DryRestartSeconds", s.DryRestartSeconds, 0.2f, 15f);
 
                 s.PumpReach = ini.GetFloat("Station", "PumpReach", s.PumpReach, 0.5f, 12f);
