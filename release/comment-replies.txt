@@ -1,0 +1,71 @@
+GTA5-MODS COMMENT REPLIES -- drafted 2026-09-13, after 1.0.3
+============================================================
+121 comments read. These are the ones with no reply from you yet.
+Paste as one comment or several, whatever suits.
+
+
+BUG REPORTS THAT ARE NOW FIXED
+------------------------------
+
+@AliG_15 sorted, it's in 1.0.3. Its thruster isn't the engine, so cutting
+the engine did nothing at all to it -- hover flight gets taken away while the
+tank is dry now. Cheers for the report.
+
+@GrandHaven both of those are done in 1.0.3. Every vehicle works its own
+consumption out from what it weighs and how hard its engine pushes instead of a
+class table, and idle scales with engine size the same way, so a truck and a
+sedan are properly different now. And the sparks and the creeping are gone --
+turned out to be two things stacked, mine and the game's own low-fuel routine
+running underneath it. A dry tank just shuts down and stays down. Thanks for
+writing both up so clearly, that's exactly the kind of report that gets fixed.
+
+@VaporHaven fixed in 1.0.2. Bare Minimum's row was re-placing and re-sizing the
+gauge every frame, so your changes were getting overruled on the next draw. The
+two settings that decide it are on the HUD page now, and opening the positioner
+switches the first one off so the placement actually takes. Cheers for spotting
+it.
+
+@susipupi44 that one's fixed in 1.0.3 -- hanging it up now wins the button
+whenever you're near the pump, so it's always the prompt you get.
+
+
+STILL OPEN -- NEEDS INFO
+------------------------
+
+@thalilmythos that shouldn't be happening, so I'd like to pin it down. Which car
+is it? The mod reads the game's own FLAG_IS_ELECTRIC, and when it sees it the
+gauge reads CHARGE instead of FUEL. So if yours says FUEL, that model isn't
+flagged electric in its meta, which does happen with add-ons -- give me the model
+name and I'll add it by hand. Worth checking [Fuel] AffectElectric = false in
+your Fumes.ini too, in case an old ini carried it over as true.
+
+
+THANKS AND FOLLOW-UPS
+---------------------
+
+@ChargedKILO nice one, that's a proper fix. Pumps-by-prop was the whole idea
+behind it, so any map using the stock ones just works -- glad it took.
+
+@SomiVH thank you, that's very kind. Most of the reported ones are in 1.0.3: the
+can at zero, the gauge not moving, the sparks on empty and the Oppressor.
+
+@timbo6 thanks mate, that means a lot. There's a couple more along the same lines
+in the works.
+
+@GrandHaven cheers mate :)
+
+@Ballsy ha, nice one.
+
+@bizmeta1 glad it's sorted, thanks for coming back to say so.
+
+@jerome74 cheers mate, hope it keeps holding up.
+
+
+NOT FOR YOU
+-----------
+@Ballsy's "are you Jeon Somi" is aimed at @SomiVH, and @AliG_15's charging
+question was answered by @MaitreSystem. Nothing needed on either.
+
+
+ALSO: the CONTROLS line on the page still says "the settings menu, 219 of them".
+1.0.3 has 246. The copy in release/nexus-description.txt is correct.
