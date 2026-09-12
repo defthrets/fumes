@@ -911,6 +911,8 @@ namespace Fumes.Station
                 return;
             }
 
+            Hold(_target);
+
             if (Can(me) == null) { StopSiphon(me, "you have no can"); return; }
 
             var filler = Filler.On(_target, out var exact);
@@ -1803,6 +1805,8 @@ namespace Fumes.Station
             Log.Info("Stopped siphoning" + (why == null ? "" : " - " + why) + ". " +
                      _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L in the can.");
 
+            Release();
+
             _target = null;
             _targetTank = null;
             _canLitres = 0f;
@@ -1986,6 +1990,8 @@ namespace Fumes.Station
                 return;
             }
 
+            Hold(_target);
+
             // Putting the can away is how you stop, and it is the obvious gesture. Checked
             // before anything else so swapping weapons cannot leave fuel pouring out of a
             // pistol.
@@ -2060,6 +2066,8 @@ namespace Fumes.Station
 
             Log.Info("Stopped pouring" + (why == null ? "" : " - " + why) + ". " +
                      _canLitres.ToString("0.0", CultureInfo.InvariantCulture) + " L left in the can.");
+
+            Release();
 
             _target = null;
             _targetTank = null;
@@ -2626,6 +2634,8 @@ namespace Fumes.Station
 
             if (_pump == null || !_pump.Exists()) { Abandon("the pump went away"); return; }
 
+            Hold(_target);
+
             var anchor = Anchor();
             _hose.Update(anchor, _nozzle.HoseEnd());
 
@@ -2767,6 +2777,8 @@ namespace Fumes.Station
             var litres = _dispensed;
             var owed = _owed;
 
+            Release();
+
             _stage = Stage.Carrying;
             _target = null;
             _targetTank = null;
@@ -2875,6 +2887,9 @@ namespace Fumes.Station
 
         private void Clear()
         {
+            // Whatever we were doing to a car, we are not doing it now.
+            Release();
+
             _stage = Stage.Idle;
             _canAtPump = false;
             _pump = null;
@@ -2894,6 +2909,74 @@ namespace Fumes.Station
 
             SafeDelete(_dropped, "dropped nozzle");
             _dropped = null;
+        }
+
+        // ==================================================================
+        // Keeping the car there
+        // ==================================================================
+
+        /// <summary>The vehicle this is holding in the world, and whether the game already owned it.</summary>
+        private int _heldVehicle;
+        private bool _heldWasOwned;
+
+        /// <summary>
+        /// Stops the game cleaning up the car out from under an interaction.
+        ///
+        /// AMBIENT TRAFFIC IS NOT OWNED BY ANYBODY. The game recycles it hard: a car nothing
+        /// has claimed can be taken away the moment it is not on screen, and the siphon is the
+        /// one interaction where that is likely -- he crouches at the flank with the camera
+        /// down at the cap, the body fills the frame, and a car that has not been asked to
+        /// stay simply goes. Which reads exactly like the mod deleting it, and was reported
+        /// as that.
+        ///
+        /// So for as long as we are doing something to a vehicle it is marked persistent, and
+        /// the moment we stop it is handed back -- MarkAsNoLongerNeeded rather than leaving it
+        /// pinned, or every car ever siphoned from would stay loaded forever. A car the game
+        /// ALREADY owned (a mission car, the player's own) is remembered as such and left
+        /// exactly as it was found.
+        /// </summary>
+        private void Hold(Vehicle v)
+        {
+            try
+            {
+                if (v == null || !v.Exists()) return;
+                if (_heldVehicle == v.Handle) return;
+
+                Release();
+
+                _heldWasOwned = v.IsPersistent;
+                if (!_heldWasOwned) v.IsPersistent = true;
+
+                _heldVehicle = v.Handle;
+            }
+            catch (Exception ex)
+            {
+                Log.Once("hold-fail", "Could not hold the vehicle in the world: " + ex.Message);
+            }
+        }
+
+        /// <summary>Hands the car back to the game. Safe when nothing is held.</summary>
+        private void Release()
+        {
+            if (_heldVehicle == 0) return;
+
+            var handle = _heldVehicle;
+            var wasOwned = _heldWasOwned;
+
+            _heldVehicle = 0;
+            _heldWasOwned = false;
+
+            if (wasOwned) return;
+
+            try
+            {
+                var v = Entity.FromHandle(handle) as Vehicle;
+                if (v != null && v.Exists()) v.MarkAsNoLongerNeeded();
+            }
+            catch (Exception ex)
+            {
+                Log.Once("release-fail", "Could not hand the vehicle back: " + ex.Message);
+            }
         }
 
         // ==================================================================

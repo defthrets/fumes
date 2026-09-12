@@ -564,7 +564,16 @@ namespace Fumes.Station
         {
             try
             {
-                if (_prop != null && _prop.Exists()) _prop.Delete();
+                // THE SAME GUARD THE LOOSE PROPS GET, and for the same reason: the game
+                // recycles entity handles, so a nozzle that streamed out can have its number
+                // handed to the next thing spawned -- and then this deletes that instead.
+                // See Refuel.SafeDelete.
+                if (_prop != null && _prop.Exists() &&
+                    Function.Call<bool>(Hash.IS_ENTITY_AN_OBJECT, _prop.Handle) &&
+                    IsNozzleModel(_prop.Model))
+                {
+                    _prop.Delete();
+                }
             }
             catch (Exception ex)
             {

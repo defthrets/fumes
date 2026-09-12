@@ -46,14 +46,24 @@ Unreleased
     standing at a filler the interaction is the fill, and a stream of petrol
     competing with it is a way to lose the fill.
 
-  * FIXED: SIPHONING SOMETIMES DELETED THE CAR. The mod deletes its own props by
-    handle on a timer -- the dropped nozzle six seconds later, a put-down can
-    two minutes later -- and the game recycles entity handles. A prop streamed
-    out in the meantime, and its number handed to the next thing spawned, still
-    "exists" at that handle, so the delete took whatever was wearing it: more
-    than once, the car somebody had just walked up to. Every delete now checks
-    that the thing at the handle is still an object, and still one of ours,
-    before it goes; if it is not, it stays, and the log says so.
+  * FIXED: THE CAR VANISHED WHILE YOU SIPHONED FROM IT. Two separate causes, and
+    the first fix did not land because the second one is the common one.
+
+    AMBIENT TRAFFIC IS NOT OWNED BY ANYBODY, and the game recycles it hard: a
+    car nothing has claimed can be taken away the moment it is off screen. The
+    siphon is exactly where that bites -- he crouches at the flank with the
+    camera down at the cap, his body fills the frame, and a car that has not
+    been asked to stay simply goes. Which looks precisely like the mod deleting
+    it. Any vehicle this mod is doing something to is now held in the world for
+    as long as it is doing it, and handed straight back afterwards; a car the
+    game already owned is left exactly as it was found.
+
+    And the mod deletes its own props by handle on a timer -- the dropped nozzle
+    six seconds later, a put-down can two minutes later -- while the game
+    recycles entity handles. A prop streamed out in the meantime, its number
+    handed to the next thing spawned, still "exists" at that handle, so the
+    delete took whatever was wearing it. Every delete now checks that the thing
+    at the handle is still an object, and still one of ours, before it goes.
 
   * WHAT THE LAST LITRE LOOKS LIKE IS A SETTING. [Engine] LowFuelEffect, on the
     FUEL page: Backfire is the game's own exhaust pop, Smoke is a puff out of
