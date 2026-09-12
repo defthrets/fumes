@@ -59,6 +59,13 @@ namespace Fumes.UI
         /// <summary>Frames a trim decision stands before it is looked at again, either way.</summary>
         private const int HoldFrames = 30;
 
+        /// <summary>
+        /// Consecutive frames over the line before a trim is made at all. One is a menu
+        /// opening; three is a scene that is busy. See Latch.
+        /// </summary>
+        private const int TripFrames = 3;
+        private static int _overRun;
+
         private const int SayTrimEveryMs = 10000;
         private const int MinuteMs = 60000;
 
@@ -273,7 +280,21 @@ namespace Fumes.UI
 
             _share = Soft / Math.Max(1, _t[KActive]);
 
-            if (!_trim) _withOn = mine;
+            // WHAT THE DECORATION COSTS, AS A RUNNING AVERAGE -- NOT THE LAST FRAME.
+            //
+            // This was "_withOn = mine" every untrimmed frame, so the figure it held when the
+            // trim fired was THE FRAME THAT FIRED IT: a menu opening, a one-frame spike of 240
+            // against a steady 194. The release test then asked for total + cost to come back
+            // under the line with cost = 240 - 176 = 64, when the decoration's real price was
+            // 194 - 176 = 18 -- and 205 + 64 never came under 234, so one spike stripped the
+            // HUD's animation for the rest of the session. The log has it: the trim at
+            // 15:37:13, then twenty "Draw list" minutes with the machine at 205 and no
+            // "decoration is back" ever written.
+            //
+            // An eighth of the way to each new frame: a spike moves it by a few rectangles
+            // and is forgotten in a couple of seconds, and what it holds when the trim fires
+            // is what the decoration actually costs on an ordinary frame.
+            if (!_trim) _withOn = _withOn == 0 ? mine : (_withOn * 7 + mine) / 8;
 
             if (_hold > 0)
             {
@@ -283,8 +304,15 @@ namespace Fumes.UI
 
             if (!_trim)
             {
-                if (total > Soft && mine > _share)
+                // AND NOT ON ONE FRAME. A frame over the line is a menu opening or a toast
+                // arriving; three in a row is a scene that is genuinely busy. The hold below
+                // already stops the decision flapping once made -- this stops it being made
+                // on evidence a single frame wide.
+                _overRun = total > Soft && mine > _share ? _overRun + 1 : 0;
+
+                if (_overRun >= TripFrames)
                 {
+                    _overRun = 0;
                     _trim = true;
                     _hold = HoldFrames;
                 }
