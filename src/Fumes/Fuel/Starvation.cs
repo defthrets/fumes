@@ -89,25 +89,44 @@ namespace Fumes.Fuel
                                  SputterAt(tank).ToString("0.00", CultureInfo.InvariantCulture) + " L.");
                     }
 
-                    Sparks(v);
+                    Sparks(v, 1f);
                     return;
                 }
 
-                // Back above the sputter line: everything resets, including the warnings, so
-                // a tank filled and run down again warns again.
+                // IN RESERVE: the effect starts here, with the chime, and not in the last
+                // litre only. The last litre is where it gets dense; from the reserve mark
+                // down to there it is an occasional pop that gets less occasional. Depth is
+                // how far into the reserve the tank is, nought at the mark and one at the
+                // dense zone.
+                var reserve = tank.Capacity * _cfg.ReserveFraction;
+
+                if (tank.Litres <= reserve)
+                {
+                    _toldEmpty = false;
+
+                    if (!_warned)
+                    {
+                        _warned = true;
+
+                        Say(tank.Electric
+                                ? "~y~Low charge.~s~ Find somewhere to plug in."
+                                : "~y~Low fuel.~s~ Next station is on the map.");
+                        Beep();
+                    }
+
+                    var span = reserve - SputterAt(tank);
+                    var depth = span > 0.01f ? 1f - (tank.Litres - SputterAt(tank)) / span : 1f;
+
+                    Sparks(v, depth);
+                    return;
+                }
+
+                // Above the reserve mark: everything resets, including the warnings, so a
+                // tank filled and run down again warns again.
                 _nextCough = 0;
                 _coughLogged = false;
                 _toldEmpty = false;
-
-                if (tank.Fraction > _cfg.ReserveFraction) { _warned = false; return; }
-
-                if (_warned) return;
-                _warned = true;
-
-                Say(tank.Electric
-                        ? "~y~Low charge.~s~ Find somewhere to plug in."
-                        : "~y~Low fuel.~s~ Next station is on the map.");
-                Beep();
+                _warned = false;
             }
             catch (Exception ex)
             {
@@ -159,7 +178,7 @@ namespace Fumes.Fuel
         }
 
         /// <summary>
-        /// The last half-litre: the exhaust backfires, and the engine is not touched.
+        /// The reserve: the exhaust backfires, more and more often, and the engine is not touched.
         ///
         /// IT USED TO CUT THE ENGINE AND BRING IT BACK, for the feel of one catching and
         /// dropping -- and every version of that, gentle or instant, locked the rear wheels
@@ -168,12 +187,18 @@ namespace Fumes.Fuel
         /// alone entirely: sparks out of the exhaust every second or two say the tank is on
         /// its last litre, and the only thing that ever stops the car is Dry, when it is empty.
         /// </summary>
-        private void Sparks(Vehicle v)
+        private void Sparks(Vehicle v, float depth)
         {
             var now = Game.GameTime;
             if (now < _nextCough) return;
 
-            _nextCough = now + 900 + _rng.Next(2200);
+            // Every five or six seconds at the reserve mark, every one to three in the last
+            // litre, with a little jitter so it never reads as a metronome.
+            if (depth < 0f) depth = 0f;
+            if (depth > 1f) depth = 1f;
+
+            var gap = 5500f - depth * 4600f;
+            _nextCough = now + (int)gap + _rng.Next((int)(gap * 0.7f));
 
             if (!v.IsEngineRunning) return;
             if (_cfg.LowFuelEffect == LowFuelEffect.None) return;

@@ -9,8 +9,11 @@ Unreleased
     version of that -- gentle or instant -- locked the rear wheels and threw the
     car into reverse for a moment, because switching a moving car's engine is a
     gearbox event before it is an audio one. The driving is left alone entirely
-    now: on the last litre the exhaust backfires every second or two, and the
-    only thing that ever stops the car is an empty tank.
+    now: from the reserve mark down the exhaust backfires -- every five or six
+    seconds at the mark, with the chime, every second or two in the last litre
+    -- and the only thing that ever stops the car is an empty tank. (It used to
+    start in the last litre only, six per cent of a tank, which was a warning
+    almost nobody would have seen.)
 
     AND THE GAME'S OWN SPLUTTER IS SWITCHED OFF UNDERNEATH IT. This is the one
     that was actually locking the wheels. GTA V has a fuel routine of its own --
