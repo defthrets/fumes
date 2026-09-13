@@ -35,9 +35,10 @@ namespace Fumes.UI
     /// ONE ANSWER FOR THE WHOLE FRAME, decided from the frame before. A live comparison would
     /// trim whichever decoration happened to ask late, differently every frame, at sixty a
     /// second -- which is a flicker, and the thing this exists to stop. And it comes back only
-    /// when the room is measured to be there: this mod's count with the decoration on against
-    /// its count with it off is what the decoration costs, and it returns when the frame has
-    /// that much spare. A latch that came back the moment it was allowed to would blink.
+    /// when the room is measured to be there: THE DECORATION COUNTS ITSELF -- see Decorating --
+    /// so what it costs is a number this class has actually watched go into the list, and it
+    /// returns when the frame has that much spare. A latch that came back the moment it was
+    /// allowed to would blink.
     ///
     /// This file is the same in every mod of the set, byte for byte after the namespace and
     /// the name. Edit the copy in Hoodrich and run tools/sync-ledger.py.
@@ -65,6 +66,18 @@ namespace Fumes.UI
         /// </summary>
         private const int TripFrames = 3;
         private static int _overRun;
+
+        /// <summary>
+        /// Frames a trim stands before the decoration is put back ON to be measured again,
+        /// whatever the sums say. A SAFETY NET RATHER THAN A RULE: everything below is an
+        /// estimate of what the decoration costs, and an estimate that comes out too high
+        /// once is an estimate that comes out too high for ever -- the latch is then shut
+        /// with no evidence that will ever open it. This is what stopped that being possible:
+        /// worst case the decoration returns for half a second every fifteen, is measured,
+        /// and goes again. Fifteen seconds at sixty a frame.
+        /// </summary>
+        private const int RetestFrames = 900;
+        private static int _trimFor;
 
         private const int SayTrimEveryMs = 10000;
         private const int MinuteMs = 60000;
@@ -100,8 +113,19 @@ namespace Fumes.UI
         private static int _myFrame;
         private static bool _trim;
         private static int _hold;
-        private static int _withOn;
         private static int _share;
+
+        // What the decoration costs, counted rather than inferred. See Decorating.
+        private static bool _decorating;
+        private static int _decorNow;
+        private static int _decorLast;
+        private static int _decorCost;
+
+        // The frame the trim was actually decided on, so the log can quote it rather than
+        // whatever the machine happened to be drawing ten seconds later when it got to speak.
+        private static int _tripTotal;
+        private static int _tripMine;
+        private static int _tripShare;
 
         private static int _saidPeak;
         private static bool _saidTrim;
@@ -117,6 +141,33 @@ namespace Fumes.UI
 
             _t[KTotal]++;
             _mine[MNow]++;
+
+            if (_decorating) _decorNow++;
+        }
+
+        /// <summary>
+        /// Opens and closes the decoration, so it can be counted apart from the instrument.
+        ///
+        /// WHY THIS EXISTS. What the decoration costs used to be guessed at: this mod's whole
+        /// count on a frame with it on, against its whole count on a frame with it off. Those
+        /// are two different frames, and everything else the mod happened to be drawing went
+        /// into the difference. Trim while the pocket is open and the sum says the specks cost
+        /// a hundred rectangles -- it was the pocket -- and the release test then asks for a
+        /// frame under a hundred and thirty that is never coming. The log has it: trimmed at
+        /// 16:55 with the machine at 165 of 260, and still trimmed twenty-four minutes later.
+        ///
+        /// So the decoration is counted, not inferred. Everything that goes into the list
+        /// between Decorating(true) and Decorating(false) is decoration; the tally the release
+        /// test reads is what those draws actually cost on the last frame that drew them.
+        ///
+        /// It is reset every frame, so a caller that returns between the two -- an early exit,
+        /// an exception -- costs one frame's measurement and nothing else. A mod that never
+        /// calls it prices its decoration at nothing and comes back as soon as the machine is
+        /// under the line, which is the behaviour this had before any of it was measured.
+        /// </summary>
+        public static void Decorating(bool on)
+        {
+            _decorating = on;
         }
 
         /// <summary>
@@ -228,6 +279,15 @@ namespace Fumes.UI
 
             _myFrame = frame;
 
+            // THIS MOD'S OWN ROLL, not the shared one. Roll above happens once for the whole
+            // machine and whichever mod noticed first does it; these three are private to this
+            // copy of the class, so they turn over here, where every mod passes exactly once a
+            // frame. Decorating is cleared with them: an unclosed block is one bad measurement
+            // rather than a flag stuck on for the rest of the session.
+            _decorLast = _decorNow;
+            _decorNow = 0;
+            _decorating = false;
+
             Latch();
             Minute();
             Say();
@@ -280,25 +340,32 @@ namespace Fumes.UI
 
             _share = Soft / Math.Max(1, _t[KActive]);
 
-            // WHAT THE DECORATION COSTS, AS A RUNNING AVERAGE -- NOT THE LAST FRAME.
+            // WHAT THE DECORATION COSTS, AS A RUNNING AVERAGE OF WHAT IT DREW.
             //
-            // This was "_withOn = mine" every untrimmed frame, so the figure it held when the
-            // trim fired was THE FRAME THAT FIRED IT: a menu opening, a one-frame spike of 240
-            // against a steady 194. The release test then asked for total + cost to come back
-            // under the line with cost = 240 - 176 = 64, when the decoration's real price was
-            // 194 - 176 = 18 -- and 205 + 64 never came under 234, so one spike stripped the
-            // HUD's animation for the rest of the session. The log has it: the trim at
-            // 15:37:13, then twenty "Draw list" minutes with the machine at 205 and no
-            // "decoration is back" ever written.
-            //
-            // An eighth of the way to each new frame: a spike moves it by a few rectangles
-            // and is forgotten in a couple of seconds, and what it holds when the trim fires
-            // is what the decoration actually costs on an ordinary frame.
-            if (!_trim) _withOn = _withOn == 0 ? mine : (_withOn * 7 + mine) / 8;
+            // Not a difference between two whole frames -- that is what Decorating exists to
+            // stop being necessary, and the note there has why. This is the decoration's own
+            // rectangles off the last frame that drew any, smoothed an eighth at a time so a
+            // frame where a bar happened to be empty does not halve the figure.
+            if (!_trim && _decorLast > 0)
+            {
+                _decorCost = _decorCost == 0 ? _decorLast : (_decorCost * 7 + _decorLast) / 8;
+            }
 
             if (_hold > 0)
             {
                 _hold--;
+                return;
+            }
+
+            // THE SAFETY NET, BEFORE ANY SUM. A trim that has stood for RetestFrames is let go
+            // whatever the numbers say, so the decoration is drawn, counted, and judged again
+            // on what it really costs now. If the frame is still busy the three frames below
+            // put it straight back. See RetestFrames.
+            if (_trim && ++_trimFor >= RetestFrames)
+            {
+                _trimFor = 0;
+                _trim = false;
+                _hold = HoldFrames;
                 return;
             }
 
@@ -314,18 +381,24 @@ namespace Fumes.UI
                 {
                     _overRun = 0;
                     _trim = true;
+                    _trimFor = 0;
                     _hold = HoldFrames;
+
+                    // The frame this was decided on, for the log. It speaks at most once every
+                    // ten seconds and by then the machine is drawing something else entirely,
+                    // which is how it came to report a trim "over the 260 line" at 165.
+                    _tripTotal = total;
+                    _tripMine = mine;
+                    _tripShare = _share;
                 }
 
                 return;
             }
 
-            var cost = _withOn - mine;
-            if (cost < 0) cost = 0;
-
-            if (total + cost < Soft * 9 / 10)
+            if (total + _decorCost < Soft * 9 / 10)
             {
                 _trim = false;
+                _trimFor = 0;
                 _hold = HoldFrames;
             }
         }
@@ -399,9 +472,11 @@ namespace Fumes.UI
             {
                 if (!_saidTrim && now - _saidTrimAt >= SayTrimEveryMs)
                 {
-                    Log.Info("Trim: " + Me + "'s decoration is off. The machine drew " + _t[KPrev] +
-                             " rectangles last frame, over the " + Soft + " line, and this mod's " +
-                             _mine[MLast] + " is over its " + _share + " share.");
+                    Log.Info("Trim: " + Me + "'s decoration is off. The machine drew " + _tripTotal +
+                             " rectangles in the frame that decided it, over the " + Soft +
+                             " line, and this mod's " + _tripMine + " was over its " + _tripShare +
+                             " share. The decoration costs " + _decorCost +
+                             "; it is back when the frame has that spare.");
 
                     _saidTrim = true;
                     _saidTrimAt = now;
