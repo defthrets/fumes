@@ -1,0 +1,21 @@
+FUMES 1.0.4 -- short changelog for comments / the upload form
+=============================================================
+
+1.0.4 is up. Three bug fixes from the comments.
+
+  - Bikes ignored every consumption setting you changed. A bike's thirst
+    is worked out from its tank and range, and that was returning over
+    the top of the class figure -- so the CLASSES page showed your number
+    while the burn used another. Change it now and yours wins. Pinning a
+    bike by name works too. @AliG_15
+
+  - The gauge was placed for whatever resolution the game first reported
+    and never looked again, so fullscreen and windowed could not both be
+    right. It also dragged Bare Minimum's row off the side of the screen.
+    Measured once a second now. @paparumz
+
+  - No route to a station if you already had a waypoint set. The route is
+    drawn on the station's own blip and never touched your waypoint, so
+    standing aside was pointless. Both lines draw now. @AliG_15
+
+247 settings. Drop it over the old one, nothing needs a new save.
