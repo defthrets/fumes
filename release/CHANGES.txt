@@ -1,8 +1,8 @@
 FUMES -- changes
 
 
-Unreleased
-==========
+1.0.4
+=====
 
   * FIXED: A BIKE IGNORED EVERY CONSUMPTION SETTING YOU CHANGED. A motorbike's
     thirst is worked out from its tank and its range rather than looked up, so

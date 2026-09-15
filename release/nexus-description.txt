@@ -95,7 +95,7 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 <b>CONTROLS</b>
 
 <ul>
-<li><b>SHIFT + F</b>: the settings menu, 246 of them. <b>LB + D-pad Down</b> on a controller;</li>
+<li><b>SHIFT + F</b>: the settings menu, 247 of them. <b>LB + D-pad Down</b> on a controller;</li>
 <li><b>E</b>: take the nozzle, fill, hang up, pour the can. <b>Q</b>: siphon, or fill the can at a pump.</li>
 </ul>
 
@@ -103,19 +103,13 @@ To uninstall, delete those. Nothing else is written and nothing in the game's fi
 
 <b>CHANGELOG</b>
 
-<b>1.0.3</b>
+<b>1.0.4</b>
 
 <ul>
-<li><b>Fuel comes out of the nozzle.</b> Hold FIRE with it in your hand, away from a filler, and petrol pours onto the ground -- the game's own decals, charged at that pump's price, and the forecourt hazard treats it exactly as it treats filling. This is what the carrying pose was chosen for three versions ago;</li>
-<li><b>Every vehicle has its own thirst</b>, worked out from what it weighs and how hard its engine pushes rather than a table -- so DLC and add-on vehicles get a figure of their own. And every figure is yours to change from the menu: THIS VEHICLE on the FUEL page tunes the car you are in, and a new CLASSES page carries the whole class table;</li>
-<li><b>Crossing into reserve routes the GPS to the nearest station</b>, in orange, on the station's own blip. A waypoint you set yourself is never touched;</li>
-<li><b>The engine stumbles on the last of the fuel</b> and smoke trails from the exhaust, and he curses the car in his own voice when you try to start it dry. None of it touches the gearbox or the brakes;</li>
-<li><b>Fixed: the car vanished while you siphoned from it.</b> Ambient traffic belongs to nobody and the game recycles it hard; anything this mod is working on is now held in the world until it is done;</li>
-<li><b>Fixed: an empty jerry can could not be filled at a pump.</b> <i>AliG_15.</i></li>
-<li><b>Fixed: the gauge could not be moved with Bare Minimum installed.</b> <i>VaporHaven, HunterBoys555.</i></li>
-<li><b>Fixed: sparks and a car creeping along on an empty tank.</b> <i>GrandHaven, AliG_15.</i></li>
-<li><b>Fixed: the Oppressor Mk II kept flying on an empty tank.</b> <i>AliG_15.</i></li>
-<li><b>The hose is smooth.</b> It was drawn in fourteen straight segments however long it got, which over nine metres is a corner every sixty-five centimetres. 246 settings.</li>
+<li><b>Fixed: a bike ignored every consumption setting you changed.</b> A motorbike's thirst is worked out from its tank and its range rather than looked up, and that calculation was returning over the top of whatever the ini or the CLASSES page said -- so the page showed the number you set while the burn used another. It is a default now: leave the class figure alone and the tank decides, change it and yours wins. Pinning a bike by name works too. <i>AliG_15.</i></li>
+<li><b>Fixed: the gauge was placed for whatever resolution the game first reported.</b> The screen was measured once and kept, and a reported resolution is not a constant -- going between fullscreen and windowed changes it, and the first read can land before the mode has settled. Right in one mode and wrong in the other, with the positioner's pixel readout wrong beside it. Bare Minimum's row moved with it, which is how bars ended up off the side of the screen. <i>paparumz.</i></li>
+<li><b>Fixed: no route to a station if you already had a waypoint down.</b> The route is drawn on the station's own blip and never touches a waypoint, so standing aside was more caution than the job needed. Both lines draw now. The fallback used when blips are off still stands aside every time, because that one would overwrite yours. <i>AliG_15.</i></li>
+<li>247 settings.</li>
 </ul>
 
 Every earlier version, with the full explanation of each change, is in <i>CHANGES.txt</i> inside the zip.
