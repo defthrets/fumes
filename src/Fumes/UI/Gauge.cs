@@ -497,9 +497,10 @@ namespace Fumes.UI
 
         private int _screenW;
         private int _screenH;
+        private int _screenAt;
 
         /// <summary>
-        /// The screen in pixels, read once and kept.
+        /// The screen in pixels, re-read about once a second.
         ///
         /// BEHIND ACCESSORS BECAUSE A FIELD READ IN ONE PLACE AND FILLED IN ANOTHER IS A TRAP.
         /// _screenH was only ever assigned inside Bands(), and when Bands() was deleted with
@@ -507,25 +508,45 @@ namespace Fumes.UI
         /// luck and wrong on any other, with nothing on screen to say so. The compiler noticed;
         /// nobody playing it would have.
         /// </summary>
-        private float ScreenW()
+        /// AND IT IS NOT READ ONCE ANY MORE. It was, and a game's reported resolution is not
+        /// a constant: going between fullscreen and windowed changes it, and the very first
+        /// read can land before the mode has settled. Latched, the gauge went on placing and
+        /// sizing itself for a screen that was no longer there -- right in one mode and wrong
+        /// in the other, with the positioner's pixel readout wrong beside it, which is the one
+        /// thing that readout exists to be trusted about. A native a second costs nothing.
+        private void MeasureScreen()
         {
-            if (_screenW <= 0)
+            if (_screenW > 0 && _screenH > 0 && Game.GameTime - _screenAt < 1000) return;
+
+            _screenAt = Game.GameTime;
+
+            try
             {
-                try { _screenW = GTA.UI.Screen.Resolution.Width; }
-                catch { _screenW = 1920; }
+                var res = GTA.UI.Screen.Resolution;
+                if (res.Width > 0 && res.Height > 0)
+                {
+                    _screenW = res.Width;
+                    _screenH = res.Height;
+                }
+            }
+            catch
+            {
+                // Leave whatever was last known; the fallbacks below cover a first read.
             }
 
+            if (_screenW <= 0) _screenW = 1920;
+            if (_screenH <= 0) _screenH = 1080;
+        }
+
+        private float ScreenW()
+        {
+            MeasureScreen();
             return _screenW;
         }
 
         private float ScreenH()
         {
-            if (_screenH <= 0)
-            {
-                try { _screenH = GTA.UI.Screen.Resolution.Height; }
-                catch { _screenH = 1080; }
-            }
-
+            MeasureScreen();
             return _screenH;
         }
 

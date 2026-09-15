@@ -213,18 +213,21 @@ namespace Fumes.Fuel
             // Derived rather than another number in the table, because the two have to
             // agree: change the tank and the range holds by construction. Two independent
             // settings would drift the first time one of them moved.
-            if (_cfg.BikeRangeKm > 0f && Tanks.IsBike(v) && tank != null && tank.Capacity > 0f)
+            // AND IT STANDS DOWN THE MOMENT YOU SET A FIGURE YOURSELF. This used to return
+            // here no matter what, so raising the Motorcycles figure in the ini or on the
+            // CLASSES page did nothing at all to a bike and nothing said why -- the number on
+            // the page was simply not the number being burned. The derived figure is a
+            // default, not a rule: leave the class figure alone and the tank decides, change
+            // it and yours wins.
+            if (_cfg.BikeRangeKm > 0f && Tanks.IsBike(v) && tank != null && tank.Capacity > 0f
+                && Math.Abs(thirst - Settings.DefaultBikeThirst) < 0.001f)
             {
                 thirst = tank.Capacity / _cfg.BikeRangeKm * 100f;
-
-                // ...unless the player pinned this bike by name, which is their call.
-                float pinned;
-                var bike = ModelName(v);
-                if (bike.Length > 0 && _overrides.TryGetValue(bike, out pinned)) thirst = pinned;
-
-                return thirst;
             }
 
+            // Bikes go through the model blend with everything else now, which is how a bike
+            // pinned by name reaches the burn. ModelThirst leaves their class figure alone
+            // otherwise, so nobody's bikes change until they ask.
             if (_cfg.PerModel > 0f) thirst = ModelThirst(v, thirst, say);
 
             return thirst;
@@ -266,9 +269,13 @@ namespace Fumes.Fuel
 
             // Aircraft, boats and rail carry mass and drive force too, and neither means
             // what it means on a road. They keep the class figure unless pinned.
+            // Motorcycles are in this list because a bike's figure is worked out from its tank
+            // and its range instead, and running mass and drive force over the top of that
+            // would quietly move every bike in the game. Pinning one by name still lands,
+            // which is the whole reason a bike comes through here at all.
             var c = v.ClassType;
             if (c == VehicleClass.Helicopters || c == VehicleClass.Planes || c == VehicleClass.Boats ||
-                c == VehicleClass.Trains || c == VehicleClass.Cycles)
+                c == VehicleClass.Trains || c == VehicleClass.Cycles || c == VehicleClass.Motorcycles)
             {
                 return classRate;
             }

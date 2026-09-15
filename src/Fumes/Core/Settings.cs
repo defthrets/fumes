@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using GTA;
@@ -354,6 +354,19 @@ namespace Fumes.Core
 
         /// <summary>Crossing into reserve routes the GPS to the nearest station. See Main.RouteToStation.</summary>
         public bool RouteOnReserve = true;
+
+        /// <summary>
+        /// Route to the station even when a waypoint of yours is already down.
+        ///
+        /// THE ROUTE IS DRAWN ON THE STATION'S OWN BLIP, so it never touches your waypoint --
+        /// two lines on the minimap, both yours to ignore. The old rule refused outright the
+        /// moment a waypoint existed, which read as the feature being broken to anybody who
+        /// plays with one set, and the thing it was protecting was never at risk.
+        ///
+        /// The fallback that has no blip to draw on still stands down, always: that one really
+        /// does take your waypoint away.
+        /// </summary>
+        public bool RouteOverWaypoint = true;
 
         /// <summary>The route line's colour, as one of the game's own blip colours. 17 is orange.</summary>
         public int RouteColour = 17;
@@ -1595,6 +1608,15 @@ namespace Fumes.Core
         /// </summary>
         public float BikeRangeKm = 720f;
 
+        /// <summary>
+        /// The Motorcycles figure this mod ships with.
+        ///
+        /// Named, because the bike derivation has to know whether the figure in front of it is
+        /// still the shipped one or something the player set. A literal 4.5 in two places is
+        /// two places to forget.
+        /// </summary>
+        public const float DefaultBikeThirst = 4.5f;
+
         public readonly Dictionary<VehicleClass, float> Thirst = new Dictionary<VehicleClass, float>
         {
             { VehicleClass.Compacts,        7.5f },
@@ -1605,7 +1627,7 @@ namespace Fumes.Core
             { VehicleClass.SportsClassics, 14.0f },
             { VehicleClass.Sports,         13.0f },
             { VehicleClass.Super,          20.0f },
-            { VehicleClass.Motorcycles,     4.5f },
+            { VehicleClass.Motorcycles,     DefaultBikeThirst },
             { VehicleClass.OffRoad,        16.0f },
             { VehicleClass.Industrial,     30.0f },
             { VehicleClass.Utility,        22.0f },
@@ -1681,6 +1703,7 @@ namespace Fumes.Core
                 s.LowFuelCutouts = ini.GetBool("Engine", "LowFuelCutouts", s.LowFuelCutouts);
                 s.LowFuelCutoutSeconds = ini.GetFloat("Engine", "LowFuelCutoutSeconds", s.LowFuelCutoutSeconds, 0.05f, 3f);
                 s.RouteOnReserve = ini.GetBool("Fuel", "RouteOnReserve", s.RouteOnReserve);
+                s.RouteOverWaypoint = ini.GetBool("Fuel", "RouteOverWaypoint", s.RouteOverWaypoint);
                 s.RouteColour = ini.GetInt("Fuel", "RouteColour", s.RouteColour, 0, 85);
                 s.NozzleSpray = ini.GetBool("Nozzle", "Spray", s.NozzleSpray);
                 s.NozzleSprayLitresPerSecond = ini.GetFloat("Nozzle", "SprayLitresPerSecond", s.NozzleSprayLitresPerSecond, 0.05f, 20f);

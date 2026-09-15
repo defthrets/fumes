@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using GTA;
 using GTA.Native;
@@ -81,21 +81,39 @@ namespace Fumes.UI
             RectsThisFrame++;
         }
 
-        /// <summary>The screen's height in pixels, for the sub-pixel test. Read once.</summary>
+        /// <summary>
+        /// The screen's height in pixels, for the sub-pixel test. Re-read about once a second.
+        ///
+        /// Not latched, for the same reason the gauge's is not: the resolution a game reports
+        /// changes when you go between fullscreen and windowed, and the first read can land
+        /// before the mode has settled.
+        /// </summary>
         private static int Tall
         {
             get
             {
-                if (_tall > 0) return _tall;
+                if (_tall > 0 && Game.GameTime - _tallAt < 1000) return _tall;
 
-                try { _tall = GTA.UI.Screen.Resolution.Height; }
-                catch { _tall = 1080; }
+                _tallAt = Game.GameTime;
+
+                try
+                {
+                    var h = GTA.UI.Screen.Resolution.Height;
+                    if (h > 0) _tall = h;
+                }
+                catch
+                {
+                    // Keep the last known height.
+                }
+
+                if (_tall <= 0) _tall = 1080;
 
                 return _tall;
             }
         }
 
         private static int _tall;
+        private static int _tallAt;
 
         /// <summary>
         /// A filled rectangle, positioned by its CENTRE.

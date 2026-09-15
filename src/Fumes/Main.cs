@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -184,8 +184,13 @@ namespace Fumes
         ///
         /// A WAYPOINT YOU ALREADY SET IS NEVER TAKEN AWAY. You were going somewhere, and a
         /// mod that silently redirects you because a needle moved is a mod that loses you the
-        /// mission you were driving to. If the map is clear, this puts one down; if it is
-        /// not, the blips are still there to pick from.
+        /// mission you were driving to.
+        ///
+        /// It used to refuse to route at all while one was set, which was more caution than the
+        /// job needed and read as the feature simply not working. The line is drawn on the
+        /// station's own blip and takes nothing from anybody, so it is drawn now whatever else
+        /// is on the map -- [Fuel] RouteOverWaypoint. Only the no-blip fallback, which puts a
+        /// real waypoint down, still stands aside.
         /// </summary>
         private void RouteToStation()
         {
@@ -193,7 +198,9 @@ namespace Fumes
 
             try
             {
-                if (Function.Call<bool>(Hash.IS_WAYPOINT_ACTIVE))
+                var waypoint = Function.Call<bool>(Hash.IS_WAYPOINT_ACTIVE);
+
+                if (waypoint && !_cfg.RouteOverWaypoint)
                 {
                     Log.Info("Low on fuel, but a waypoint is already set - leaving it alone.");
                     return;
@@ -225,7 +232,15 @@ namespace Fumes
                 }
 
                 // Blips turned off, so there is nothing to draw a line to. A waypoint is the
-                // only thing left, and the game picks its colour.
+                // only thing left, and the game picks its colour -- but this is the one path
+                // that would take yours away, so it never does.
+                if (waypoint)
+                {
+                    Log.Info("Low on fuel and no blip to route to, but a waypoint is already " +
+                             "set - leaving it alone.");
+                    return;
+                }
+
                 Function.Call(Hash.SET_NEW_WAYPOINT, near.Position.X, near.Position.Y);
 
                 Log.Info("Low on fuel: no blip to route, so a waypoint to " + near.Title + ", " +

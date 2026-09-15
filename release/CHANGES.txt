@@ -1,6 +1,43 @@
 FUMES -- changes
 
 
+Unreleased
+==========
+
+  * FIXED: A BIKE IGNORED EVERY CONSUMPTION SETTING YOU CHANGED. A motorbike's
+    thirst is worked out from its tank and its range rather than looked up, so
+    that a quarter of the fuel still covers the same ground -- and that
+    calculation returned there and then, over the top of whatever the ini or the
+    CLASSES page said. Raise the Motorcycles figure and nothing happened, with
+    the page still showing the number you set and the burn still using another.
+    The derived figure is a default now: leave the class figure alone and the
+    tank decides, change it and yours wins. Bikes also go through the model
+    blend with everything else, so one pinned by name reaches the burn at last.
+    AliG_15.
+
+  * FIXED: THE GAUGE WAS PLACED FOR WHATEVER RESOLUTION THE GAME FIRST REPORTED.
+    The screen was measured once and kept for the session. A game's reported
+    resolution is not a constant -- going between fullscreen and windowed changes
+    it, and the very first read can land before the mode has settled -- so the
+    gauge went on sizing and placing itself for a screen that was no longer
+    there. Right in one mode, wrong in the other, and the positioner's pixel
+    readout wrong beside it, which is the one number it exists to be trusted
+    about. Bare Minimum's row moved with it, which is how bars ended up off the
+    side of the screen. Measured about once a second now, in the gauge and in the
+    sub-pixel test under every rectangle. paparumz.
+
+  * FIXED: NO ROUTE TO A STATION IF YOU ALREADY HAD A WAYPOINT DOWN. The route is
+    drawn on the station's own blip and never touches a waypoint, so refusing
+    outright was more caution than the job needed -- and from the pavement it
+    read as the feature being broken for anyone who plays with a waypoint set.
+    Both lines are drawn now. [Fuel] RouteOverWaypoint, on by default. The
+    fallback used when blips are turned off still stands aside every time,
+    because that one puts a real waypoint down and would overwrite yours.
+    AliG_15.
+
+  * 247 settings in the ini.
+
+
 1.0.3
 =====
 
