@@ -375,6 +375,10 @@ namespace Fumes.UI
                                   "Once when it drops into reserve, not on a loop."));
             fuel.Items.Add(Toggle("Tanks leak when shot", () => _cfg.TankLeaks,
                                   v => _cfg.TankLeaks = v, "Fuel", "TankLeaks", null));
+            fuel.Items.Add(Number("Leak below tank health", () => _cfg.TankLeakBelow,
+                                  v => _cfg.TankLeakBelow = v, 50f, 0f, 999f, "0",
+                                  "Fuel", "TankLeakBelow",
+                                  "Out of 1000. The game shows its own trail from about 650. 999 weeps from the first scratch."));
             fuel.Items.Add(Toggle("Stall when empty", () => _cfg.StallWhenEmpty,
                                   v => _cfg.StallWhenEmpty = v, "Engine", "StallWhenEmpty",
                                   "Off leaves you driving on an empty tank."));

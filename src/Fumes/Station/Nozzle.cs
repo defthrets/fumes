@@ -478,6 +478,7 @@ namespace Fumes.Station
                     // Right weapon already. Only the hiding is worth repeating -- anything that
                     // reselects a weapon makes its model visible again.
                     Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, false, false, true, false);
+                    HideWeaponObject(me);
                     _posed = true;
                     return;
                 }
@@ -518,6 +519,7 @@ namespace Fumes.Station
 
                 Function.Call(Hash.SET_CURRENT_PED_WEAPON, me.Handle, (uint)want, true);
                 Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, false, false, true, false);
+                HideWeaponObject(me);
                 Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, me.Handle, false);
 
                 _posed = true;
@@ -526,6 +528,49 @@ namespace Fumes.Station
             {
                 Log.Once("pose-fail", "Could not give the carrying pose: " + ex.Message +
                                       " - the nozzle will still work, his arm will just hang.");
+            }
+        }
+
+        /// <summary>
+        /// The weapon's own object, hidden as an entity -- the second hand on the same job.
+        ///
+        /// SET_PED_CURRENT_WEAPON_VISIBLE is a flag on the ped, and on the online character
+        /// models it was reported not holding: the extinguisher drew in his hand for as long
+        /// as the nozzle was out, with a screenshot to prove it. Whatever re-shows it there --
+        /// another script minding that ped's weapons, or the flag simply not reaching a
+        /// freemode model -- an entity that is invisible in its own right is a different
+        /// mechanism, and both are asked every frame. Not reproduced here, where the story
+        /// characters hide it fine, so this is the belt to the flag's braces rather than a
+        /// fix seen working. [Nozzle] Pose = None sidesteps the weapon entirely if it still
+        /// shows.
+        /// </summary>
+        private static void HideWeaponObject(Ped me)
+        {
+            try
+            {
+                var obj = Function.Call<int>(Hash.GET_CURRENT_PED_WEAPON_ENTITY_INDEX, me.Handle, 0);
+                if (obj != 0 && Function.Call<bool>(Hash.IS_ENTITY_VISIBLE, obj))
+                {
+                    Function.Call(Hash.SET_ENTITY_VISIBLE, obj, false, false);
+                }
+            }
+            catch
+            {
+                // The flag above is still doing its job.
+            }
+        }
+
+        /// <summary>Undoes HideWeaponObject before the weapon is handed back or removed.</summary>
+        private static void ShowWeaponObject(Ped me)
+        {
+            try
+            {
+                var obj = Function.Call<int>(Hash.GET_CURRENT_PED_WEAPON_ENTITY_INDEX, me.Handle, 0);
+                if (obj != 0) Function.Call(Hash.SET_ENTITY_VISIBLE, obj, true, false);
+            }
+            catch
+            {
+                // It is about to be removed or reselected anyway.
             }
         }
 
@@ -607,6 +652,7 @@ namespace Fumes.Station
                     Function.Call(Hash.REMOVE_WEAPON_FROM_PED, me.Handle, (uint)_poseWeapon);
                 }
 
+                ShowWeaponObject(me);
                 Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, me.Handle, true, false, true, false);
 
                 // The stance goes back with the weapon, for the same reason it had to be

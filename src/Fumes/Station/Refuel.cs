@@ -119,6 +119,8 @@ namespace Fumes.Station
         /// </summary>
         private bool _keyWasDown;
         private bool _keyEdge;
+        private bool _siphonWasDown;
+        private bool _siphonEdge;
 
         /// <summary>Stops the over-stretch warning being said sixty times a second.</summary>
         private int _stretchMoanedAt;
@@ -3704,6 +3706,7 @@ namespace Fumes.Station
         private void Prompt(Control control, string label)
         {
             if (control == Control.Context && !IsDefaultKey()) label += "   [" + KeyName() + "]";
+            if (control == Control.ContextSecondary && !IsDefaultSiphonKey()) label += "   [" + SecondaryName() + "]";
 
             if (_cfg.Prompts == PromptStyle.ButtonBar)
             {
@@ -4039,6 +4042,18 @@ namespace Fumes.Station
                 _keyEdge = false;
                 _keyWasDown = false;
             }
+
+            try
+            {
+                var down = Game.IsKeyPressed(_cfg.SiphonKey);
+                _siphonEdge = down && !_siphonWasDown;
+                _siphonWasDown = down;
+            }
+            catch
+            {
+                _siphonEdge = false;
+                _siphonWasDown = false;
+            }
         }
 
         /// <summary>
@@ -4066,10 +4081,39 @@ namespace Fumes.Station
             catch { return false; }
         }
 
-        private static bool SecondaryPressed()
+        /// <summary>
+        /// The siphon key, on its rising edge.
+        ///
+        /// IT HAD NO KEY OF ITS OWN. Siphoning and filling the can rode the game's secondary
+        /// context control, Q on a keyboard, and Q is also take-cover -- so every siphon at a
+        /// car's flank was a man ducking behind it too, and there was nothing in the ini to
+        /// move. Now [Nozzle] SiphonKey is the key, the way InteractKey is for the nozzle.
+        ///
+        /// The game's own control still works on a pad, always, because a pad has no other
+        /// way in. On a keyboard it works only while SiphonKey is still the key that control
+        /// sits on: the whole point of moving the key off Q is that Q stops doing this.
+        /// </summary>
+        private bool SecondaryPressed()
         {
-            try { return Game.IsControlJustPressed(Control.ContextSecondary); }
-            catch { return false; }
+            if (InputBlocked) return false;
+
+            if (_siphonEdge) return true;
+
+            try
+            {
+                if (!IsDefaultSiphonKey() && Game.LastInputMethod != InputMethod.GamePad) return false;
+                return Game.IsControlJustPressed(Control.ContextSecondary);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Whether SiphonKey is still the key the secondary context control itself is on.</summary>
+        private bool IsDefaultSiphonKey()
+        {
+            return string.Equals(SecondaryName(), "Q", StringComparison.Ordinal);
         }
 
         private string KeyName()
@@ -4077,11 +4121,12 @@ namespace Fumes.Station
             return _cfg.InteractKey.ToString().ToUpperInvariant();
         }
 
-        private static string SecondaryName()
+        private string SecondaryName()
         {
-            // ContextSecondary is Q on a keyboard out of the box. Named rather than tagged
-            // because ~INPUT_~ only resolves inside help text and this string is also logged.
-            return "Q";
+            // Named rather than tagged because ~INPUT_~ only resolves inside help text and
+            // this string is also logged. Q out of the box, which is where the game keeps
+            // its secondary context control.
+            return _cfg.SiphonKey.ToString().ToUpperInvariant();
         }
 
         private static void Notify(string text)

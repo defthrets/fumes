@@ -398,19 +398,58 @@ namespace Fumes.Fuel
             return 1f + (1000f - health) / 1000f * 0.35f;
         }
 
+        /// <summary>
+        /// A holed tank, draining. Engine running or not -- this is the one burn that does not
+        /// need the engine, which is exactly why it has to be careful about when it applies.
+        ///
+        /// IT USED TO WEEP FROM THE FIRST SCRATCH. Anything under 999 leaked, on a curve, and
+        /// two things made that a bug rather than a feature. A tank the game had never been
+        /// asked to hurt still reads a little under full after any knock, so a car that had
+        /// been rear-ended once lost fuel sitting in a car park with nothing on the road to
+        /// say why -- and a model that reports no tank health at all reads as ZERO, which the
+        /// old curve took for a tank shot to pieces and emptied in ninety seconds. Parked,
+        /// engine off, gauge falling, and only in the car you are in, because the traffic
+        /// sweeps skip a dead engine and this path does not. That is the report, exactly.
+        ///
+        /// NOW IT DRAINS WHEN YOU CAN SEE IT DRAINING. The game draws its own trail on the road
+        /// once the tank is hurt enough, from somewhere around 650 of 1000, and nothing above
+        /// that is visible to anyone. [Fuel] TankLeakBelow is that line; the gauge follows the
+        /// puddle and never leads it. And a health of nought on a body without a mark on it is
+        /// a model that does not report one, not a hole, and is left alone.
+        ///
+        /// Full-bore at zero health is still a tank emptied in about a minute and a half.
+        /// Scaled by capacity so a tanker does not drain like a bike.
+        /// </summary>
         private float Leak(Vehicle v, Tank tank, float dt)
         {
             if (!_cfg.TankLeaks || tank.Empty) return 0f;
+
+            var below = _cfg.TankLeakBelow;
+            if (below <= 0f) return 0f;
 
             float health;
             try { health = v.PetrolTankHealth; }
             catch { return 0f; }
 
-            if (health >= 999f) return 0f;
+            if (float.IsNaN(health) || health >= below) return 0f;
 
-            // Full-bore at zero health is a tank emptied in about a minute and a half; a
-            // scratch is a slow weep. Scaled by capacity so a tanker does not drain like a bike.
-            var severity = (1000f - Math.Max(health, 0f)) / 1000f;
+            if (health <= 0f)
+            {
+                float body;
+                try { body = v.BodyHealth; }
+                catch { body = 0f; }
+
+                if (body >= 999f) return 0f;      // no tank reported, not a hole
+                health = 0f;
+            }
+
+            // Said once per car, with the number, so the next report about a falling gauge
+            // comes with the thing that explains it.
+            Log.Once("leak-" + v.Handle + "-" + v.Model.Hash,
+                     v.LocalizedName + ": petrol tank health " + health.ToString("0", CultureInfo.InvariantCulture) +
+                     ", under " + below.ToString("0", CultureInfo.InvariantCulture) + " - it is leaking.");
+
+            var severity = (below - health) / below;
             return tank.Capacity * severity * severity * dt / 90f;
         }
 

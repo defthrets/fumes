@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using GTA;
@@ -81,6 +81,12 @@ namespace Fumes.Fuel
             catch { return false; }
         }
 
+        /// <summary>The game's flag, the built-in names, or a name the player put in the ini.</summary>
+        private bool Electric(Vehicle v)
+        {
+            return Tank.IsElectric(v) || _cfg.ListedElectric(v);
+        }
+
         public static string KeyFor(Vehicle v)
         {
             try
@@ -133,7 +139,7 @@ namespace Fumes.Fuel
                 // returns null for anything it refuses, and every caller already handles null.
                 // Excluding them here means no tank, no gauge, no prompt at a pump and no fuel
                 // burned, from one line, instead of four places each remembering to ask.
-                if (!_cfg.AffectElectric && Tank.IsElectric(v)) return false;
+                if (!_cfg.AffectElectric && Electric(v)) return false;
 
                 switch (v.ClassType)
                 {
@@ -219,7 +225,7 @@ namespace Fumes.Fuel
             {
                 Key = key,
                 Capacity = capacity,
-                Electric = Tank.IsElectric(v)
+                Electric = Electric(v)
             };
 
             if (key != null && _saved.TryGetValue(key, out var remembered))

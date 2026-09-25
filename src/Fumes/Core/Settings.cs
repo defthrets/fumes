@@ -232,6 +232,46 @@ namespace Fumes.Core
         /// </summary>
         public bool AffectElectric;
 
+        /// <summary>
+        /// Electric models by name, from the ini, on top of the game's own flag and the list in
+        /// Tank.ElectricNames. Comma-separated spawn names -- "estride, voltic3".
+        ///
+        /// For the add-on and the newer DLC car whose meta does not carry FLAG_IS_ELECTRIC:
+        /// the reports name an E-Stride taking petrol, and the only fix that does not wait for
+        /// a release is one the player can type. The name to type is the one in brackets on
+        /// the model's own line in the log.
+        /// </summary>
+        public string ElectricModels = "";
+
+        private HashSet<int> _electricHashes;
+
+        /// <summary>Whether this vehicle's model is one the ini calls electric.</summary>
+        public bool ListedElectric(Vehicle v)
+        {
+            if (string.IsNullOrEmpty(ElectricModels)) return false;
+
+            try
+            {
+                if (_electricHashes == null)
+                {
+                    var set = new HashSet<int>();
+                    foreach (var raw in ElectricModels.Split(',', ';', ' '))
+                    {
+                        var name = raw.Trim();
+                        if (name.Length > 0) set.Add(Game.GenerateHash(name));
+                    }
+                    _electricHashes = set;
+                    Log.Info(set.Count + " electric model(s) listed in the ini: " + ElectricModels.Trim() + ".");
+                }
+
+                return _electricHashes.Contains(v.Model.Hash);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public bool AffectBoats = true;
         public bool AffectAircraft = false;
 
@@ -293,6 +333,13 @@ namespace Fumes.Core
 
         /// <summary>Whether a shot petrol tank drains onto the road. See Consumption.Leak.</summary>
         public bool TankLeaks = true;
+
+        /// <summary>
+        /// The petrol tank health, out of 1000, under which it drains. The game draws its own
+        /// fuel trail from somewhere around 650, so that is where the gauge starts following
+        /// it. 999 is the old behaviour -- a weep from the first scratch. 0 turns leaks off.
+        /// </summary>
+        public float TankLeakBelow = 650f;
 
         /// <summary>
         /// A chime when a tank drops into reserve. No notification with it -- see LowFuel.
@@ -1035,6 +1082,14 @@ namespace Fumes.Core
 
         // ---- the nozzle and its hose -----------------------------------------
         public Keys InteractKey = Keys.E;
+
+        /// <summary>
+        /// Siphon, and fill the can at a pump. Q, where the game keeps its secondary context
+        /// control -- and also take-cover, which is why this is settable at all. See
+        /// Refuel.SecondaryPressed.
+        /// </summary>
+        public Keys SiphonKey = Keys.Q;
+
         public NozzlePose Pose = NozzlePose.FireExtinguisher;
         /// <summary>
         /// THE DRAWN HOSE, which is what 1.0.2 shipped and what this went back to.
@@ -1670,6 +1725,7 @@ namespace Fumes.Core
                 s.IdleLitresPerHour = ini.GetFloat("Fuel", "IdleLitresPerHour", s.IdleLitresPerHour, 0f, 60f);
                 s.AffectBoats = ini.GetBool("Fuel", "AffectBoats", s.AffectBoats);
                 s.AffectElectric = ini.GetBool("Fuel", "AffectElectric", s.AffectElectric);
+                s.ElectricModels = ini.GetString("Fuel", "ElectricModels", s.ElectricModels);
                 s.AffectAircraft = ini.GetBool("Fuel", "AffectAircraft", s.AffectAircraft);
                 s.AffectTraffic = ini.GetBool("Fuel", "AffectTraffic", s.AffectTraffic);
                 s.AbandonedIdle = ini.GetBool("Fuel", "AbandonedIdle", s.AbandonedIdle);
@@ -1679,6 +1735,7 @@ namespace Fumes.Core
                 s.MissionTanksFull = ini.GetBool("Fuel", "MissionTanksFull", s.MissionTanksFull);
                 s.ReserveFraction = ini.GetFloat("Fuel", "ReserveFraction", s.ReserveFraction, 0.01f, 0.6f);
                 s.TankLeaks = ini.GetBool("Fuel", "TankLeaks", s.TankLeaks);
+                s.TankLeakBelow = ini.GetFloat("Fuel", "TankLeakBelow", s.TankLeakBelow, 0f, 999f);
                 s.LowFuelChime = ini.GetBool("Fuel", "LowFuelChime", s.LowFuelChime);
                 s.LowFuelSoundName = ini.GetString("Fuel", "LowFuelSoundName", s.LowFuelSoundName);
                 s.LowFuelSoundSet = ini.GetString("Fuel", "LowFuelSoundSet", s.LowFuelSoundSet);
@@ -1809,6 +1866,7 @@ namespace Fumes.Core
                 s.ChargeMoney = ini.GetBool("Station", "ChargeMoney", s.ChargeMoney);
 
                 s.InteractKey = ini.GetKey("Nozzle", "InteractKey", s.InteractKey);
+                s.SiphonKey = ini.GetKey("Nozzle", "SiphonKey", s.SiphonKey);
                 s.Pose = ParseEnum(ini.GetString("Nozzle", "Pose", "PetrolCan"), s.Pose);
                 s.Hose = ParseEnum(ini.GetString("Nozzle", "Hose", "Auto"), s.Hose);
                 s.HoseMaxMetres = ini.GetFloat("Nozzle", "HoseMaxMetres", s.HoseMaxMetres, 2f, 40f);

@@ -1,6 +1,51 @@
 FUMES -- changes
 
 
+Unreleased
+==========
+
+  * FIXED: THE TANK DRAINED WITH THE ENGINE OFF. A holed tank leaks, engine
+    running or not, and it used to weep from the first scratch: anything under
+    999 of 1000 leaked on a curve. Two things made that a bug. A tank the game
+    had never been asked to hurt still reads a little under full after any
+    knock, so a car that had been rear-ended once lost fuel sitting in a car
+    park with nothing on the road to say why -- and a model that reports no
+    tank health at all reads as ZERO, which the curve took for a tank shot to
+    pieces and emptied in ninety seconds. Only in the car you are in, because
+    the traffic sweeps skip a dead engine and this path does not, which is the
+    report to the letter. It drains when you can see it draining now: the game
+    draws its own fuel trail from about 650, and [Fuel] TankLeakBelow is that
+    line, on the FUEL page. A health of nought on a body without a mark on it
+    is a model that does not report one, and is left alone. The log says when
+    a tank starts leaking, and at what health. xenmf2k.
+
+  * THE SIPHON HAS A KEY OF ITS OWN. It rode the game's secondary context
+    control, Q on a keyboard, and Q is also take-cover -- so every siphon at a
+    car's flank was a man ducking behind it too, with nothing in the ini to
+    move. [Nozzle] SiphonKey, next to InteractKey, and the prompt names the
+    key once it is moved. A controller's button keeps working whatever it
+    says; on a keyboard, Q stops siphoning the moment the key is somewhere
+    else, which is the whole point. Chantha Silentsnight.
+
+  * THE FIRE EXTINGUISHER SHOULD NOT SHOW ON AN ONLINE CHARACTER. The nozzle
+    sits in his hand by borrowing an invisible weapon, and the flag that hides
+    it was reported not holding on the online character models, screenshot
+    attached. The weapon's own object is now hidden as an entity as well,
+    every frame, which is a different mechanism from the flag. Not seen
+    working here, where the story characters hide it fine, so this is the
+    belt to the flag's braces. [Nozzle] Pose = None sidesteps the weapon
+    entirely if it still shows. unitedOrange66.
+
+  * ELECTRIC MODELS THE MOD DOES NOT KNOW CAN BE NAMED IN THE INI. The game's
+    own flag catches nearly all of them and a list in the source catches the
+    rest of the stock ones, but an add-on or a DLC car newer than this build
+    -- the E-Stride, reported twice -- has neither. [Fuel] ElectricModels,
+    comma-separated spawn names; the name to put there is the one in brackets
+    on that car's own line in the log. JRod, thalilmythos.
+
+  * 250 settings in the ini.
+
+
 1.0.4
 =====
 
